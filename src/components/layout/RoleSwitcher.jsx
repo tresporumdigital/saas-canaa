@@ -25,7 +25,7 @@ export default function RoleSwitcher() {
     <div className="role-switcher" ref={ref}>
       <button onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}>
         <span className="avatar xs">{role.avatar}</span>
-        {role.name}
+        <span className="rs-name">{role.name}</span>
         <Icon name="chevron-down" size={13} />
       </button>
       {open && (

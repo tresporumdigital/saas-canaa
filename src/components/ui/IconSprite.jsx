@@ -16,6 +16,7 @@ export default function IconSprite() {
         <symbol id="ic-chevron-up" viewBox="0 0 24 24"><polyline points="6 15 12 9 18 15" /></symbol>
         <symbol id="ic-chevron-right" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18" /></symbol>
         <symbol id="ic-chevron-left" viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18" /></symbol>
+        <symbol id="ic-menu" viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" /></symbol>
         <symbol id="ic-check" viewBox="0 0 24 24"><polyline points="5 13 10 18 19 7" /></symbol>
         <symbol id="ic-x" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></symbol>
         <symbol id="ic-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2.2" /><line x1="3.5" y1="10" x2="20.5" y2="10" /><line x1="8" y1="3.5" x2="8" y2="7.5" /><line x1="16" y1="3.5" x2="16" y2="7.5" /></symbol>

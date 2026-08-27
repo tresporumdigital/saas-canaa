@@ -4,7 +4,7 @@ import Icon from '../ui/Icon.jsx';
 import RoleSwitcher from './RoleSwitcher.jsx';
 import { useRole } from '../../context/RoleContext.jsx';
 
-export default function TopBar() {
+export default function TopBar({ onOpenMenu }) {
   const [q, setQ] = useState('');
   const navigate = useNavigate();
   const { role } = useRole();
@@ -16,8 +16,11 @@ export default function TopBar() {
 
   return (
     <header className="app-topbar">
+      <button className="icon-btn only-mobile" onClick={onOpenMenu} aria-label="Abrir menu">
+        <Icon name="menu" size={18} />
+      </button>
       <span className="brand">Canaã</span>
-      <form className="search" onSubmit={submit} role="search">
+      <form className="search hide-mobile" onSubmit={submit} role="search">
         <Icon name="search" size={15} />
         <input
           value={q}
@@ -28,9 +31,9 @@ export default function TopBar() {
       </form>
       <div className="spacer" />
       <div className="actions">
-        <button className="icon-btn" aria-label="Notificações"><Icon name="bell" size={16} /></button>
+        <button className="icon-btn hide-mobile" aria-label="Notificações"><Icon name="bell" size={16} /></button>
         <RoleSwitcher />
-        <span className="avatar sm" title={role.name}>{role.avatar}</span>
+        <span className="avatar sm hide-mobile" title={role.name}>{role.avatar}</span>
       </div>
     </header>
   );
