@@ -1,1 +1,5 @@
 design-system/dist/
+node_modules/
+dist/
+*.local
+.DS_Store

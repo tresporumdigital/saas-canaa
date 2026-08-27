@@ -1,0 +1,91 @@
+// Parceiros comerciais (RF-16..RF-22).
+export const parceiros = [
+  {
+    id: 'PAR-001', razaoSocial: 'Transportes Boa Viagem Ltda', nomeFantasia: 'Boa Viagem Translados',
+    cnpj: '18334455000178', tipoParceria: 'Translado e transporte', cidade: 'São Paulo', uf: 'SP',
+    status: 'Ativo', dadosBancarios: 'Banco 341 · Ag 1234 · CC 56789-0',
+    contatos: [
+      { nome: 'Wagner Lopes', funcao: 'Coordenador operacional', telefone: '11987651001', email: 'wagner@boaviagem.com' },
+      { nome: 'Central de plantão', funcao: 'Plantão 24h', telefone: '11940041001', email: 'plantao@boaviagem.com' },
+    ],
+    acordo: { tipo: 'Fixo por atendimento', valor: 480, vigencia: '2025-01-01 a 2026-12-31', servicosCobertos: ['Translado local até 100km', 'Translado intermunicipal', 'Remoção'] },
+    usuarioPortal: { login: 'boaviagem.wagner', ativo: true, ultimoAcesso: '2026-08-26T22:10:00' },
+  },
+  {
+    id: 'PAR-002', razaoSocial: 'Flores & Cia Comércio de Flores ME', nomeFantasia: 'Floricultura Jardim',
+    cnpj: '22778811000199', tipoParceria: 'Ornamentação e flores', cidade: 'São Paulo', uf: 'SP',
+    status: 'Ativo', dadosBancarios: 'Banco 237 · Ag 0987 · CC 11223-4',
+    contatos: [{ nome: 'Marta Nunes', funcao: 'Proprietária', telefone: '11987652002', email: 'marta@floriculturajardim.com' }],
+    acordo: { tipo: 'Percentual', valor: 0.15, vigencia: '2025-03-01 a 2027-02-28', servicosCobertos: ['Coroa de flores', 'Ornamentação de sala', 'Arranjos'] },
+    usuarioPortal: { login: 'floriculturajardim.marta', ativo: true, ultimoAcesso: '2026-08-25T14:32:00' },
+  },
+  {
+    id: 'PAR-003', razaoSocial: 'Cemitério Jardim das Oliveiras S/A', nomeFantasia: 'Jardim das Oliveiras',
+    cnpj: '10556677000122', tipoParceria: 'Sepultamento e jazigos', cidade: 'São Paulo', uf: 'SP',
+    status: 'Ativo', dadosBancarios: 'Banco 001 · Ag 4455 · CC 99887-1',
+    contatos: [
+      { nome: 'Paulo Tavares', funcao: 'Administração', telefone: '11987653003', email: 'paulo@jardimoliveiras.com' },
+      { nome: 'Setor de sepultamento', funcao: 'Agendamento', telefone: '11930033003', email: 'agenda@jardimoliveiras.com' },
+    ],
+    acordo: { tipo: 'Fixo por atendimento', valor: 1850, vigencia: '2024-06-01 a 2026-05-31 (em renovação)', servicosCobertos: ['Sepultamento', 'Locação de jazigo 3 anos', 'Exumação'] },
+    usuarioPortal: { login: 'jardimoliveiras.paulo', ativo: true, ultimoAcesso: '2026-08-27T07:45:00' },
+  },
+  {
+    id: 'PAR-004', razaoSocial: 'Crematório Memorial Bosque Ltda', nomeFantasia: 'Memorial Bosque',
+    cnpj: '30991122000155', tipoParceria: 'Cremação', cidade: 'Embu das Artes', uf: 'SP',
+    status: 'Ativo', dadosBancarios: 'Banco 033 · Ag 7788 · CC 33445-6',
+    contatos: [{ nome: 'Renata Bittencourt', funcao: 'Gerente', telefone: '11987654004', email: 'renata@memorialbosque.com' }],
+    acordo: { tipo: 'Fixo por atendimento', valor: 2400, vigencia: '2025-01-01 a 2027-12-31', servicosCobertos: ['Cremação', 'Cerimônia de despedida', 'Urna para cinzas'] },
+    usuarioPortal: { login: 'memorialbosque.renata', ativo: true, ultimoAcesso: '2026-08-24T19:05:00' },
+  },
+  {
+    id: 'PAR-005', razaoSocial: 'Arte Final Tanatopraxia ME', nomeFantasia: 'Arte Final',
+    cnpj: '25443322000188', tipoParceria: 'Preparação e tanatopraxia', cidade: 'São Paulo', uf: 'SP',
+    status: 'Ativo', dadosBancarios: 'Banco 341 · Ag 2233 · CC 44556-7',
+    contatos: [{ nome: 'Cláudio Reis', funcao: 'Técnico responsável', telefone: '11987655005', email: 'claudio@artefinal.com' }],
+    acordo: { tipo: 'Fixo por atendimento', valor: 650, vigencia: '2025-05-01 a 2026-04-30 (em renovação)', servicosCobertos: ['Tanatopraxia', 'Preparação simples', 'Necromaquiagem'] },
+    usuarioPortal: { login: 'artefinal.claudio', ativo: true, ultimoAcesso: '2026-08-26T11:20:00' },
+  },
+  {
+    id: 'PAR-006', razaoSocial: 'Buffet Conforto Eventos Ltda', nomeFantasia: 'Conforto Velório',
+    cnpj: '19882277000144', tipoParceria: 'Buffet de velório', cidade: 'São Paulo', uf: 'SP',
+    status: 'Ativo', dadosBancarios: 'Banco 260 · Ag 0001 · CC 12398-0',
+    contatos: [{ nome: 'Sílvia Andrade', funcao: 'Atendimento', telefone: '11987656006', email: 'silvia@confortovelorio.com' }],
+    acordo: { tipo: 'Percentual', valor: 0.2, vigencia: '2025-02-01 a 2026-01-31 (em renovação)', servicosCobertos: ['Café e água', 'Kit lanche família', 'Serviço de copa 12h'] },
+    usuarioPortal: { login: 'confortovelorio.silvia', ativo: false, ultimoAcesso: '2026-06-30T10:00:00' },
+  },
+  {
+    id: 'PAR-007', razaoSocial: 'Documenta Cartório Assessoria ME', nomeFantasia: 'Documenta',
+    cnpj: '27665511000133', tipoParceria: 'Documentação e cartório', cidade: 'São Paulo', uf: 'SP',
+    status: 'Ativo', dadosBancarios: 'Banco 237 · Ag 3344 · CC 55667-8',
+    contatos: [{ nome: 'André Vasques', funcao: 'Despachante', telefone: '11987657007', email: 'andre@documenta.com' }],
+    acordo: { tipo: 'Fixo por atendimento', valor: 320, vigencia: '2025-01-01 a 2026-12-31', servicosCobertos: ['Registro de óbito', 'Traslado de corpo (guia)', '2ª via de certidão'] },
+    usuarioPortal: { login: 'documenta.andre', ativo: true, ultimoAcesso: '2026-08-27T08:12:00' },
+  },
+  {
+    id: 'PAR-008', razaoSocial: 'Luz Eterna Urnas Indústria Ltda', nomeFantasia: 'Luz Eterna Urnas',
+    cnpj: '31220099000166', tipoParceria: 'Fornecimento de urnas', cidade: 'Guarulhos', uf: 'SP',
+    status: 'Ativo', dadosBancarios: 'Banco 341 · Ag 5566 · CC 66778-9',
+    contatos: [{ nome: 'Fernando Klein', funcao: 'Comercial', telefone: '11987658008', email: 'fernando@luzeterna.com' }],
+    acordo: { tipo: 'Comissão de venda', valor: 0.1, vigencia: '2025-01-01 a 2027-12-31', servicosCobertos: ['Urna padrão', 'Urna semiluxo', 'Urna luxo', 'Urna infantil'] },
+    usuarioPortal: { login: 'luzeterna.fernando', ativo: true, ultimoAcesso: '2026-08-20T16:40:00' },
+  },
+  {
+    id: 'PAR-009', razaoSocial: 'Paz Assistência Funerária EIRELI', nomeFantasia: 'Paz Assistência',
+    cnpj: '28773311000177', tipoParceria: 'Assistência 24h', cidade: 'São Paulo', uf: 'SP',
+    status: 'Inativo', dadosBancarios: 'Banco 033 · Ag 8899 · CC 77889-0',
+    contatos: [{ nome: 'Marcelo Pires', funcao: 'Operações', telefone: '11987659009', email: 'marcelo@pazassistencia.com' }],
+    acordo: { tipo: 'Fixo por atendimento', valor: 540, vigencia: '2024-01-01 a 2025-12-31 (encerrado)', servicosCobertos: ['Plantão de remoção', 'Apoio a documentação'] },
+    usuarioPortal: { login: 'pazassistencia.marcelo', ativo: false, ultimoAcesso: '2026-01-15T09:00:00' },
+  },
+  {
+    id: 'PAR-010', razaoSocial: 'Rosa Branca Coroas e Flores ME', nomeFantasia: 'Rosa Branca',
+    cnpj: '20554488000122', tipoParceria: 'Ornamentação e flores', cidade: 'São Paulo', uf: 'SP',
+    status: 'Ativo', dadosBancarios: 'Banco 077 · Ag 0102 · CC 88990-1',
+    contatos: [{ nome: 'Beatriz Rocha', funcao: 'Proprietária', telefone: '11987650010', email: 'beatriz@rosabranca.com' }],
+    acordo: { tipo: 'Percentual', valor: 0.18, vigencia: '2025-06-01 a 2027-05-31', servicosCobertos: ['Coroa de flores', 'Ornamentação de sala', 'Tapete de pétalas'] },
+    usuarioPortal: { login: 'rosabranca.beatriz', ativo: true, ultimoAcesso: '2026-08-23T13:15:00' },
+  },
+];
+
+export const parceiroById = (id) => parceiros.find((p) => p.id === id);
