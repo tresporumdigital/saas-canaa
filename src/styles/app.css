@@ -43,6 +43,9 @@ button { font-family: inherit; }
 .app-content {
   flex: 1;
   overflow-y: auto;
+  /* Reserva o espaço da barra de rolagem sempre — evita o deslocamento lateral
+     do conteúdo centralizado entre páginas com e sem rolagem. */
+  scrollbar-gutter: stable;
   padding: var(--space-6);
 }
 .app-content-inner { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-5); }
