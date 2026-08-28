@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import PageHeader from '../../components/layout/PageHeader.jsx';
+import { PageHeader } from '../../components/index.js';
 import {
   Card, Tabs, DataTable, Badge, Button, StatCard, Alert, Input, Select, Textarea, Checkbox, DefList, CoverageBanner,
-} from '../../components/ui/index.js';
+} from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useRole } from '../../context/RoleContext.jsx';
 import { parceiroById } from '../../mock/parceiros.js';

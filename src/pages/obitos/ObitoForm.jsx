@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PageHeader from '../../components/layout/PageHeader.jsx';
+import { PageHeader } from '../../components/index.js';
 import {
   Card, Button, Input, Select, Textarea, FieldRow, CoverageBanner, Alert, Checkbox,
-} from '../../components/ui/index.js';
+} from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { clientes } from '../../mock/clientes.js';
 import { contratosDoCliente } from '../../mock/contratos.js';

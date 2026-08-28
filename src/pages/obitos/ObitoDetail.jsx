@@ -1,8 +1,8 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import PageHeader from '../../components/layout/PageHeader.jsx';
+import { PageHeader } from '../../components/index.js';
 import {
   Card, Badge, Button, DefList, CoverageBanner, DataTable, EmptyState, Icon, Alert,
-} from '../../components/ui/index.js';
+} from '../../components/index.js';
 import { obitoById } from '../../mock/obitos.js';
 import { guiasDoObito } from '../../mock/guias.js';
 import { clienteById } from '../../mock/clientes.js';

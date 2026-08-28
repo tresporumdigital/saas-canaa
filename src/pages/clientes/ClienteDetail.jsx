@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import PageHeader from '../../components/layout/PageHeader.jsx';
+import { PageHeader } from '../../components/index.js';
 import {
   Card, Badge, Button, Tabs, DefList, DataTable, Avatar, Alert, EmptyState, Icon, ConfirmDialog,
-} from '../../components/ui/index.js';
+} from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import {
   clienteById, contratosDoCliente, obitosDoCliente, emprestimosDoCliente,

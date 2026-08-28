@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import PageHeader from '../../components/layout/PageHeader.jsx';
+import { PageHeader } from '../../components/index.js';
 import {
   Card, Tabs, DataTable, Badge, Button, StatCard, Alert, Modal, Textarea, Input, DefList, Drawer,
-} from '../../components/ui/index.js';
+} from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { pagamentos, filaExcecoes, logApiBancaria } from '../../mock/pagamentos.js';
 import { money, dateTime, number } from '../../lib/format.js';

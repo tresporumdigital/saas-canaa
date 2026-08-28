@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import PageHeader from '../../components/layout/PageHeader.jsx';
+import { PageHeader } from '../../components/index.js';
 import {
   Card, Badge, Button, Tabs, DefList, DataTable, EmptyState, Icon,
-} from '../../components/ui/index.js';
+} from '../../components/index.js';
 import { parceiroById } from '../../mock/parceiros.js';
 import { guiasDoParceiro } from '../../mock/guias.js';
 import { baixasDoParceiro, extratoParceiro } from '../../mock/portal.js';

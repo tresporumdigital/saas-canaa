@@ -1,7 +1,7 @@
-import PageHeader from '../../components/layout/PageHeader.jsx';
+import { PageHeader } from '../../components/index.js';
 import {
   Card, DataTable, Badge, Button, StatCard, DefList, Alert,
-} from '../../components/ui/index.js';
+} from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { backupConfig, backupExecucoes, ultimoBackup } from '../../mock/sistema.js';
 import { dateTime, date } from '../../lib/format.js';

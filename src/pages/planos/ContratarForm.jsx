@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PageHeader from '../../components/layout/PageHeader.jsx';
-import { Card, Button, Input, Select, FieldRow, Alert, Tag } from '../../components/ui/index.js';
+import { PageHeader } from '../../components/index.js';
+import { Card, Button, Input, Select, FieldRow, Alert, Tag } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { clientes } from '../../mock/clientes.js';
 import { planosProduto, planoById } from '../../mock/planos.js';

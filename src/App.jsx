@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import AppLayout from './components/layout/AppLayout.jsx';
+import AppLayout from './components/templates/AppLayout.jsx';
+import RequireAuth from './components/organisms/RequireAuth.jsx';
 
+import AuthPage from './pages/auth/AuthPage.jsx';
 import Dashboard from './pages/dashboard/Dashboard.jsx';
 import ClientesList from './pages/clientes/ClientesList.jsx';
 import ClienteDetail from './pages/clientes/ClienteDetail.jsx';
@@ -31,7 +33,17 @@ import NotFound from './pages/NotFound.jsx';
 export default function App() {
   return (
     <Routes>
-      <Route element={<AppLayout />}>
+      {/* Rota pública: tela inicial de acesso. */}
+      <Route path="/login" element={<AuthPage />} />
+
+      {/* Tudo abaixo exige sessão; sem login, RequireAuth manda para /login. */}
+      <Route
+        element={(
+          <RequireAuth>
+            <AppLayout />
+          </RequireAuth>
+        )}
+      >
         <Route index element={<Dashboard />} />
 
         <Route path="clientes" element={<ClientesList />} />

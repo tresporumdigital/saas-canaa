@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import PageHeader from '../../components/layout/PageHeader.jsx';
-import { Card, Tabs, DataTable, Badge, Button } from '../../components/ui/index.js';
+import { PageHeader } from '../../components/index.js';
+import { Card, Tabs, DataTable, Badge, Button } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { usuarios, perfisPermissoes, parametros } from '../../mock/sistema.js';
 import { dateTime } from '../../lib/format.js';

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import PageHeader from '../../components/layout/PageHeader.jsx';
-import { Card, Button, Input, Select, FieldRow, Alert, Icon } from '../../components/ui/index.js';
+import { PageHeader } from '../../components/index.js';
+import { Card, Button, Input, Select, FieldRow, Alert, Icon } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { clientes, clienteById } from '../../mock/index.js';
 import { cpf as fmtCpf } from '../../lib/format.js';

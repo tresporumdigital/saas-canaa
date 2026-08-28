@@ -1,5 +1,5 @@
-import PageHeader from '../components/layout/PageHeader.jsx';
-import { EmptyState, Button } from '../components/ui/index.js';
+import { PageHeader } from '../components/index.js';
+import { EmptyState, Button } from '../components/index.js';
 
 export default function NotFound() {
   return (

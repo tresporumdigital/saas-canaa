@@ -1,6 +1,6 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import PageHeader from '../../components/layout/PageHeader.jsx';
-import { Card, DataTable, Badge, Button } from '../../components/ui/index.js';
+import { PageHeader } from '../../components/index.js';
+import { Card, DataTable, Badge, Button } from '../../components/index.js';
 import { clientes, contratosDoCliente } from '../../mock/index.js';
 import { planoById } from '../../mock/planos.js';
 import { contratoById } from '../../mock/contratos.js';

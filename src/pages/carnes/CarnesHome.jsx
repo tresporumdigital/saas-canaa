@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import PageHeader from '../../components/layout/PageHeader.jsx';
+import { PageHeader } from '../../components/index.js';
 import {
   Card, Tabs, DataTable, Badge, Button, Modal, Select, Input, Checkbox, PrintDocument, StatCard,
-} from '../../components/ui/index.js';
+} from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { carnes } from '../../mock/carnes.js';
 import { contratos } from '../../mock/contratos.js';

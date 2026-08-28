@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Deploy alvo: GitHub Pages project site -> https://tresporumdigital.github.io/saas-canaa/
+// Deploy alvo: Hostinger -> https://backoffice.funerariacanaa.com/
+// `base` relativo: assets referenciados como ./assets/... (funciona na raiz do subdomínio).
 export default defineConfig({
-  base: '/saas-canaa/',
+  base: './',
   plugins: [react()],
   build: {
     outDir: 'dist',

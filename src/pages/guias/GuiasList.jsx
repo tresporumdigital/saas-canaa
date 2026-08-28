@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PageHeader from '../../components/layout/PageHeader.jsx';
-import { Card, DataTable, Badge, Select, StatCard } from '../../components/ui/index.js';
+import { PageHeader } from '../../components/index.js';
+import { Card, DataTable, Badge, Select, StatCard } from '../../components/index.js';
 import { guias } from '../../mock/guias.js';
 import { parceiros, parceiroById } from '../../mock/parceiros.js';
 import { CICLO_GUIA } from '../../mock/guias.js';

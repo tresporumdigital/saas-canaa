@@ -3,7 +3,21 @@
 Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md), construído para **validação visual do produto e das jornadas**.
 Sem backend e sem banco de dados: **todos os dados são mockados** em `src/mock/` (referências cruzadas consistentes entre clientes, contratos, óbitos, guias, parceiros etc.).
 
-**Online:** https://tresporumdigital.github.io/saas-canaa/
+**Online:** https://backoffice.funerariacanaa.com/
+
+## Acesso (mock)
+
+O sistema abre na **tela de login** (`#/login`). Sem sessão, qualquer rota interna
+redireciona para lá.
+
+- **Entrar** com e-mail e senha — qualquer valor é aceito (não há validação real).
+- **Entrar / cadastrar com o Google** — usa uma conta fictícia; no cadastro, nome e
+  e-mail chegam preenchidos.
+- **Cadastro** (nome completo, e-mail, senha) na mesma tela, alternando pelo botão inferior.
+- A sessão fica em `localStorage` (`canaa.auth`) só para sobreviver a um reload; "Sair"
+  fica no menu do usuário (topo) e no drawer mobile.
+
+Quando o backend existir, basta trocar as funções de `src/context/AuthContext.jsx`.
 
 ## Design
 
@@ -14,19 +28,27 @@ badges semânticos e **tema claro fixo**.
 
 - `src/styles/tokens.css` — cópia dos tokens do design system (fonte da verdade visual).
 - `src/styles/app.css` — camada de componentes (botões, cards, tabelas, formulários, alertas,
-  toasts, modais, timeline, aging, documentos para impressão) consumindo apenas os tokens.
+  toasts, modais, timeline, aging, cena de autenticação, documentos para impressão)
+  consumindo apenas os tokens.
+
+### Componentes — Atomic Design
+
+`src/components/` é organizado em `atoms/ → molecules/ → organisms/ → templates/`, com
+barril único em `src/components/index.js`. Mapa completo em
+[`src/components/README.md`](./src/components/README.md).
 
 ## Stack
 
 - React 18 + Vite 5 + React Router 6 (`HashRouter`).
 - JavaScript/JSX, sem dependências além de React e do roteador.
-- Deploy: GitHub Pages via GitHub Actions (`.github/workflows/deploy.yml`).
+- Deploy: build estático (`npm run build`) publicado na Hostinger em
+  `backoffice.funerariacanaa.com` (`base` relativo `./` no `vite.config.js`).
 
 ## Rodando localmente
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173/saas-canaa/
+npm run dev      # http://localhost:5173/
 npm run build    # gera dist/
 npm run preview  # serve o build
 ```
@@ -50,5 +72,6 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
 ## Observações
 
 - Ações de criar/editar/emitir **não persistem** — disparam um _toast_ de confirmação.
+- Autenticação é **mock** (sem backend); a sessão vive só no navegador.
 - Data de referência do protótipo: **27/08/2026**.
 - `design-system/`, `PRD.md` e `visual/` não são alterados por este frontend.

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import PageHeader from '../../components/layout/PageHeader.jsx';
+import { PageHeader } from '../../components/index.js';
 import {
   Card, Badge, Button, DefList, DataTable, EmptyState, Tag, Modal, Input, Textarea,
-} from '../../components/ui/index.js';
+} from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { contratoById, parcelasDoContrato, contratoValor } from '../../mock/contratos.js';
 import { clienteById } from '../../mock/clientes.js';

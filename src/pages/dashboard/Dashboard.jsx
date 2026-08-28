@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import PageHeader from '../../components/layout/PageHeader.jsx';
-import { Card, Badge, Icon, StatCard, Spark, Alert } from '../../components/ui/index.js';
+import { PageHeader } from '../../components/index.js';
+import { Card, Badge, Icon, StatCard, Spark, Alert } from '../../components/index.js';
 import { useRole } from '../../context/RoleContext.jsx';
 import { dashboardData } from '../../mock/index.js';
 import { money, number, percent } from '../../lib/format.js';

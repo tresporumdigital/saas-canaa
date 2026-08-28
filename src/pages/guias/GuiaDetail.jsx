@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import PageHeader from '../../components/layout/PageHeader.jsx';
+import { PageHeader } from '../../components/index.js';
 import {
   Card, Badge, Button, DefList, Timeline, EmptyState, Alert, Modal, Textarea, PrintDocument,
-} from '../../components/ui/index.js';
+} from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { guiaById, CICLO_GUIA } from '../../mock/guias.js';
 import { obitoById } from '../../mock/obitos.js';

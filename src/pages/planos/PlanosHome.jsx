@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PageHeader from '../../components/layout/PageHeader.jsx';
+import { PageHeader } from '../../components/index.js';
 import {
   Card, Tabs, DataTable, Badge, Button, Tag, AgingBars, StatCard,
-} from '../../components/ui/index.js';
+} from '../../components/index.js';
 import { planosProduto } from '../../mock/planos.js';
 import { contratos } from '../../mock/contratos.js';
 import { clienteById } from '../../mock/clientes.js';
