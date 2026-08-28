@@ -35,7 +35,6 @@ export default function UserMenu() {
       {open && (
         <div className="menu" role="menu">
           <div className="um-head">
-            <Avatar name={user.name} src={user.photo} size="md" />
             <div>
               <strong>{user.name}</strong>
               <span>{user.email}</span>
