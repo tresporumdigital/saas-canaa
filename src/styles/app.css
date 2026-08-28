@@ -159,7 +159,11 @@ button { font-family: inherit; }
 .avatar {
   border-radius: 50%; background: var(--color-accent-soft); color: var(--color-accent-strong);
   display: inline-flex; align-items: center; justify-content: center; font-weight: 800; flex: none;
+  /* Plus Jakarta Sans deixa a caixa-alta ~0.09em acima do centro óptico (banda do
+     descendente fica vazia). Um respiro no topo recoloca as iniciais no centro do círculo. */
+  padding-top: 0.18em;
 }
+img.avatar { overflow: hidden; object-fit: cover; padding-top: 0; }
 .avatar.xs { width: 26px; height: 26px; font-size: 10px; }
 .avatar.sm { width: 34px; height: 34px; font-size: var(--text-xs); }
 .avatar.md { width: 42px; height: 42px; font-size: var(--text-sm); }
