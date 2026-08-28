@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
-  Card, Tabs, DataTable, Badge, Button, StatCard, Drawer, DefList, Alert, Modal, Textarea,
+  Card, Tabs, DataTable, Badge, StatusMenu, Button, StatCard, Drawer, DefList, Alert, Modal, Textarea,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
+import useRowStatus from '../../hooks/useRowStatus.js';
 import { notasFiscais } from '../../mock/notasFiscais.js';
 import { money, dateTime, number } from '../../lib/format.js';
-import { statusVariant } from '../../lib/status.js';
+import { STATUS_SETS } from '../../lib/status.js';
 
 const TABS = [
   { id: 'todas', label: 'Todas' },
@@ -20,10 +21,11 @@ export default function NotasFiscais() {
   const [nota, setNota] = useState(null);
   const [correcao, setCorrecao] = useState(false);
 
-  const pendentes = notasFiscais.filter((n) => n.status === 'Pendente');
-  const rejeitadas = notasFiscais.filter((n) => n.status === 'Rejeitada');
-  const autorizadas = notasFiscais.filter((n) => n.status === 'Autorizada');
-  const rows = tab === 'pendentes' ? pendentes : tab === 'rejeitadas' ? rejeitadas : notasFiscais;
+  const [allNotas, setNotaStatus] = useRowStatus(notasFiscais);
+  const pendentes = allNotas.filter((n) => n.status === 'Pendente');
+  const rejeitadas = allNotas.filter((n) => n.status === 'Rejeitada');
+  const autorizadas = allNotas.filter((n) => n.status === 'Autorizada');
+  const rows = tab === 'pendentes' ? pendentes : tab === 'rejeitadas' ? rejeitadas : allNotas;
 
   return (
     <>
@@ -54,7 +56,13 @@ export default function NotasFiscais() {
             { key: 'clienteNome', header: 'Cliente', sortable: true },
             { key: 'origemTipo', header: 'Origem', render: (r) => `${r.origemTipo} ${r.origemRef}` },
             { key: 'valor', header: 'Valor', align: 'right', sortable: true, render: (r) => money(r.valor) },
-            { key: 'status', header: 'Status', sortable: true, render: (r) => <Badge variant={statusVariant(r.status)}>{r.status}</Badge> },
+            { key: 'status', header: 'Status', sortable: true, render: (r) => (
+              <StatusMenu
+                value={r.status}
+                options={STATUS_SETS.notaFiscal}
+                onChange={(next) => { setNotaStatus(r.id, next); toast(`Nota ${r.id} definida como "${next}".`); }}
+              />
+            ) },
             { key: 'emitidaEm', header: 'Emissão', render: (r) => (r.emitidaEm ? dateTime(r.emitidaEm) : '—') },
           ]}
         />

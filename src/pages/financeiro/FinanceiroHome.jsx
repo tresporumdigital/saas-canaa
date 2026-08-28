@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
-  Card, Tabs, DataTable, Badge, Button, StatCard, AgingBars, Bar,
+  Card, Tabs, DataTable, Badge, StatusMenu, Button, StatCard, AgingBars, Bar,
 } from '../../components/index.js';
+import useRowStatus from '../../hooks/useRowStatus.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import {
   contasReceber, contasPagar, fluxoCaixa, agingInadimplencia,
   fechamentoCaixa, dreMes, dreResultado,
 } from '../../mock/financeiro.js';
 import { money, date, number } from '../../lib/format.js';
-import { statusVariant } from '../../lib/status.js';
+import { STATUS_SETS } from '../../lib/status.js';
 
 const TABS = [
   { id: 'visao', label: 'Visão geral' },
@@ -24,6 +25,8 @@ const TABS = [
 export default function FinanceiroHome() {
   const { toast } = useToast();
   const [tab, setTab] = useState('visao');
+  const [receberRows, setReceberStatus] = useRowStatus(contasReceber);
+  const [pagarRows, setPagarStatus] = useRowStatus(contasPagar);
 
   const totalReceber = contasReceber.reduce((s, c) => s + c.valor, 0);
   const totalPagar = contasPagar.reduce((s, c) => s + c.valor, 0);
@@ -71,7 +74,7 @@ export default function FinanceiroHome() {
       {tab === 'receber' && (
         <Card>
           <DataTable
-            rows={contasReceber}
+            rows={receberRows}
             searchKeys={['clienteNome', 'categoria', 'ref']}
             columns={[
               { key: 'id', header: 'Lançamento', sortable: true },
@@ -80,7 +83,13 @@ export default function FinanceiroHome() {
               { key: 'centroCusto', header: 'Centro de custo' },
               { key: 'vencimento', header: 'Vencimento', sortable: true, render: (r) => date(r.vencimento) },
               { key: 'valor', header: 'Valor', align: 'right', sortable: true, render: (r) => money(r.valor) },
-              { key: 'status', header: 'Status', render: (r) => <Badge variant={statusVariant(r.status)}>{r.status}</Badge> },
+              { key: 'status', header: 'Status', render: (r) => (
+                <StatusMenu
+                  value={r.status}
+                  options={STATUS_SETS.contaFinanceira}
+                  onChange={(next) => { setReceberStatus(r.id, next); toast(`Lançamento ${r.id} definido como "${next}".`); }}
+                />
+              ) },
             ]}
           />
         </Card>
@@ -89,7 +98,7 @@ export default function FinanceiroHome() {
       {tab === 'pagar' && (
         <Card>
           <DataTable
-            rows={contasPagar}
+            rows={pagarRows}
             searchKeys={['favorecido', 'categoria']}
             columns={[
               { key: 'id', header: 'Lançamento', sortable: true },
@@ -98,7 +107,13 @@ export default function FinanceiroHome() {
               { key: 'centroCusto', header: 'Centro de custo' },
               { key: 'vencimento', header: 'Vencimento', sortable: true, render: (r) => date(r.vencimento) },
               { key: 'valor', header: 'Valor', align: 'right', sortable: true, render: (r) => money(r.valor) },
-              { key: 'status', header: 'Status', render: (r) => <Badge variant={statusVariant(r.status)}>{r.status}</Badge> },
+              { key: 'status', header: 'Status', render: (r) => (
+                <StatusMenu
+                  value={r.status}
+                  options={STATUS_SETS.contaFinanceira}
+                  onChange={(next) => { setPagarStatus(r.id, next); toast(`Lançamento ${r.id} definido como "${next}".`); }}
+                />
+              ) },
             ]}
           />
         </Card>

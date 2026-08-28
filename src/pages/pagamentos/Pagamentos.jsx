@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
-  Card, Tabs, DataTable, Badge, Button, StatCard, Alert, Modal, Textarea, Input, DefList, Drawer,
+  Card, Tabs, DataTable, StatusMenu, Button, StatCard, Alert, Modal, Textarea, Input, DefList, Drawer,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
+import useRowStatus from '../../hooks/useRowStatus.js';
 import { pagamentos, filaExcecoes, logApiBancaria } from '../../mock/pagamentos.js';
 import { money, dateTime, number } from '../../lib/format.js';
-import { statusVariant } from '../../lib/status.js';
+import { STATUS_SETS } from '../../lib/status.js';
 
 const TABS = [
   { id: 'conciliacao', label: 'Conciliação' },
@@ -18,6 +19,7 @@ export default function Pagamentos() {
   const { toast } = useToast();
   const [tab, setTab] = useState('conciliacao');
   const [baixa, setBaixa] = useState(false);
+  const [pagamentosRows, setPagamentoStatus] = useRowStatus(pagamentos);
   const [excecao, setExcecao] = useState(null);
 
   const excecoes = filaExcecoes();
@@ -44,7 +46,7 @@ export default function Pagamentos() {
       {tab === 'conciliacao' && (
         <Card>
           <DataTable
-            rows={pagamentos}
+            rows={pagamentosRows}
             searchKeys={['id', 'clienteNome', 'parcelaRef']}
             pageSize={12}
             columns={[
@@ -54,7 +56,13 @@ export default function Pagamentos() {
               { key: 'meio', header: 'Meio' },
               { key: 'recebidoEm', header: 'Recebido em', sortable: true, render: (r) => dateTime(r.recebidoEm) },
               { key: 'valor', header: 'Valor', align: 'right', sortable: true, render: (r) => money(r.valor) },
-              { key: 'status', header: 'Status', sortable: true, render: (r) => <Badge variant={statusVariant(r.status)}>{r.status}</Badge> },
+              { key: 'status', header: 'Status', sortable: true, render: (r) => (
+                <StatusMenu
+                  value={r.status}
+                  options={STATUS_SETS.pagamento}
+                  onChange={(next) => { setPagamentoStatus(r.id, next); toast(`Pagamento ${r.id} definido como "${next}".`); }}
+                />
+              ) },
             ]}
           />
         </Card>

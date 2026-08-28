@@ -1,13 +1,19 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
-import { Card, DataTable, Badge, Button } from '../../components/index.js';
+import { Card, DataTable, StatusMenu, Button } from '../../components/index.js';
+import { useToast } from '../../context/ToastContext.jsx';
+import useRowStatus from '../../hooks/useRowStatus.js';
 import { parceiros } from '../../mock/parceiros.js';
 import { guiasDoParceiro } from '../../mock/guias.js';
 import { cnpj } from '../../lib/format.js';
+import { STATUS_SETS } from '../../lib/status.js';
 
 export default function ParceirosList() {
   const navigate = useNavigate();
-  const rows = parceiros.map((p) => ({ ...p, guias: guiasDoParceiro(p.id).length }));
+  const { toast } = useToast();
+  const base = useMemo(() => parceiros.map((p) => ({ ...p, guias: guiasDoParceiro(p.id).length })), []);
+  const [rows, setStatus] = useRowStatus(base);
 
   return (
     <>
@@ -34,7 +40,13 @@ export default function ParceirosList() {
             { key: 'tipoParceria', header: 'Tipo', sortable: true },
             { key: 'acordo', header: 'Remuneração', render: (r) => r.acordo.tipo },
             { key: 'guias', header: 'Guias', align: 'right', sortable: true },
-            { key: 'status', header: 'Status', sortable: true, render: (r) => <Badge variant={r.status === 'Ativo' ? 'success' : 'neutral'}>{r.status}</Badge> },
+            { key: 'status', header: 'Status', sortable: true, render: (r) => (
+              <StatusMenu
+                value={r.status}
+                options={STATUS_SETS.parceiro}
+                onChange={(next) => { setStatus(r.id, next); toast(`Parceiro ${r.nomeFantasia} definido como "${next}".`); }}
+              />
+            ) },
           ]}
         />
       </Card>

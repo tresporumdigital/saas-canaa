@@ -1,18 +1,22 @@
+import { useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
-import { Card, DataTable, Badge, Button } from '../../components/index.js';
+import { Card, DataTable, StatusMenu, Button } from '../../components/index.js';
+import { useToast } from '../../context/ToastContext.jsx';
+import useRowStatus from '../../hooks/useRowStatus.js';
 import { clientes, contratosDoCliente } from '../../mock/index.js';
 import { planoById } from '../../mock/planos.js';
 import { contratoById } from '../../mock/contratos.js';
 import { cpf, phone, date } from '../../lib/format.js';
-import { statusVariant } from '../../lib/status.js';
+import { STATUS_SETS } from '../../lib/status.js';
 
 export default function ClientesList() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [params] = useSearchParams();
   const q = params.get('q') || '';
 
-  const rows = clientes.map((c) => {
+  const base = useMemo(() => clientes.map((c) => {
     const contratos = contratosDoCliente(c.id);
     const principal = contratos[0];
     return {
@@ -21,7 +25,10 @@ export default function ClientesList() {
       situacaoPlano: principal ? principal.situacao : 'Sem plano',
       dependentesCount: c.dependentes.length,
     };
-  });
+  }), []);
+
+  const [rowsCadastro, setCadastro] = useRowStatus(base, { key: 'status' });
+  const [rows, setSituacao] = useRowStatus(rowsCadastro, { key: 'situacaoPlano' });
 
   const columns = [
     { key: 'nome', header: 'Cliente', sortable: true, render: (r) => (
@@ -33,8 +40,20 @@ export default function ClientesList() {
     { key: 'planoNome', header: 'Plano', sortable: true },
     { key: 'dependentesCount', header: 'Depend.', align: 'right', sortable: true },
     { key: 'cadastradoEm', header: 'Cliente desde', sortable: true, render: (r) => date(r.cadastradoEm) },
-    { key: 'situacaoPlano', header: 'Situação', sortable: true, render: (r) => <Badge variant={r.situacaoPlano === 'Sem plano' ? 'neutral' : statusVariant(r.situacaoPlano)}>{r.situacaoPlano}</Badge> },
-    { key: 'status', header: 'Cadastro', render: (r) => <Badge variant={r.status === 'Ativo' ? 'success' : 'neutral'}>{r.status}</Badge> },
+    { key: 'situacaoPlano', header: 'Situação', sortable: true, render: (r) => (
+      <StatusMenu
+        value={r.situacaoPlano}
+        options={STATUS_SETS.clientePlano}
+        onChange={(next) => { setSituacao(r.id, next); toast(`Situação de plano de ${r.nome} alterada para "${next}".`); }}
+      />
+    ) },
+    { key: 'status', header: 'Cadastro', render: (r) => (
+      <StatusMenu
+        value={r.status}
+        options={STATUS_SETS.clienteCadastro}
+        onChange={(next) => { setCadastro(r.id, next); toast(`Cadastro de ${r.nome} definido como "${next}".`); }}
+      />
+    ) },
   ];
 
   return (

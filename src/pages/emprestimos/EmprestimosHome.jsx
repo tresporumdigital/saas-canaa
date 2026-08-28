@@ -2,14 +2,15 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
 import {
-  Card, Tabs, DataTable, Badge, Button, StatCard, Alert, Modal, Select, Input, Textarea,
+  Card, Tabs, DataTable, StatusMenu, Button, StatCard, Alert, Modal, Select, Input, Textarea,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
+import useRowStatus from '../../hooks/useRowStatus.js';
 import {
   emprestimos, unidadesEquipamento, emprestimosAtrasados,
 } from '../../mock/equipamentos.js';
 import { date, money } from '../../lib/format.js';
-import { statusVariant } from '../../lib/status.js';
+import { STATUS_SETS } from '../../lib/status.js';
 
 const TABS = [
   { id: 'emprestimos', label: 'Empréstimos' },
@@ -21,10 +22,12 @@ export default function EmprestimosHome() {
   const { toast } = useToast();
   const [tab, setTab] = useState('emprestimos');
   const [novo, setNovo] = useState(false);
+  const [emprestimosRows, setEmprestimoStatus] = useRowStatus(emprestimos);
+  const [unidadesRows, setUnidadeStatus] = useRowStatus(unidadesEquipamento, { getId: (r) => r.patrimonio });
 
   const atrasados = emprestimosAtrasados();
-  const emprestadas = unidadesEquipamento.filter((u) => u.status === 'Emprestado').length;
-  const disponiveis = unidadesEquipamento.filter((u) => u.status === 'Disponível').length;
+  const emprestadas = unidadesRows.filter((u) => u.status === 'Emprestado').length;
+  const disponiveis = unidadesRows.filter((u) => u.status === 'Disponível').length;
 
   return (
     <>
@@ -52,7 +55,7 @@ export default function EmprestimosHome() {
       {tab === 'emprestimos' && (
         <Card>
           <DataTable
-            rows={emprestimos}
+            rows={emprestimosRows}
             searchKeys={['id', 'clienteNome', 'unidadePatrimonio', 'produtoDescricao']}
             searchPlaceholder="Buscar por cliente, patrimônio ou equipamento…"
             pageSize={12}
@@ -66,7 +69,13 @@ export default function EmprestimosHome() {
               { key: 'saidaEm', header: 'Saída', sortable: true, render: (r) => date(r.saidaEm) },
               { key: 'previsaoDevolucao', header: 'Prev. devolução', render: (r) => date(r.previsaoDevolucao) },
               { key: 'vinculo', header: 'Vínculo', render: (r) => r.vinculo.tipo === 'Locação' ? `Locação ${money(r.vinculo.valorLocacao)}` : 'Cobertura de plano' },
-              { key: 'status', header: 'Status', sortable: true, render: (r) => <Badge variant={statusVariant(r.status)}>{r.status}</Badge> },
+              { key: 'status', header: 'Status', sortable: true, render: (r) => (
+                <StatusMenu
+                  value={r.status}
+                  options={STATUS_SETS.emprestimo}
+                  onChange={(next) => { setEmprestimoStatus(r.id, next); toast(`Empréstimo ${r.id} definido como "${next}".`); }}
+                />
+              ) },
               { key: 'acao', header: '', render: (r) => r.status !== 'Devolvido' ? (
                 <Button size="sm" variant="secondary" onClick={() => toast(`Devolução da unidade ${r.unidadePatrimonio} registrada. Unidade retorna a "Disponível" (simulação).`)}>Devolver</Button>
               ) : null },
@@ -78,17 +87,24 @@ export default function EmprestimosHome() {
       {tab === 'inventario' && (
         <Card>
           <DataTable
-            rows={unidadesEquipamento}
+            rows={unidadesRows}
             searchKeys={['patrimonio', 'descricao', 'status']}
             searchPlaceholder="Buscar por patrimônio, equipamento ou status…"
             pageSize={14}
+            getKey={(r) => r.patrimonio}
             onRowClick={(r) => navigate(`/emprestimos/unidade/${r.patrimonio}`)}
             columns={[
               { key: 'patrimonio', header: 'Patrimônio', sortable: true },
               { key: 'descricao', header: 'Equipamento', sortable: true },
               { key: 'estadoConservacao', header: 'Conservação' },
               { key: 'aquisicao', header: 'Aquisição', render: (r) => date(r.aquisicao) },
-              { key: 'status', header: 'Status', sortable: true, render: (r) => <Badge variant={statusVariant(r.status)}>{r.status}</Badge> },
+              { key: 'status', header: 'Status', sortable: true, render: (r) => (
+                <StatusMenu
+                  value={r.status}
+                  options={STATUS_SETS.unidadeEquipamento}
+                  onChange={(next) => { setUnidadeStatus(r.patrimonio, next); toast(`Unidade ${r.patrimonio} definida como "${next}".`); }}
+                />
+              ) },
             ]}
           />
         </Card>

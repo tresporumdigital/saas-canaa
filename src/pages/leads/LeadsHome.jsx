@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
 import {
-  Card, Tabs, DataTable, Badge, Button, StatCard, Drawer, DefList, Select, Alert,
+  Card, Tabs, DataTable, StatusMenu, Button, StatCard, Drawer, DefList, Select, Alert,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
+import useRowStatus from '../../hooks/useRowStatus.js';
 import { leads } from '../../mock/leads.js';
 import { dateTime, phone, percent, number } from '../../lib/format.js';
-import { statusVariant } from '../../lib/status.js';
+import { STATUS_SETS } from '../../lib/status.js';
 
 const TABS = [
   { id: 'fila', label: 'Fila de leads' },
@@ -21,12 +22,13 @@ export default function LeadsHome() {
   const [lead, setLead] = useState(null);
   const [origem, setOrigem] = useState('');
 
-  const filtered = useMemo(() => leads.filter((l) => !origem || l.origem === origem), [origem]);
-  const novos = leads.filter((l) => l.status === 'Novo').length;
-  const convertidos = leads.filter((l) => l.status === 'Convertido').length;
-  const taxa = convertidos / leads.length;
+  const [allLeads, setLeadStatus] = useRowStatus(leads);
+  const filtered = useMemo(() => allLeads.filter((l) => !origem || l.origem === origem), [allLeads, origem]);
+  const novos = allLeads.filter((l) => l.status === 'Novo').length;
+  const convertidos = allLeads.filter((l) => l.status === 'Convertido').length;
+  const taxa = convertidos / allLeads.length;
 
-  const porOrigem = Object.values(leads.reduce((acc, l) => {
+  const porOrigem = Object.values(allLeads.reduce((acc, l) => {
     acc[l.origem] = acc[l.origem] || { origem: l.origem, total: 0, conv: 0 };
     acc[l.origem].total += 1;
     if (l.status === 'Convertido') acc[l.origem].conv += 1;
@@ -68,7 +70,13 @@ export default function LeadsHome() {
               { key: 'origem', header: 'Origem' },
               { key: 'paginaOrigem', header: 'Página' },
               { key: 'recebidoEm', header: 'Recebido em', sortable: true, render: (r) => dateTime(r.recebidoEm) },
-              { key: 'status', header: 'Status', sortable: true, render: (r) => <Badge variant={statusVariant(r.status)}>{r.status}</Badge> },
+              { key: 'status', header: 'Status', sortable: true, render: (r) => (
+                <StatusMenu
+                  value={r.status}
+                  options={STATUS_SETS.lead}
+                  onChange={(next) => { setLeadStatus(r.id, next); toast(`Lead ${r.id} definido como "${next}".`); }}
+                />
+              ) },
             ]}
           />
         </Card>

@@ -20,10 +20,14 @@ Sem estado de negócio, sem layout de página.
 `Pagination`, `SkeletonRows`.
 
 ### `organisms/` — seções completas e autônomas
-`DataTable`, `Modal`/`ConfirmDialog`, `Drawer`, `Tabs`, `Domain` (`Timeline`,
+`DataTable`, `StatusMenu`, `Modal`/`ConfirmDialog`, `Drawer`, `Tabs`, `Domain` (`Timeline`,
 `CoverageBanner`, `AgingBars`, `PrintDocument`), `PageHeader`, `NavRail`,
 `NavPanel`, `MobileNav`, `TopBar`, `RoleSwitcher`, `UserMenu`, `RequireAuth`,
 `auth/LoginForm`.
+
+`StatusMenu` transforma o badge de status das listagens em botão: abre os status
+pré-definidos daquela página (`STATUS_SETS` em `src/lib/status.js`) e troca o status
+da linha. A troca fica só em memória, via o hook `src/hooks/useRowStatus.js`.
 
 ### `templates/` — esqueleto de página, sem dados reais
 `AppLayout` (casca autenticada: trilho + painel + topo + conteúdo),

@@ -1,12 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
-import { Card, DataTable, Badge, Button } from '../../components/index.js';
+import { Card, DataTable, Badge, StatusMenu, Button } from '../../components/index.js';
+import { useToast } from '../../context/ToastContext.jsx';
+import useRowStatus from '../../hooks/useRowStatus.js';
 import { obitos } from '../../mock/index.js';
 import { date, dateTime, money } from '../../lib/format.js';
-import { statusVariant } from '../../lib/status.js';
+import { STATUS_SETS } from '../../lib/status.js';
 
 export default function ObitosList() {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [rows, setStatus] = useRowStatus(obitos);
+
   const columns = [
     { key: 'id', header: 'Atendimento', sortable: true },
     { key: 'falecido', header: 'Falecido', sortable: true, sortValue: (r) => r.falecido.nome, render: (r) => (
@@ -21,7 +26,13 @@ export default function ObitosList() {
     { key: 'responsavel', header: 'Responsável', sortable: true },
     { key: 'abertoEm', header: 'Aberto em', sortable: true, render: (r) => date(r.abertoEm) },
     { key: 'valorTotal', header: 'Valor cobrado', align: 'right', sortable: true, render: (r) => money(r.valorTotal) },
-    { key: 'status', header: 'Status', sortable: true, render: (r) => <Badge variant={statusVariant(r.status)}>{r.status}</Badge> },
+    { key: 'status', header: 'Status', sortable: true, render: (r) => (
+      <StatusMenu
+        value={r.status}
+        options={STATUS_SETS.obito}
+        onChange={(next) => { setStatus(r.id, next); toast(`Atendimento ${r.id} definido como "${next}".`); }}
+      />
+    ) },
   ];
 
   return (
@@ -35,7 +46,7 @@ export default function ObitosList() {
       <Card>
         <DataTable
           columns={columns}
-          rows={obitos}
+          rows={rows}
           searchKeys={['id', 'responsavel']}
           searchPlaceholder="Buscar por nº do atendimento ou responsável…"
           onRowClick={(r) => navigate(`/obitos/${r.id}`)}

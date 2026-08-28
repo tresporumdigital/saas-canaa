@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { PageHeader } from '../../components/index.js';
-import { Card, Tabs, DataTable, Badge, Button } from '../../components/index.js';
+import { Card, Tabs, DataTable, Badge, StatusMenu, Button } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
+import useRowStatus from '../../hooks/useRowStatus.js';
 import { usuarios, perfisPermissoes, parametros } from '../../mock/sistema.js';
 import { dateTime } from '../../lib/format.js';
+import { STATUS_SETS } from '../../lib/status.js';
 
 const TABS = [
   { id: 'usuarios', label: 'Usuários' },
@@ -14,6 +16,7 @@ const TABS = [
 export default function Configuracoes() {
   const { toast } = useToast();
   const [tab, setTab] = useState('usuarios');
+  const [usuariosRows, setUsuarioStatus] = useRowStatus(usuarios);
 
   return (
     <>
@@ -29,7 +32,7 @@ export default function Configuracoes() {
       {tab === 'usuarios' && (
         <Card>
           <DataTable
-            rows={usuarios}
+            rows={usuariosRows}
             searchKeys={['nome', 'email', 'perfil']}
             columns={[
               { key: 'nome', header: 'Usuário', sortable: true },
@@ -37,7 +40,13 @@ export default function Configuracoes() {
               { key: 'perfil', header: 'Perfil', sortable: true, render: (r) => <Badge variant="info">{r.perfil}</Badge> },
               { key: 'doisFatores', header: '2FA', render: (r) => <Badge variant={r.doisFatores ? 'success' : 'neutral'}>{r.doisFatores ? 'Ativo' : '—'}</Badge> },
               { key: 'ultimoAcesso', header: 'Último acesso', sortable: true, render: (r) => dateTime(r.ultimoAcesso) },
-              { key: 'status', header: 'Status', render: (r) => <Badge variant={r.status === 'Ativo' ? 'success' : 'neutral'}>{r.status}</Badge> },
+              { key: 'status', header: 'Status', render: (r) => (
+                <StatusMenu
+                  value={r.status}
+                  options={STATUS_SETS.usuario}
+                  onChange={(next) => { setUsuarioStatus(r.id, next); toast(`Usuário ${r.nome} definido como "${next}".`); }}
+                />
+              ) },
             ]}
           />
         </Card>

@@ -1,21 +1,25 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
-import { Card, DataTable, Badge, Select, StatCard } from '../../components/index.js';
+import { Card, DataTable, StatusMenu, Select, StatCard } from '../../components/index.js';
+import { useToast } from '../../context/ToastContext.jsx';
+import useRowStatus from '../../hooks/useRowStatus.js';
 import { guias } from '../../mock/guias.js';
 import { parceiros, parceiroById } from '../../mock/parceiros.js';
 import { CICLO_GUIA } from '../../mock/guias.js';
 import { date, money } from '../../lib/format.js';
-import { statusVariant } from '../../lib/status.js';
+import { STATUS_SETS } from '../../lib/status.js';
 
 export default function GuiasList() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [parceiro, setParceiro] = useState('');
   const [status, setStatus] = useState('');
+  const [allGuias, setGuiaStatus] = useRowStatus(guias);
 
-  const filtered = useMemo(() => guias.filter((g) =>
+  const filtered = useMemo(() => allGuias.filter((g) =>
     (!parceiro || g.parceiroId === parceiro) && (!status || g.status === status)
-  ), [parceiro, status]);
+  ), [allGuias, parceiro, status]);
 
   const totalPagar = filtered
     .filter((g) => g.status !== 'Cancelada')
@@ -61,7 +65,13 @@ export default function GuiasList() {
             { key: 'servico', header: 'Serviço' },
             { key: 'emitidaEm', header: 'Emitida', sortable: true, render: (r) => date(r.emitidaEm) },
             { key: 'valorAcordado', header: 'Valor', align: 'right', sortable: true, render: (r) => money(r.valorAcordado) },
-            { key: 'status', header: 'Status', sortable: true, render: (r) => <Badge variant={statusVariant(r.status)}>{r.status}</Badge> },
+            { key: 'status', header: 'Status', sortable: true, render: (r) => (
+              <StatusMenu
+                value={r.status}
+                options={STATUS_SETS.guia}
+                onChange={(next) => { setGuiaStatus(r.id, next); toast(`Guia ${r.id} definida como "${next}".`); }}
+              />
+            ) },
           ]}
         />
       </Card>

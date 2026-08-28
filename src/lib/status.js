@@ -59,3 +59,21 @@ const MAP = {
 export function statusVariant(status) {
   return MAP[status] || 'neutral';
 }
+
+// Conjuntos de status pré-definidos por listagem — alimentam o <StatusMenu>
+// (troca de status direto na tabela). Protótipo: a troca é só visual, sem persistência.
+export const STATUS_SETS = {
+  clienteCadastro: ['Ativo', 'Inativo'],
+  clientePlano: ['Ativo', 'Em atraso', 'Suspenso', 'Sem plano'],
+  parceiro: ['Ativo', 'Inativo'],
+  obito: ['Aberto', 'Em andamento', 'Concluído'],
+  guia: ['Emitida', 'Enviada', 'Aceita', 'Em execução', 'Concluída', 'Faturada', 'Cancelada'],
+  contrato: ['Ativo', 'Em atraso', 'Suspenso', 'Cancelado', 'Encerrado'],
+  lead: ['Novo', 'Em contato', 'Convertido', 'Perdido'],
+  usuario: ['Ativo', 'Inativo'],
+  notaFiscal: ['Pendente', 'Autorizada', 'Rejeitada', 'Cancelada'],
+  pagamento: ['Conciliado', 'Exceção', 'Baixa manual'],
+  emprestimo: ['Em vigência', 'Devolvido', 'Atrasado'],
+  unidadeEquipamento: ['Disponível', 'Emprestado', 'Em manutenção', 'Baixado'],
+  contaFinanceira: ['Pago', 'Em aberto', 'Vencido', 'Negociado'],
+};

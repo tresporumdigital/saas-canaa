@@ -39,6 +39,7 @@ export { Drawer } from './organisms/Drawer.jsx';
 export { Tabs } from './organisms/Tabs.jsx';
 export { Timeline, CoverageBanner, AgingBars, PrintDocument } from './organisms/Domain.jsx';
 export { default as PageHeader } from './organisms/PageHeader.jsx';
+export { default as StatusMenu } from './organisms/StatusMenu.jsx';
 export { default as NavRail } from './organisms/NavRail.jsx';
 export { default as NavPanel } from './organisms/NavPanel.jsx';
 export { default as MobileNav } from './organisms/MobileNav.jsx';
