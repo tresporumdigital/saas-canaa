@@ -1,15 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Button from '../../atoms/Button.jsx';
-import Divider from '../../atoms/Divider.jsx';
 import { Input, PasswordInput } from '../../molecules/Field.jsx';
-import GoogleButton from '../../molecules/GoogleButton.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { useToast } from '../../../context/ToastContext.jsx';
 
-// Organismo: formulário de acesso (e-mail + senha, ou Google). Mock: qualquer dado entra.
-export default function LoginForm({ onSwitch }) {
-  const { login, loginWithGoogle } = useAuth();
+// Organismo: formulário de acesso — só e-mail + senha. Contas são criadas por um
+// administrador; não há cadastro nem login social nesta tela. Mock: qualquer dado entra.
+export default function LoginForm() {
+  const { login } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,31 +16,18 @@ export default function LoginForm({ onSwitch }) {
 
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [loading, setLoading] = useState(null); // 'password' | 'google' | null
-
-  const finish = (user, msg) => {
-    toast(msg);
-    navigate(dest, { replace: true });
-  };
+  const [loading, setLoading] = useState(false);
 
   const entrar = (e) => {
     e.preventDefault();
     if (loading) return;
-    setLoading('password');
+    setLoading(true);
     // Simula a latência do backend que ainda será construído.
     setTimeout(() => {
       const u = login({ email: email || 'atendente@funerariacanaa.com', password: senha });
-      finish(u, `Bem-vindo(a), ${u.name.split(' ')[0]}.`);
+      toast(`Bem-vindo(a), ${u.name.split(' ')[0]}.`);
+      navigate(dest, { replace: true });
     }, 420);
-  };
-
-  const comGoogle = () => {
-    if (loading) return;
-    setLoading('google');
-    setTimeout(() => {
-      const u = loginWithGoogle();
-      finish(u, `Conectado como ${u.email}.`);
-    }, 620);
   };
 
   return (
@@ -68,21 +54,12 @@ export default function LoginForm({ onSwitch }) {
           value={senha}
           onChange={(e) => setSenha(e.target.value)}
         />
-        <Button type="submit" variant="primary" block loading={loading === 'password'} iconRight="arrow-right">
+        <Button type="submit" variant="primary" block loading={loading} iconRight="arrow-right">
           Entrar
         </Button>
       </form>
 
-      <Divider label="ou" />
-
-      <GoogleButton loading={loading === 'google'} onClick={comGoogle}>
-        Entrar com o Google
-      </GoogleButton>
-
-      <p className="auth-switch">
-        Não tem uma conta?{' '}
-        <button type="button" className="link-btn" onClick={onSwitch}>Cadastre-se</button>
-      </p>
+      <p className="auth-note">Não tem acesso? Fale com o administrador do sistema.</p>
     </div>
   );
 }

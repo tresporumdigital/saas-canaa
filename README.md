@@ -10,14 +10,13 @@ Sem backend e sem banco de dados: **todos os dados são mockados** em `src/mock/
 O sistema abre na **tela de login** (`#/login`). Sem sessão, qualquer rota interna
 redireciona para lá.
 
-- **Entrar** com e-mail e senha — qualquer valor é aceito (não há validação real).
-- **Entrar / cadastrar com o Google** — usa uma conta fictícia; no cadastro, nome e
-  e-mail chegam preenchidos.
-- **Cadastro** (nome completo, e-mail, senha) na mesma tela, alternando pelo botão inferior.
+- **Entrar** apenas com e-mail e senha — qualquer valor é aceito (não há validação real).
+- **Sem cadastro e sem login social** nesta tela: as contas são criadas por um
+  administrador. O backend cuidará disso futuramente.
 - A sessão fica em `localStorage` (`canaa.auth`) só para sobreviver a um reload; "Sair"
   fica no menu do usuário (topo) e no drawer mobile.
 
-Quando o backend existir, basta trocar as funções de `src/context/AuthContext.jsx`.
+Quando o backend existir, basta trocar `login` em `src/context/AuthContext.jsx`.
 
 ## Design
 

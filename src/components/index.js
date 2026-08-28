@@ -8,7 +8,6 @@
 /* ---------------- Atoms ---------------- */
 export { default as Icon } from './atoms/Icon.jsx';
 export { default as IconSprite } from './atoms/IconSprite.jsx';
-export { default as GoogleIcon } from './atoms/GoogleIcon.jsx';
 export { Button } from './atoms/Button.jsx';
 export { Card } from './atoms/Card.jsx';
 export { Badge } from './atoms/Badge.jsx';
@@ -32,7 +31,6 @@ export { EmptyState } from './molecules/EmptyState.jsx';
 export { Breadcrumb } from './molecules/Breadcrumb.jsx';
 export { Pagination } from './molecules/Pagination.jsx';
 export { SkeletonRows } from './molecules/SkeletonRows.jsx';
-export { GoogleButton } from './molecules/GoogleButton.jsx';
 
 /* ---------------- Organisms ---------------- */
 export { default as DataTable } from './organisms/DataTable.jsx';
@@ -49,7 +47,6 @@ export { default as RoleSwitcher } from './organisms/RoleSwitcher.jsx';
 export { default as UserMenu } from './organisms/UserMenu.jsx';
 export { default as RequireAuth } from './organisms/RequireAuth.jsx';
 export { default as LoginForm } from './organisms/auth/LoginForm.jsx';
-export { default as RegisterForm } from './organisms/auth/RegisterForm.jsx';
 
 /* ---------------- Templates ---------------- */
 export { default as AppLayout } from './templates/AppLayout.jsx';

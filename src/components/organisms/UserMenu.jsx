@@ -38,7 +38,6 @@ export default function UserMenu() {
             <div>
               <strong>{user.name}</strong>
               <span>{user.email}</span>
-              {user.via === 'google' ? <span className="um-tag">conta Google</span> : null}
             </div>
           </div>
           <button onClick={sair} role="menuitem" className="um-signout">

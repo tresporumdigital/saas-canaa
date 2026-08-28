@@ -11,19 +11,19 @@ import { Button, Field, DataTable, PageHeader } from '../../components/index.js'
 
 ### `atoms/` — blocos indivisíveis
 Sem estado de negócio, sem layout de página.
-`Icon`, `IconSprite`, `GoogleIcon`, `Button`, `Card`, `Badge`, `Tag`, `Avatar`,
+`Icon`, `IconSprite`, `Button`, `Card`, `Badge`, `Tag`, `Avatar`,
 `Bar`, `Spark`, `Skeleton`, `Spinner`, `Divider`.
 
 ### `molecules/` — grupos pequenos de átomos
 `Field` (+ `Input`, `PasswordInput`, `Select`, `Textarea`, `Checkbox`, `Radio`, `FieldRow`),
 `DefList`, `AvatarGroup`, `StatCard`, `Alert`, `EmptyState`, `Breadcrumb`,
-`Pagination`, `SkeletonRows`, `GoogleButton`.
+`Pagination`, `SkeletonRows`.
 
 ### `organisms/` — seções completas e autônomas
 `DataTable`, `Modal`/`ConfirmDialog`, `Drawer`, `Tabs`, `Domain` (`Timeline`,
 `CoverageBanner`, `AgingBars`, `PrintDocument`), `PageHeader`, `NavRail`,
 `NavPanel`, `MobileNav`, `TopBar`, `RoleSwitcher`, `UserMenu`, `RequireAuth`,
-`auth/LoginForm`, `auth/RegisterForm`.
+`auth/LoginForm`.
 
 ### `templates/` — esqueleto de página, sem dados reais
 `AppLayout` (casca autenticada: trilho + painel + topo + conteúdo),

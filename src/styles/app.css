@@ -535,11 +535,6 @@ button.stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2p
 }
 .input-affix-btn:hover { color: var(--color-text-secondary); }
 
-/* ============================ Botão Google (molécula) ============================ */
-.btn-google { background: var(--color-bg-raised); color: var(--color-text-primary); border-color: var(--color-border-strong); }
-.btn-google:hover { background: var(--color-bg-sunken); }
-.btn-google svg { width: 18px; height: 18px; }
-
 /* ============================ Menu do usuário (organismo) ============================ */
 .user-menu { position: relative; }
 .user-menu > button {
@@ -557,11 +552,6 @@ button.stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2p
 .user-menu .um-head { display: flex; gap: var(--space-3); padding: var(--space-4); border-bottom: 1px solid var(--color-border); }
 .user-menu .um-head strong { display: block; font-size: var(--text-sm); }
 .user-menu .um-head span { display: block; font-size: var(--text-xs); color: var(--color-text-secondary); word-break: break-all; }
-.user-menu .um-tag {
-  margin-top: 4px; display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: var(--tracking-wide); color: var(--color-accent-strong); background: var(--color-accent-soft);
-  padding: 1px 8px; border-radius: var(--radius-pill);
-}
 .user-menu .um-signout {
   display: flex; align-items: center; gap: var(--space-2); width: 100%;
   padding: var(--space-3) var(--space-4); background: none; border: none; cursor: pointer;
@@ -613,13 +603,7 @@ button.stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2p
 .auth-form { display: flex; flex-direction: column; gap: var(--space-4); margin-bottom: var(--space-2); }
 .auth-form .field { margin-bottom: 0; }
 .auth-form .btn { margin-top: var(--space-2); }
-.auth-hint { margin-top: var(--space-3); font-size: var(--text-xs); color: var(--color-text-muted); text-align: center; }
-.auth-switch { margin-top: var(--space-5); text-align: center; font-size: var(--text-sm); color: var(--color-text-secondary); }
-.link-btn {
-  background: none; border: none; padding: 0; cursor: pointer; font: inherit;
-  font-weight: 700; color: var(--color-accent-strong); text-decoration: underline; text-underline-offset: 2px;
-}
-.link-btn:hover { color: var(--color-accent); }
+.auth-note { margin-top: var(--space-5); text-align: center; font-size: var(--text-xs); color: var(--color-text-muted); }
 
 @media (max-width: 920px) {
   .auth-scene { grid-template-columns: 1fr; }

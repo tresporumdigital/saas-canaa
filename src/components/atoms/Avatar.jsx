@@ -1,6 +1,6 @@
 import { initials as toInitials } from '../../lib/format.js';
 
-// Átomo: avatar com iniciais. `src` opcional exibe a foto (ex.: conta Google).
+// Átomo: avatar com iniciais. `src` opcional exibe uma foto no lugar.
 export function Avatar({ name, src, size = 'sm', className = '' }) {
   const cls = `avatar ${size} ${className}`.trim();
   if (src) return <img className={cls} src={src} alt="" aria-hidden="true" />;
