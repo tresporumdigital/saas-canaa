@@ -75,6 +75,9 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
   tela e troca o status da linha (só em memória, sem persistência).
 - Cadastro/edição de clientes, parceiros e registros de óbito abrem em pop-up sobre a
   página atual (lista ou ficha), sem navegar para uma rota separada.
+- Os campos de seleção são pop-overs próprios do sistema (sem `<select>` nativo).
+- Em Guias de Atendimento, "Gerar guia" abre um pop-up para escolher cliente + parceiro
+  e cria a guia na lista (só em memória).
 - Autenticação é **mock** (sem backend); a sessão vive só no navegador.
 - Data de referência do protótipo: **27/08/2026**.
 - `design-system/`, `PRD.md` e `visual/` não são alterados por este frontend.
