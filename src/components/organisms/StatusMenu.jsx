@@ -43,17 +43,24 @@ export default function StatusMenu({ value, options = [], onChange, disabled, ti
       close();
     };
     const onKey = (e) => e.key === 'Escape' && close();
+    // Reposiciona (não fecha) ao rolar a página ou o container, e ao redimensionar.
+    let raf = 0;
+    const reposition = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => { raf = 0; place(); });
+    };
     document.addEventListener('mousedown', onDoc);
     document.addEventListener('keydown', onKey);
-    window.addEventListener('resize', close);
-    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', reposition);
+    window.addEventListener('scroll', reposition, true);
     return () => {
+      if (raf) cancelAnimationFrame(raf);
       document.removeEventListener('mousedown', onDoc);
       document.removeEventListener('keydown', onKey);
-      window.removeEventListener('resize', close);
-      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', reposition);
+      window.removeEventListener('scroll', reposition, true);
     };
-  }, [open, close]);
+  }, [open, close, place]);
 
   const choices = options.filter(Boolean);
 
