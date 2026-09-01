@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
-import { Card, DataTable, StatusMenu, Select, StatCard } from '../../components/index.js';
+import { Card, DataTable, StatusMenu, Select, StatCard, Button } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import useRowStatus from '../../hooks/useRowStatus.js';
 import { guias } from '../../mock/guias.js';
@@ -9,13 +9,17 @@ import { parceiros, parceiroById } from '../../mock/parceiros.js';
 import { CICLO_GUIA } from '../../mock/guias.js';
 import { date, money } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
+import GerarGuiaModal from './GerarGuiaModal.jsx';
 
 export default function GuiasList() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [parceiro, setParceiro] = useState('');
   const [status, setStatus] = useState('');
-  const [allGuias, setGuiaStatus] = useRowStatus(guias);
+  const [gerando, setGerando] = useState(false);
+  const [novasGuias, setNovasGuias] = useState([]);
+  const fonte = useMemo(() => [...novasGuias, ...guias], [novasGuias]);
+  const [allGuias, setGuiaStatus] = useRowStatus(fonte);
 
   const filtered = useMemo(() => allGuias.filter((g) =>
     (!parceiro || g.parceiroId === parceiro) && (!status || g.status === status)
@@ -43,7 +47,7 @@ export default function GuiasList() {
         <DataTable
           rows={filtered}
           searchKeys={['id', 'clienteNome', 'servico']}
-          searchPlaceholder="Buscar por nº da guia, falecido ou serviço…"
+          searchPlaceholder="Buscar por nº da guia, cliente ou serviço…"
           onRowClick={(r) => navigate(`/guias/${r.id}`)}
           pageSize={12}
           toolbarExtra={
@@ -56,11 +60,12 @@ export default function GuiasList() {
                 <option value="">Todos os status</option>
                 {[...CICLO_GUIA, 'Cancelada'].map((s) => <option key={s} value={s}>{s}</option>)}
               </Select>
+              <Button variant="primary" icon="plus" onClick={() => setGerando(true)}>Gerar guia</Button>
             </>
           }
           columns={[
             { key: 'id', header: 'Guia', sortable: true },
-            { key: 'clienteNome', header: 'Falecido / cliente', sortable: true },
+            { key: 'clienteNome', header: 'Cliente', sortable: true },
             { key: 'parceiroId', header: 'Parceiro', render: (r) => parceiroById(r.parceiroId)?.nomeFantasia },
             { key: 'servico', header: 'Serviço' },
             { key: 'emitidaEm', header: 'Emitida', sortable: true, render: (r) => date(r.emitidaEm) },
@@ -75,6 +80,16 @@ export default function GuiasList() {
           ]}
         />
       </Card>
+
+      {gerando && (
+        <GerarGuiaModal
+          onClose={() => setGerando(false)}
+          onGenerate={(guia) => {
+            setNovasGuias((list) => [guia, ...list]);
+            toast(`Guia ${guia.id} gerada para ${guia.clienteNome} (simulação — sem persistência).`);
+          }}
+        />
+      )}
     </>
   );
 }

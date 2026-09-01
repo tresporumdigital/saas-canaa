@@ -61,7 +61,7 @@ export default function GuiaDetail() {
       <div className="grid cols-2">
         <Card title="Dados da guia">
           <DefList items={[
-            { label: 'Falecido / cliente', value: g.clienteNome },
+            { label: 'Cliente', value: g.clienteNome },
             { label: 'Vínculo', value: g.clienteVinculo },
             { label: 'Atendimento', value: obito ? <Link to={`/obitos/${obito.id}`}>{obito.id}</Link> : '—' },
             { label: 'Parceiro acionado', value: <Link to={`/parceiros/${g.parceiroId}`}>{parceiro?.nomeFantasia}</Link> },
@@ -89,7 +89,7 @@ export default function GuiaDetail() {
           <PrintDocument kind="Guia de Atendimento" numero={g.pdfNumero}>
             <table>
               <tbody>
-                <tr><th>Falecido / cliente</th><td>{g.clienteNome}</td><th>Vínculo</th><td>{g.clienteVinculo}</td></tr>
+                <tr><th>Cliente</th><td>{g.clienteNome}</td><th>Vínculo</th><td>{g.clienteVinculo}</td></tr>
                 <tr><th>Atendimento</th><td>{g.obitoId}</td><th>Emissão</th><td>{dateTime(g.emitidaEm)}</td></tr>
                 <tr><th>Parceiro</th><td>{parceiro?.razaoSocial}</td><th>CNPJ</th><td>{parceiro?.cnpj}</td></tr>
                 <tr><th>Serviço solicitado</th><td colSpan={3}>{g.servico}</td></tr>

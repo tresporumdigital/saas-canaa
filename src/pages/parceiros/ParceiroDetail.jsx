@@ -98,7 +98,7 @@ export default function ParceiroDetail() {
             onRowClick={(r) => navigate(`/guias/${r.id}`)}
             columns={[
               { key: 'id', header: 'Guia' },
-              { key: 'clienteNome', header: 'Falecido / cliente' },
+              { key: 'clienteNome', header: 'Cliente' },
               { key: 'servico', header: 'Serviço' },
               { key: 'emitidaEm', header: 'Emitida', render: (r) => date(r.emitidaEm) },
               { key: 'valorAcordado', header: 'Valor', align: 'right', render: (r) => money(r.valorAcordado) },
