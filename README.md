@@ -60,7 +60,7 @@ npm run preview  # serve o build
 | **Receita** | Planos e contratos, Gerador de Carnês, Pagamento Integrado, Controle Financeiro |
 | **Operação** | Empréstimo de Equipamentos, Vendas de Equipamentos, Cadastro de Equipamentos, Notas Fiscais |
 | **Expansão** | Leads do Site, Portal do Parceiro |
-| **Config** | Usuários, Perfis e Permissões, Parâmetros |
+| **Config** | Usuários, Perfis e Permissões, Parâmetros, Empresa e Unidades |
 
 Profundidade: **Painel, Clientes, Óbitos, Guias, Planos e Financeiro** têm listagem + detalhe +
 formulários; os demais têm listagem funcional + detalhe/drawer.
