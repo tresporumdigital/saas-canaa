@@ -21,6 +21,7 @@ import FinanceiroHome from './pages/financeiro/FinanceiroHome.jsx';
 import EmprestimosHome from './pages/emprestimos/EmprestimosHome.jsx';
 import UnidadeHistorico from './pages/emprestimos/UnidadeHistorico.jsx';
 import EquipamentosVendas from './pages/equipamentos/EquipamentosVendas.jsx';
+import EquipamentosCadastro from './pages/equipamentos/EquipamentosCadastro.jsx';
 import NotasFiscais from './pages/notas/NotasFiscais.jsx';
 import LeadsHome from './pages/leads/LeadsHome.jsx';
 import PortalParceiro from './pages/portal/PortalParceiro.jsx';
@@ -67,6 +68,7 @@ export default function App() {
         <Route path="emprestimos" element={<EmprestimosHome />} />
         <Route path="emprestimos/unidade/:patrimonio" element={<UnidadeHistorico />} />
         <Route path="equipamentos" element={<EquipamentosVendas />} />
+        <Route path="equipamentos-cadastro" element={<EquipamentosCadastro />} />
         <Route path="notas-fiscais" element={<NotasFiscais />} />
 
         <Route path="leads" element={<LeadsHome />} />

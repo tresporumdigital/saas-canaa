@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
   Card, Tabs, DataTable, Badge, Button, StatCard, Alert, Modal, Drawer, DefList,
+  Input, Select, FieldRow,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import {
   equipamentosProduto, equipamentosAbaixoDoMinimo, vendasEquipamento, vendaTotais,
 } from '../../mock/equipamentos.js';
+import { clientes } from '../../mock/clientes.js';
 import { money, date, number } from '../../lib/format.js';
 
 const TABS = [
@@ -15,15 +17,46 @@ const TABS = [
   { id: 'relatorio', label: 'Relatório de vendas' },
 ];
 
+const FORMAS_PAGAMENTO = ['Pix', 'Dinheiro', 'Boleto', 'Cartão 2x', 'Cartão 3x', 'Boleto 3x'];
+
 export default function EquipamentosVendas() {
   const { toast } = useToast();
   const [tab, setTab] = useState('vendas');
   const [venda, setVenda] = useState(null);
   const [nova, setNova] = useState(false);
+  const [novasVendas, setNovasVendas] = useState([]);
+  const [form, setForm] = useState({ clienteId: '', equipId: '', valor: '', formaPagamento: 'Pix' });
+  const setF = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  const rowsVendas = useMemo(() => [...novasVendas, ...vendasEquipamento], [novasVendas]);
   const abaixoMin = equipamentosAbaixoDoMinimo();
-  const totalMes = vendasEquipamento.reduce((s, v) => s + vendaTotais(v).total, 0);
-  const margemMes = vendasEquipamento.reduce((s, v) => s + vendaTotais(v).margem, 0);
+  const totalMes = rowsVendas.reduce((s, v) => s + vendaTotais(v).total, 0);
+  const margemMes = rowsVendas.reduce((s, v) => s + vendaTotais(v).margem, 0);
+
+  const equipSel = equipamentosProduto.find((p) => p.id === form.equipId);
+  const clienteSel = clientes.find((c) => c.id === form.clienteId);
+  const vendaPronta = clienteSel && equipSel && Number(form.valor) > 0;
+
+  const registrarVenda = (e) => {
+    e.preventDefault();
+    if (!vendaPronta) return;
+    const nv = {
+      id: `VEQ-2026-9${String(Date.now()).slice(-3)}`,
+      data: '2026-09-01',
+      clienteId: clienteSel.id,
+      clienteNome: clienteSel.nome,
+      vendedor: 'Balcão',
+      formaPagamento: form.formaPagamento,
+      itens: [{ descricao: equipSel.descricao, qtd: 1, valorUnit: Number(form.valor) }],
+      desconto: 0,
+      custo: equipSel.precoCusto,
+      notaFiscalId: null,
+    };
+    setNovasVendas((l) => [nv, ...l]);
+    toast(`Venda ${nv.id} registrada para ${clienteSel.nome} (simulação — sem persistência).`);
+    setForm({ clienteId: '', equipId: '', valor: '', formaPagamento: 'Pix' });
+    setNova(false);
+  };
 
   return (
     <>
@@ -35,7 +68,7 @@ export default function EquipamentosVendas() {
       />
 
       <div className="grid cols-3">
-        <StatCard label="Vendas no período" value={number(vendasEquipamento.length)} icon="box" />
+        <StatCard label="Vendas no período" value={number(rowsVendas.length)} icon="box" />
         <StatCard label="Faturamento" value={money(totalMes)} icon="cash" tone="success" />
         <StatCard label="Margem" value={money(margemMes)} icon="trend" tone="info" />
       </div>
@@ -51,7 +84,7 @@ export default function EquipamentosVendas() {
       {tab === 'vendas' && (
         <Card>
           <DataTable
-            rows={vendasEquipamento}
+            rows={rowsVendas}
             searchKeys={['id', 'clienteNome', 'vendedor']}
             onRowClick={(r) => setVenda(r)}
             pageSize={10}
@@ -95,7 +128,7 @@ export default function EquipamentosVendas() {
           <table className="data-table">
             <thead><tr><th>Produto</th><th className="num">Qtd</th><th className="num">Faturamento</th><th className="num">Margem</th></tr></thead>
             <tbody>
-              {Object.values(vendasEquipamento.reduce((acc, v) => {
+              {Object.values(rowsVendas.reduce((acc, v) => {
                 v.itens.forEach((it) => {
                   acc[it.descricao] = acc[it.descricao] || { descricao: it.descricao, qtd: 0, fat: 0 };
                   acc[it.descricao].qtd += it.qtd;
@@ -143,14 +176,41 @@ export default function EquipamentosVendas() {
       )}
 
       {nova && (
-        <Modal title="Nova venda de equipamento" onClose={() => setNova(false)}
-          footer={<>
-            <Button size="sm" variant="secondary" onClick={() => setNova(false)}>Cancelar</Button>
-            <Button size="sm" variant="primary" onClick={() => { toast('Venda registrada, estoque baixado e NF acionada (simulação).'); setNova(false); }}>Confirmar venda</Button>
-          </>}>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
-            Na confirmação, o estoque é baixado automaticamente e a emissão de nota fiscal é acionada.
-          </p>
+        <Modal
+          title="Nova venda de equipamento"
+          onClose={() => setNova(false)}
+          wide
+          footer={(
+            <>
+              <Button variant="secondary" type="button" onClick={() => setNova(false)}>Cancelar</Button>
+              <Button variant="primary" type="submit" form="venda-form" disabled={!vendaPronta}>Confirmar venda</Button>
+            </>
+          )}
+        >
+          <form id="venda-form" onSubmit={registrarVenda} className="stack" style={{ gap: 'var(--space-4)' }}>
+            <FieldRow>
+              <Select label="Cliente" value={form.clienteId} onChange={setF('clienteId')}>
+                <option value="">Selecione um cliente…</option>
+                {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </Select>
+              <Select
+                label="Equipamento"
+                value={form.equipId}
+                onChange={(e) => setForm((f) => {
+                  const p = equipamentosProduto.find((x) => x.id === e.target.value);
+                  return { ...f, equipId: e.target.value, valor: p ? String(p.precoVenda) : f.valor };
+                })}
+              >
+                <option value="">Selecione um equipamento…</option>
+                {equipamentosProduto.map((p) => <option key={p.id} value={p.id}>{p.descricao} — {money(p.precoVenda)}</option>)}
+              </Select>
+              <Input label="Valor (R$)" type="number" min="0" step="0.01" value={form.valor} onChange={setF('valor')} required />
+              <Select label="Forma de pagamento" value={form.formaPagamento} onChange={setF('formaPagamento')} options={FORMAS_PAGAMENTO} />
+            </FieldRow>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>
+              Na confirmação, o estoque é baixado e a emissão de nota fiscal é acionada (simulação).
+            </p>
+          </form>
         </Modal>
       )}
     </>

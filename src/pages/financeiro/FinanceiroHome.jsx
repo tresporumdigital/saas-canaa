@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
   Card, Tabs, DataTable, Badge, StatusMenu, Button, StatCard, AgingBars, Bar,
@@ -11,6 +11,7 @@ import {
 } from '../../mock/financeiro.js';
 import { money, date, number } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
+import NovaContaModal from './NovaContaModal.jsx';
 
 const TABS = [
   { id: 'visao', label: 'Visão geral' },
@@ -25,11 +26,16 @@ const TABS = [
 export default function FinanceiroHome() {
   const { toast } = useToast();
   const [tab, setTab] = useState('visao');
-  const [receberRows, setReceberStatus] = useRowStatus(contasReceber);
-  const [pagarRows, setPagarStatus] = useRowStatus(contasPagar);
+  const [novaConta, setNovaConta] = useState(null);
+  const [novasReceber, setNovasReceber] = useState([]);
+  const [novasPagar, setNovasPagar] = useState([]);
+  const fonteReceber = useMemo(() => [...novasReceber, ...contasReceber], [novasReceber]);
+  const fontePagar = useMemo(() => [...novasPagar, ...contasPagar], [novasPagar]);
+  const [receberRows, setReceberStatus] = useRowStatus(fonteReceber);
+  const [pagarRows, setPagarStatus] = useRowStatus(fontePagar);
 
-  const totalReceber = contasReceber.reduce((s, c) => s + c.valor, 0);
-  const totalPagar = contasPagar.reduce((s, c) => s + c.valor, 0);
+  const totalReceber = fonteReceber.reduce((s, c) => s + c.valor, 0);
+  const totalPagar = fontePagar.reduce((s, c) => s + c.valor, 0);
   const maxFluxo = Math.max(...fluxoCaixa.map((f) => Math.max(f.entradas, f.saidas)));
 
   return (
@@ -76,6 +82,7 @@ export default function FinanceiroHome() {
           <DataTable
             rows={receberRows}
             searchKeys={['clienteNome', 'categoria', 'ref']}
+            toolbarExtra={<Button variant="primary" icon="plus" onClick={() => setNovaConta('receber')}>Nova conta</Button>}
             columns={[
               { key: 'id', header: 'Lançamento', sortable: true },
               { key: 'clienteNome', header: 'Cliente / origem', sortable: true },
@@ -100,6 +107,7 @@ export default function FinanceiroHome() {
           <DataTable
             rows={pagarRows}
             searchKeys={['favorecido', 'categoria']}
+            toolbarExtra={<Button variant="primary" icon="plus" onClick={() => setNovaConta('pagar')}>Nova conta</Button>}
             columns={[
               { key: 'id', header: 'Lançamento', sortable: true },
               { key: 'favorecido', header: 'Favorecido', sortable: true },
@@ -191,6 +199,18 @@ export default function FinanceiroHome() {
             </tbody>
           </table>
         </Card>
+      )}
+
+      {novaConta && (
+        <NovaContaModal
+          tipo={novaConta}
+          onClose={() => setNovaConta(null)}
+          onCreate={(conta) => {
+            if (novaConta === 'receber') setNovasReceber((l) => [conta, ...l]);
+            else setNovasPagar((l) => [conta, ...l]);
+            toast(`Conta ${conta.id} lançada (simulação — sem persistência).`);
+          }}
+        />
       )}
     </>
   );

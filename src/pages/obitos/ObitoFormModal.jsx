@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Modal, Button, Input, Select, Textarea, FieldRow, CoverageBanner, Alert, Checkbox, Card } from '../../components/index.js';
+import { Modal, Button, Input, Select, Textarea, FieldRow, CoverageBanner, Alert, Card } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { clientes } from '../../mock/clientes.js';
 import { contratosDoCliente } from '../../mock/contratos.js';
 import { planoById } from '../../mock/planos.js';
-import { parceiros } from '../../mock/parceiros.js';
 
 // Pop-up de registro de novo atendimento de óbito.
 export default function ObitoFormModal({ onClose }) {
@@ -16,7 +15,6 @@ export default function ObitoFormModal({ onClose }) {
     falecido: '', obitoEm: '2026-08-27T04:00', local: '', causa: '', numeroDO: '',
     solicitante: '', parentesco: '', telefone: '',
   });
-  const [parceirosSel, setParceirosSel] = useState([]);
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const cliente = clientes.find((c) => c.id === clienteId);
@@ -36,11 +34,9 @@ export default function ObitoFormModal({ onClose }) {
     ];
   }, [tipo, contrato]);
 
-  const toggleParceiro = (id) => setParceirosSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
-
   const submit = (e) => {
     e.preventDefault();
-    toast(`Óbito registrado e ${parceirosSel.length} guia(s) emitida(s) sem redigitação (simulação).`);
+    toast('Óbito registrado (simulação — sem persistência).');
     onClose();
   };
 
@@ -52,7 +48,7 @@ export default function ObitoFormModal({ onClose }) {
       footer={(
         <>
           <Button variant="secondary" type="button" onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" type="submit" form="obito-form">Registrar e emitir guias</Button>
+          <Button variant="primary" type="submit" form="obito-form">Registrar óbito</Button>
         </>
       )}
     >
@@ -99,18 +95,6 @@ export default function ObitoFormModal({ onClose }) {
             <Input label="Parentesco" value={form.parentesco} onChange={set('parentesco')} />
             <Input label="Telefone" value={form.telefone} onChange={set('telefone')} />
           </FieldRow>
-        </div>
-
-        <div>
-          <div className="card-title">Acionar parceiros</div>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-3)' }}>
-            Os parceiros selecionados recebem uma guia gerada automaticamente com os dados deste atendimento.
-          </p>
-          <div className="grid cols-2" style={{ gap: 0 }}>
-            {parceiros.filter((p) => p.status === 'Ativo').map((p) => (
-              <Checkbox key={p.id} label={`${p.nomeFantasia} — ${p.tipoParceria}`} checked={parceirosSel.includes(p.id)} onChange={() => toggleParceiro(p.id)} />
-            ))}
-          </div>
         </div>
 
         <Textarea label="Observações do atendimento" placeholder="Detalhes adicionais…" />

@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Modal, Button, Input, Select, FieldRow, Alert, Icon } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { clientes, clienteById } from '../../mock/index.js';
-import { cpf as fmtCpf } from '../../lib/format.js';
+import { planosProduto } from '../../mock/planos.js';
+import { cpf as fmtCpf, money } from '../../lib/format.js';
 
-// Pop-up de cadastro/edição de cliente — dados pessoais e endereço em uma única seção.
+// Pop-up de cadastro/edição de cliente — dados pessoais, endereço e, no cadastro, contratação de plano.
 export default function ClienteFormModal({ clienteId, onClose }) {
   const { toast } = useToast();
   const editing = Boolean(clienteId);
@@ -23,17 +24,27 @@ export default function ClienteFormModal({ clienteId, onClose }) {
     bairro: base?.endereco.bairro || '',
     cidade: base?.endereco.cidade || 'São Paulo',
     uf: base?.endereco.uf || 'SP',
+    planoId: '',
+    planoInicio: '2026-09-01',
+    planoVencimento: '10',
   }));
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const cpfDigits = form.cpf.replace(/\D/g, '');
   const duplicado = !editing && cpfDigits.length === 11 && clientes.find((c) => c.cpf === cpfDigits);
+  const planoEscolhido = planosProduto.find((p) => p.id === form.planoId);
 
   const submit = (e) => {
     e.preventDefault();
     if (duplicado) return;
-    toast(editing ? 'Cliente atualizado (simulação — sem persistência).' : 'Cliente cadastrado (simulação — sem persistência).');
+    if (editing) {
+      toast('Cliente atualizado (simulação — sem persistência).');
+    } else if (planoEscolhido) {
+      toast(`Cliente cadastrado e ${planoEscolhido.nome} contratado (simulação — sem persistência).`);
+    } else {
+      toast('Cliente cadastrado (simulação — sem persistência).');
+    }
     onClose();
   };
 
@@ -74,6 +85,33 @@ export default function ClienteFormModal({ clienteId, onClose }) {
           <Input label="Cidade" value={form.cidade} onChange={set('cidade')} />
           <Select label="UF" value={form.uf} onChange={set('uf')} options={['SP', 'RJ', 'MG', 'PR', 'SC', 'RS', 'BA', 'GO']} />
         </FieldRow>
+
+        {!editing && (
+          <div>
+            <div className="card-title">Plano (opcional)</div>
+            <FieldRow>
+              <Select label="Contratar plano" value={form.planoId} onChange={set('planoId')}>
+                <option value="">Não contratar agora</option>
+                {planosProduto.map((p) => (
+                  <option key={p.id} value={p.id}>{p.nome} — {money(p.valorMensal)}/mês</option>
+                ))}
+              </Select>
+              {planoEscolhido && (
+                <>
+                  <Input label="Início do plano" type="date" value={form.planoInicio} onChange={set('planoInicio')} />
+                  <Select label="Dia de vencimento" value={form.planoVencimento} onChange={set('planoVencimento')}
+                    options={['1', '5', '10', '15', '20', '25']} />
+                </>
+              )}
+            </FieldRow>
+            {planoEscolhido && (
+              <Alert variant="info">
+                {planoEscolhido.nome} · {money(planoEscolhido.valorMensal)}/mês · carência {planoEscolhido.carenciaDias} dias ·
+                até {planoEscolhido.limiteDependentes} dependentes. As 12 parcelas são geradas ao salvar.
+              </Alert>
+            )}
+          </div>
+        )}
       </form>
     </Modal>
   );
