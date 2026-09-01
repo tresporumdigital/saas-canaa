@@ -21,8 +21,8 @@ export default function Configuracoes() {
   return (
     <>
       <PageHeader
-        crumbs={[{ label: 'Início', to: '/' }, { label: 'Configurações' }]}
-        title="Usuários e Perfis"
+        crumbs={[{ label: 'Início', to: '/' }, { label: 'Usuários' }]}
+        title="Usuários"
         subtitle="Controle de acesso, matriz de permissões por perfil e parâmetros de negócio do sistema."
         actions={<Button variant="primary" icon="plus" onClick={() => toast('Formulário de novo usuário (simulação).')}>Novo usuário</Button>}
       />

@@ -53,7 +53,8 @@ export const NAV = [
     label: 'Configurações',
     icon: 'gear',
     modules: [
-      { path: '/configuracoes', label: 'Usuários e Perfis', icon: 'gear', roles: ['admin'] },
+      { path: '/configuracoes', label: 'Usuários', icon: 'users', end: true, roles: ['admin'] },
+      { path: '/empresa', label: 'Empresa e Unidades', icon: 'briefcase', roles: ['admin'] },
     ],
   },
 ];

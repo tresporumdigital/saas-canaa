@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
   Card, Tabs, DataTable, Badge, StatusMenu, Button, StatCard, Drawer, DefList, Alert, Modal, Textarea,
@@ -8,6 +8,7 @@ import useRowStatus from '../../hooks/useRowStatus.js';
 import { notasFiscais } from '../../mock/notasFiscais.js';
 import { money, dateTime, number } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
+import GerarNotaModal from './GerarNotaModal.jsx';
 
 const TABS = [
   { id: 'todas', label: 'Todas' },
@@ -20,8 +21,11 @@ export default function NotasFiscais() {
   const [tab, setTab] = useState('todas');
   const [nota, setNota] = useState(null);
   const [correcao, setCorrecao] = useState(false);
+  const [gerando, setGerando] = useState(false);
+  const [novasNotas, setNovasNotas] = useState([]);
+  const fonte = useMemo(() => [...novasNotas, ...notasFiscais], [novasNotas]);
 
-  const [allNotas, setNotaStatus] = useRowStatus(notasFiscais);
+  const [allNotas, setNotaStatus] = useRowStatus(fonte);
   const pendentes = allNotas.filter((n) => n.status === 'Pendente');
   const rejeitadas = allNotas.filter((n) => n.status === 'Rejeitada');
   const autorizadas = allNotas.filter((n) => n.status === 'Autorizada');
@@ -50,6 +54,7 @@ export default function NotasFiscais() {
           searchKeys={['id', 'clienteNome', 'origemRef']}
           onRowClick={(r) => setNota(r)}
           pageSize={12}
+          toolbarExtra={<Button variant="primary" icon="plus" onClick={() => setGerando(true)}>Gerar nota fiscal</Button>}
           columns={[
             { key: 'id', header: 'Nota', sortable: true },
             { key: 'tipo', header: 'Tipo', render: (r) => <Badge variant="neutral">{r.tipo}</Badge> },
@@ -112,6 +117,16 @@ export default function NotasFiscais() {
           </>}>
           <Textarea label="Descrição da correção" placeholder="Ex.: correção do endereço do tomador…" />
         </Modal>
+      )}
+
+      {gerando && (
+        <GerarNotaModal
+          onClose={() => setGerando(false)}
+          onGenerate={(nf) => {
+            setNovasNotas((list) => [nf, ...list]);
+            toast(`Nota ${nf.id} gerada e adicionada à fila de emissão (simulação).`);
+          }}
+        />
       )}
     </>
   );
