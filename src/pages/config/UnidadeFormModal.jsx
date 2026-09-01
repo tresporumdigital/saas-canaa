@@ -5,45 +5,80 @@ import { useToast } from '../../context/ToastContext.jsx';
 const UF = ['SP', 'RJ', 'MG', 'PR', 'SC', 'RS', 'BA', 'GO', 'ES', 'DF'];
 const TIPOS = ['Matriz', 'Filial', 'Escritório'];
 
-// Pop-up de edição de uma unidade da empresa.
-export default function UnidadeFormModal({ unidade, onClose }) {
+const vazia = {
+  nome: '', tipo: 'Filial', cnpj: '', status: 'Ativa', responsavel: '', telefone: '', email: '',
+  horario: '24 horas', alvara: '', salasVelorio: '0', capela: false,
+  cep: '', logradouro: '', numero: '', bairro: '', cidade: 'São Paulo', uf: 'SP',
+};
+
+// Pop-up de cadastro/edição de uma unidade da empresa.
+export default function UnidadeFormModal({ unidade, onClose, onCreate }) {
   const { toast } = useToast();
-  const [form, setForm] = useState(() => ({
-    nome: unidade.nome,
-    tipo: unidade.tipo,
-    cnpj: unidade.cnpj,
-    status: unidade.status,
-    responsavel: unidade.responsavel,
-    telefone: unidade.telefone,
-    email: unidade.email,
-    horario: unidade.horario,
-    alvara: unidade.alvara,
-    salasVelorio: String(unidade.salasVelorio),
-    capela: unidade.capela,
-    cep: unidade.endereco.cep,
-    logradouro: unidade.endereco.logradouro,
-    numero: unidade.endereco.numero,
-    bairro: unidade.endereco.bairro,
-    cidade: unidade.endereco.cidade,
-    uf: unidade.endereco.uf,
-  }));
+  const editando = Boolean(unidade);
+  const [form, setForm] = useState(() => (
+    editando ? {
+      nome: unidade.nome,
+      tipo: unidade.tipo,
+      cnpj: unidade.cnpj,
+      status: unidade.status,
+      responsavel: unidade.responsavel,
+      telefone: unidade.telefone,
+      email: unidade.email,
+      horario: unidade.horario,
+      alvara: unidade.alvara,
+      salasVelorio: String(unidade.salasVelorio),
+      capela: unidade.capela,
+      cep: unidade.endereco.cep,
+      logradouro: unidade.endereco.logradouro,
+      numero: unidade.endereco.numero,
+      bairro: unidade.endereco.bairro,
+      cidade: unidade.endereco.cidade,
+      uf: unidade.endereco.uf,
+    } : { ...vazia }
+  ));
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const submit = (e) => {
     e.preventDefault();
-    toast(`Unidade ${form.nome} atualizada (simulação — sem persistência).`);
+    if (editando) {
+      toast(`Unidade ${form.nome} atualizada (simulação — sem persistência).`);
+    } else {
+      onCreate?.({
+        id: `UNI-9${String(Date.now()).slice(-3)}`,
+        nome: form.nome.trim(),
+        tipo: form.tipo,
+        cnpj: form.cnpj,
+        status: form.status,
+        responsavel: form.responsavel || 'A definir',
+        telefone: form.telefone,
+        email: form.email,
+        cidade: form.cidade,
+        uf: form.uf,
+        horario: form.horario,
+        alvara: form.alvara || '—',
+        salasVelorio: Number(form.salasVelorio) || 0,
+        capela: form.capela,
+        endereco: {
+          logradouro: form.logradouro, numero: form.numero, bairro: form.bairro,
+          cidade: form.cidade, uf: form.uf, cep: form.cep,
+        },
+      });
+      toast(`Unidade ${form.nome} cadastrada (simulação — sem persistência).`);
+    }
     onClose();
   };
 
   return (
     <Modal
-      title={`Editar ${unidade.nome}`}
+      title={editando ? `Editar ${unidade.nome}` : 'Nova unidade'}
       onClose={onClose}
       wide
       footer={(
         <>
           <Button variant="secondary" type="button" onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" type="submit" form="unidade-form">Salvar alterações</Button>
+          <Button variant="primary" type="submit" form="unidade-form">
+            {editando ? 'Salvar alterações' : 'Cadastrar unidade'}
+          </Button>
         </>
       )}
     >
