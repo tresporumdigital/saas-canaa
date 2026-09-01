@@ -9,6 +9,7 @@ import { guiasDoParceiro } from '../../mock/guias.js';
 import { baixasDoParceiro, extratoParceiro } from '../../mock/portal.js';
 import { cnpj, dateTime, money, date, percent } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
+import ParceiroFormModal from './ParceiroFormModal.jsx';
 
 const TABS = [
   { id: 'dados', label: 'Dados e acordo' },
@@ -21,6 +22,7 @@ export default function ParceiroDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [tab, setTab] = useState('dados');
+  const [editing, setEditing] = useState(false);
 
   const p = parceiroById(id);
   if (!p) return <EmptyState icon="briefcase" title="Parceiro não encontrado" action={<Button to="/parceiros">Voltar</Button>} />;
@@ -36,7 +38,12 @@ export default function ParceiroDetail() {
         crumbs={[{ label: 'Início', to: '/' }, { label: 'Parceiros', to: '/parceiros' }, { label: p.nomeFantasia }]}
         title={p.nomeFantasia}
         subtitle={`${p.razaoSocial} · ${cnpj(p.cnpj)} · ${p.cidade}/${p.uf}`}
-        actions={<Badge variant={p.status === 'Ativo' ? 'success' : 'neutral'}>{p.status}</Badge>}
+        actions={(
+          <>
+            <Button variant="secondary" icon="pencil" onClick={() => setEditing(true)}>Editar</Button>
+            <Badge variant={p.status === 'Ativo' ? 'success' : 'neutral'}>{p.status}</Badge>
+          </>
+        )}
       />
 
       <Tabs tabs={TABS} active={tab} onChange={setTab} />
@@ -125,6 +132,8 @@ export default function ParceiroDetail() {
           </Card>
         </>
       )}
+
+      {editing && <ParceiroFormModal parceiroId={p.id} onClose={() => setEditing(false)} />}
     </>
   );
 }

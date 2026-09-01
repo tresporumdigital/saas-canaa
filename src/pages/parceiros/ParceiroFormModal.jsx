@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Modal, Button, Input, Select, FieldRow } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
+import { parceiroById } from '../../mock/parceiros.js';
+import { money, percent, cnpj as fmtCnpj } from '../../lib/format.js';
 
 const TIPOS_PARCERIA = [
   'Translado e transporte', 'Ornamentação e flores', 'Sepultamento e jazigos', 'Cremação',
@@ -8,33 +10,48 @@ const TIPOS_PARCERIA = [
   'Fornecimento de urnas', 'Assistência 24h',
 ];
 
-// Pop-up de cadastro de novo parceiro comercial.
-export default function ParceiroFormModal({ onClose }) {
-  const { toast } = useToast();
+const isPercentual = (tipo) => tipo === 'Percentual' || tipo === 'Comissão de venda';
 
-  const [form, setForm] = useState({
-    razaoSocial: '', nomeFantasia: '', cnpj: '', tipoParceria: TIPOS_PARCERIA[0],
-    cidade: 'São Paulo', uf: 'SP', dadosBancarios: '',
-    tipoRemuneracao: 'Fixo por atendimento', valorRemuneracao: '',
-    contatoNome: '', contatoTelefone: '', contatoEmail: '',
-  });
+// Pop-up de cadastro/edição de parceiro comercial.
+export default function ParceiroFormModal({ parceiroId, onClose }) {
+  const { toast } = useToast();
+  const editing = Boolean(parceiroId);
+  const base = editing ? parceiroById(parceiroId) : null;
+  const contato = base?.contatos?.[0];
+
+  const [form, setForm] = useState(() => ({
+    razaoSocial: base?.razaoSocial || '',
+    nomeFantasia: base?.nomeFantasia || '',
+    cnpj: base ? fmtCnpj(base.cnpj) : '',
+    tipoParceria: base?.tipoParceria || TIPOS_PARCERIA[0],
+    cidade: base?.cidade || 'São Paulo',
+    uf: base?.uf || 'SP',
+    dadosBancarios: base?.dadosBancarios || '',
+    tipoRemuneracao: base?.acordo.tipo || 'Fixo por atendimento',
+    valorRemuneracao: base ? (isPercentual(base.acordo.tipo) ? percent(base.acordo.valor) : money(base.acordo.valor)) : '',
+    contatoNome: contato?.nome || '',
+    contatoTelefone: contato?.telefone || '',
+    contatoEmail: contato?.email || '',
+  }));
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const submit = (e) => {
     e.preventDefault();
-    toast('Parceiro cadastrado (simulação — sem persistência).');
+    toast(editing ? 'Parceiro atualizado (simulação — sem persistência).' : 'Parceiro cadastrado (simulação — sem persistência).');
     onClose();
   };
 
   return (
     <Modal
-      title="Novo parceiro"
+      title={editing ? `Editar ${base?.nomeFantasia}` : 'Novo parceiro'}
       onClose={onClose}
       wide
       footer={(
         <>
           <Button variant="secondary" type="button" onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" type="submit" form="parceiro-form">Cadastrar parceiro</Button>
+          <Button variant="primary" type="submit" form="parceiro-form">
+            {editing ? 'Salvar alterações' : 'Cadastrar parceiro'}
+          </Button>
         </>
       )}
     >
