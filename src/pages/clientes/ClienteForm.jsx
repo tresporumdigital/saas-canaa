@@ -48,7 +48,7 @@ export default function ClienteForm() {
         subtitle="Cadastro do titular. Dependentes, planos e documentos são gerenciados na ficha após salvar."
       />
 
-      <form onSubmit={submit}>
+      <form onSubmit={submit} className="stack" style={{ gap: 'var(--space-5)' }}>
         {duplicado && (
           <Alert variant="warning" title="CPF já cadastrado">
             O CPF {fmtCpf(cpfDigits)} pertence a <strong>{duplicado.nome}</strong>.{' '}
@@ -79,7 +79,7 @@ export default function ClienteForm() {
           </FieldRow>
         </Card>
 
-        <div className="row" style={{ justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
+        <div className="row" style={{ justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-2)' }}>
           <Button variant="secondary" type="button" onClick={() => navigate(-1)}>Cancelar</Button>
           <Button variant="primary" type="submit" disabled={Boolean(duplicado)}>{editing ? 'Salvar alterações' : 'Cadastrar cliente'}</Button>
         </div>
