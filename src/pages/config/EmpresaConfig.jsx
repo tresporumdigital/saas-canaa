@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
-  Card, DataTable, Badge, Button, DefList, Modal,
+  Card, DataTable, Badge, Button, DefList, Modal, Icon,
 } from '../../components/index.js';
-import { useToast } from '../../context/ToastContext.jsx';
 import { empresa, unidades } from '../../mock/sistema.js';
+import EmpresaFormModal from './EmpresaFormModal.jsx';
+import UnidadeFormModal from './UnidadeFormModal.jsx';
 
 const enderecoLinha = (e) =>
   `${e.logradouro}, ${e.numero}${e.complemento ? ` — ${e.complemento}` : ''} · ${e.bairro} · ${e.cidade}/${e.uf} · CEP ${e.cep}`;
 
 export default function EmpresaConfig() {
-  const { toast } = useToast();
   const [unidade, setUnidade] = useState(null);
+  const [editEmpresa, setEditEmpresa] = useState(false);
+  const [editUnidade, setEditUnidade] = useState(null);
 
   return (
     <>
@@ -19,7 +21,7 @@ export default function EmpresaConfig() {
         crumbs={[{ label: 'Início', to: '/' }, { label: 'Empresa e Unidades' }]}
         title="Empresa e Unidades"
         subtitle="Dados cadastrais da matriz e as unidades (filiais e escritórios) da Funerária Canaã."
-        actions={<Button variant="secondary" icon="pencil" onClick={() => toast('Edição dos dados da empresa (simulação).')}>Editar dados</Button>}
+        actions={<Button variant="secondary" icon="pencil" onClick={() => setEditEmpresa(true)}>Editar dados</Button>}
       />
 
       <Card title="Dados da empresa">
@@ -54,7 +56,20 @@ export default function EmpresaConfig() {
             { key: 'cidade', header: 'Cidade/UF', render: (r) => `${r.cidade}/${r.uf}` },
             { key: 'responsavel', header: 'Responsável', sortable: true },
             { key: 'telefone', header: 'Telefone' },
-            { key: 'status', header: 'Status', render: (r) => <Badge variant={r.status === 'Ativa' ? 'success' : 'neutral'}>{r.status}</Badge> },
+            { key: 'status', header: 'Status', render: (r) => (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <Badge variant={r.status === 'Ativa' ? 'success' : 'neutral'}>{r.status}</Badge>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  style={{ padding: 'var(--space-1)' }}
+                  aria-label={`Editar ${r.nome}`}
+                  onClick={(e) => { e.stopPropagation(); setEditUnidade(r); }}
+                >
+                  <Icon name="pencil" size={14} />
+                </button>
+              </span>
+            ) },
           ]}
         />
       </Card>
@@ -64,7 +79,12 @@ export default function EmpresaConfig() {
           title={unidade.nome}
           onClose={() => setUnidade(null)}
           wide
-          footer={<Button variant="secondary" type="button" onClick={() => setUnidade(null)}>Fechar</Button>}
+          footer={(
+            <>
+              <Button variant="secondary" type="button" icon="pencil" onClick={() => { const u = unidade; setUnidade(null); setEditUnidade(u); }}>Editar</Button>
+              <Button variant="secondary" type="button" onClick={() => setUnidade(null)}>Fechar</Button>
+            </>
+          )}
         >
           <DefList items={[
             { label: 'Tipo', value: <Badge variant={unidade.tipo === 'Matriz' ? 'info' : 'neutral'}>{unidade.tipo}</Badge> },
@@ -81,6 +101,9 @@ export default function EmpresaConfig() {
           ]} />
         </Modal>
       )}
+
+      {editEmpresa && <EmpresaFormModal empresa={empresa} onClose={() => setEditEmpresa(false)} />}
+      {editUnidade && <UnidadeFormModal unidade={editUnidade} onClose={() => setEditUnidade(null)} />}
     </>
   );
 }
