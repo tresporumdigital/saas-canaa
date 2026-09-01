@@ -73,6 +73,8 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
 - Ações de criar/editar/emitir **não persistem** — disparam um _toast_ de confirmação.
 - Nas listagens, o badge de status é clicável: abre os status pré-definidos daquela
   tela e troca o status da linha (só em memória, sem persistência).
+- Cadastro/edição de clientes, parceiros e registros de óbito abrem em pop-up sobre a
+  página atual (lista ou ficha), sem navegar para uma rota separada.
 - Autenticação é **mock** (sem backend); a sessão vive só no navegador.
 - Data de referência do protótipo: **27/08/2026**.
 - `design-system/`, `PRD.md` e `visual/` não são alterados por este frontend.
