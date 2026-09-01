@@ -21,14 +21,18 @@ export default function StatusMenu({ value, options = [], onChange, disabled, ti
     const b = btnRef.current?.getBoundingClientRect();
     if (!b) return;
     const width = 200;
-    const left = Math.min(b.left, window.innerWidth - width - 12);
-    const below = window.innerHeight - b.bottom;
-    const openUp = below < 240 && b.top > below;
+    const gap = 6;
+    const margin = 12;
+    const left = Math.min(b.left, window.innerWidth - width - margin);
+    const spaceBelow = window.innerHeight - b.bottom - margin;
+    const spaceAbove = b.top - margin;
+    const openUp = spaceBelow < 220 && spaceAbove > spaceBelow;
     setCoords({
-      left: Math.max(12, left),
-      top: openUp ? undefined : b.bottom + 6,
-      bottom: openUp ? window.innerHeight - b.top + 6 : undefined,
+      left: Math.max(margin, left),
+      top: openUp ? undefined : b.bottom + gap,
+      bottom: openUp ? window.innerHeight - b.top + gap : undefined,
       width,
+      maxHeight: Math.max(120, Math.min(320, (openUp ? spaceAbove : spaceBelow) - gap)),
     });
   }, []);
 
@@ -43,22 +47,26 @@ export default function StatusMenu({ value, options = [], onChange, disabled, ti
       close();
     };
     const onKey = (e) => e.key === 'Escape' && close();
-    // Reposiciona (não fecha) ao rolar a página ou o container, e ao redimensionar.
+    // Rolar a página/um container só reposiciona (nunca fecha); rolar dentro do menu é ignorado.
     let raf = 0;
     const reposition = () => {
       if (raf) return;
       raf = requestAnimationFrame(() => { raf = 0; place(); });
     };
+    const onScroll = (e) => {
+      if (listRef.current && listRef.current.contains(e.target)) return;
+      reposition();
+    };
     document.addEventListener('mousedown', onDoc);
     document.addEventListener('keydown', onKey);
     window.addEventListener('resize', reposition);
-    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('scroll', onScroll, true);
     return () => {
       if (raf) cancelAnimationFrame(raf);
       document.removeEventListener('mousedown', onDoc);
       document.removeEventListener('keydown', onKey);
       window.removeEventListener('resize', reposition);
-      window.removeEventListener('scroll', reposition, true);
+      window.removeEventListener('scroll', onScroll, true);
     };
   }, [open, close, place]);
 
@@ -93,7 +101,7 @@ export default function StatusMenu({ value, options = [], onChange, disabled, ti
           ref={listRef}
           className="status-menu-list"
           role="listbox"
-          style={{ left: coords.left, top: coords.top, bottom: coords.bottom, width: coords.width }}
+          style={{ left: coords.left, top: coords.top, bottom: coords.bottom, width: coords.width, maxHeight: coords.maxHeight }}
           onClick={(e) => e.stopPropagation()}
         >
           {choices.map((o) => (

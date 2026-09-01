@@ -113,15 +113,20 @@ export function Select({
   const place = () => {
     const b = btnRef.current?.getBoundingClientRect();
     if (!b) return;
-    const below = window.innerHeight - b.bottom;
-    const needed = Math.min(288, choices.length * 40 + 12);
-    const openUp = below < needed && b.top > below;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const gap = 6;
+    const margin = 12;
+    const spaceBelow = vh - b.bottom - margin;
+    const spaceAbove = b.top - margin;
+    const openUp = spaceBelow < 220 && spaceAbove > spaceBelow;
+    const maxHeight = Math.max(120, Math.min(360, (openUp ? spaceAbove : spaceBelow) - gap));
     setCoords({
-      left: b.left,
+      left: Math.max(margin, Math.min(b.left, vw - b.width - margin)),
       width: b.width,
-      top: openUp ? undefined : b.bottom + 6,
-      bottom: openUp ? window.innerHeight - b.top + 6 : undefined,
-      maxHeight: Math.max(140, (openUp ? b.top : below) - 16),
+      top: openUp ? undefined : b.bottom + gap,
+      bottom: openUp ? vh - b.top + gap : undefined,
+      maxHeight,
     });
   };
 
@@ -134,22 +139,27 @@ export function Select({
       close();
     };
     const onKey = (e) => e.key === 'Escape' && close();
-    // Reposiciona (não fecha) ao rolar a página ou o container, e ao redimensionar.
+    // Rolar a página ou um container só reposiciona (nunca fecha). Rolar dentro do
+    // próprio menu é ignorado para não causar reflow.
     let raf = 0;
     const reposition = () => {
       if (raf) return;
       raf = requestAnimationFrame(() => { raf = 0; place(); });
     };
+    const onScroll = (e) => {
+      if (listRef.current && listRef.current.contains(e.target)) return;
+      reposition();
+    };
     document.addEventListener('mousedown', onDoc);
     document.addEventListener('keydown', onKey);
     window.addEventListener('resize', reposition);
-    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('scroll', onScroll, true);
     return () => {
       if (raf) cancelAnimationFrame(raf);
       document.removeEventListener('mousedown', onDoc);
       document.removeEventListener('keydown', onKey);
       window.removeEventListener('resize', reposition);
-      window.removeEventListener('scroll', reposition, true);
+      window.removeEventListener('scroll', onScroll, true);
     };
   }, [open]);
 
