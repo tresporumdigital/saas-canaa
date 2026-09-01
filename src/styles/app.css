@@ -350,7 +350,7 @@ button.stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2p
 .table-toolbar .select-control { border-radius: var(--radius-pill); padding: var(--space-2) var(--space-4); }
 
 .select-menu {
-  position: fixed; z-index: 90; background: var(--color-bg-raised);
+  position: fixed; z-index: 110; background: var(--color-bg-raised);
   border: 1px solid var(--color-border); border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg); padding: var(--space-2); overflow-y: auto;
   display: flex; flex-direction: column; gap: 2px;

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Icon from '../atoms/Icon.jsx';
 
 let uid = 0;
@@ -170,7 +171,7 @@ export function Select({
     </button>
   );
 
-  const menu = open && coords && (
+  const menu = open && coords ? createPortal(
     <div
       ref={listRef}
       className="select-menu"
@@ -190,8 +191,9 @@ export function Select({
           {c.value === current ? <Icon name="check" size={14} /> : null}
         </button>
       ))}
-    </div>
-  );
+    </div>,
+    document.body,
+  ) : null;
 
   if (!label) {
     return (
