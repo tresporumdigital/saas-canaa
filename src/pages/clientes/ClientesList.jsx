@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
 import { Card, DataTable, StatusMenu, Button } from '../../components/index.js';
@@ -9,12 +9,14 @@ import { planoById } from '../../mock/planos.js';
 import { contratoById } from '../../mock/contratos.js';
 import { cpf, phone, date } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
+import ClienteFormModal from './ClienteFormModal.jsx';
 
 export default function ClientesList() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [params] = useSearchParams();
   const q = params.get('q') || '';
+  const [showNew, setShowNew] = useState(false);
 
   const base = useMemo(() => clientes.map((c) => {
     const contratos = contratosDoCliente(c.id);
@@ -62,7 +64,7 @@ export default function ClientesList() {
         crumbs={[{ label: 'Início', to: '/' }, { label: 'Clientes' }]}
         title="Clientes"
         subtitle="Ficha completa com histórico de planos, atendimentos e equipamentos. Busca por nome, CPF, telefone ou contrato."
-        actions={<Button variant="primary" icon="plus" to="/clientes/novo">Novo cliente</Button>}
+        actions={<Button variant="primary" icon="plus" onClick={() => setShowNew(true)}>Novo cliente</Button>}
       />
       <Card>
         <DataTable
@@ -75,6 +77,8 @@ export default function ClientesList() {
           initialQuery={q}
         />
       </Card>
+
+      {showNew && <ClienteFormModal onClose={() => setShowNew(false)} />}
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
 import { Card, DataTable, Badge, StatusMenu, Button } from '../../components/index.js';
@@ -6,11 +7,13 @@ import useRowStatus from '../../hooks/useRowStatus.js';
 import { obitos } from '../../mock/index.js';
 import { date, dateTime, money } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
+import ObitoFormModal from './ObitoFormModal.jsx';
 
 export default function ObitosList() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [rows, setStatus] = useRowStatus(obitos);
+  const [showNew, setShowNew] = useState(false);
 
   const columns = [
     { key: 'id', header: 'Atendimento', sortable: true },
@@ -41,7 +44,7 @@ export default function ObitosList() {
         crumbs={[{ label: 'Início', to: '/' }, { label: 'Registro de Óbito' }]}
         title="Registro de Óbito"
         subtitle="Atendimentos funerários vinculados ao cadastro do cliente e ao plano contratado."
-        actions={<Button variant="primary" icon="plus" to="/obitos/novo">Registrar óbito</Button>}
+        actions={<Button variant="primary" icon="plus" onClick={() => setShowNew(true)}>Registrar óbito</Button>}
       />
       <Card>
         <DataTable
@@ -53,6 +56,8 @@ export default function ObitosList() {
           pageSize={10}
         />
       </Card>
+
+      {showNew && <ObitoFormModal onClose={() => setShowNew(false)} />}
     </>
   );
 }

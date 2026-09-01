@@ -1,17 +1,13 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { PageHeader } from '../../components/index.js';
-import {
-  Card, Button, Input, Select, Textarea, FieldRow, CoverageBanner, Alert, Checkbox,
-} from '../../components/index.js';
+import { Modal, Button, Input, Select, Textarea, FieldRow, CoverageBanner, Alert, Checkbox, Card } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { clientes } from '../../mock/clientes.js';
 import { contratosDoCliente } from '../../mock/contratos.js';
 import { planoById } from '../../mock/planos.js';
 import { parceiros } from '../../mock/parceiros.js';
 
-export default function ObitoForm() {
-  const navigate = useNavigate();
+// Pop-up de registro de novo atendimento de óbito.
+export default function ObitoFormModal({ onClose }) {
   const { toast } = useToast();
 
   const [tipo, setTipo] = useState('Titular');
@@ -45,18 +41,23 @@ export default function ObitoForm() {
   const submit = (e) => {
     e.preventDefault();
     toast(`Óbito registrado e ${parceirosSel.length} guia(s) emitida(s) sem redigitação (simulação).`);
-    navigate('/obitos');
+    onClose();
   };
 
   return (
-    <>
-      <PageHeader
-        crumbs={[{ label: 'Início', to: '/' }, { label: 'Registro de Óbito', to: '/obitos' }, { label: 'Novo registro' }]}
-        title="Registrar óbito"
-        subtitle="Ao vincular um cliente com plano, o sistema informa em tela se há cobertura, carência pendente ou inadimplência antes de prosseguir."
-      />
-      <form onSubmit={submit}>
-        <Card title="Vínculo">
+    <Modal
+      title="Registrar óbito"
+      onClose={onClose}
+      wide
+      footer={(
+        <>
+          <Button variant="secondary" type="button" onClick={onClose}>Cancelar</Button>
+          <Button variant="primary" type="submit" form="obito-form">Registrar e emitir guias</Button>
+        </>
+      )}
+    >
+      <form id="obito-form" onSubmit={submit} className="stack" style={{ gap: 'var(--space-5)' }}>
+        <div>
           <FieldRow>
             <Select label="Tipo de atendimento" value={tipo} onChange={(e) => setTipo(e.target.value)}
               options={['Titular', 'Dependente', 'Particular']} />
@@ -71,16 +72,17 @@ export default function ObitoForm() {
           {tipo === 'Particular' ? (
             <Alert variant="warning" title="Atendimento particular">Todos os serviços serão cobrados à parte. Nenhuma validação de cobertura se aplica.</Alert>
           ) : checks ? (
-            <Card className="anim-fade-up" style={{ background: 'var(--color-bg-sunken)' }}>
+            <Card className="anim-fade-up" style={{ background: 'var(--color-bg-sunken)', marginTop: 'var(--space-4)' }}>
               <div className="card-title">Cobertura em tempo real</div>
               <CoverageBanner checks={checks} />
             </Card>
           ) : clienteId ? (
             <Alert variant="info">Cliente sem contrato de plano — o atendimento seguirá como particular.</Alert>
           ) : null}
-        </Card>
+        </div>
 
-        <Card title="Dados do falecido">
+        <div>
+          <div className="card-title">Dados do falecido</div>
           <FieldRow>
             <Input label="Nome do falecido" value={form.falecido} onChange={set('falecido')} required />
             <Input label="Data/hora do óbito" type="datetime-local" value={form.obitoEm} onChange={set('obitoEm')} />
@@ -88,17 +90,19 @@ export default function ObitoForm() {
             <Input label="Causa declarada" value={form.causa} onChange={set('causa')} />
             <Input label="Nº da declaração de óbito" value={form.numeroDO} onChange={set('numeroDO')} />
           </FieldRow>
-        </Card>
+        </div>
 
-        <Card title="Solicitante">
+        <div>
+          <div className="card-title">Solicitante</div>
           <FieldRow>
             <Input label="Nome do responsável" value={form.solicitante} onChange={set('solicitante')} required />
             <Input label="Parentesco" value={form.parentesco} onChange={set('parentesco')} />
             <Input label="Telefone" value={form.telefone} onChange={set('telefone')} />
           </FieldRow>
-        </Card>
+        </div>
 
-        <Card title="Acionar parceiros">
+        <div>
+          <div className="card-title">Acionar parceiros</div>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-3)' }}>
             Os parceiros selecionados recebem uma guia gerada automaticamente com os dados deste atendimento.
           </p>
@@ -107,17 +111,10 @@ export default function ObitoForm() {
               <Checkbox key={p.id} label={`${p.nomeFantasia} — ${p.tipoParceria}`} checked={parceirosSel.includes(p.id)} onChange={() => toggleParceiro(p.id)} />
             ))}
           </div>
-        </Card>
-
-        <Card>
-          <Textarea label="Observações do atendimento" placeholder="Detalhes adicionais…" />
-        </Card>
-
-        <div className="row" style={{ justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
-          <Button variant="secondary" type="button" onClick={() => navigate(-1)}>Cancelar</Button>
-          <Button variant="primary" type="submit">Registrar e emitir guias</Button>
         </div>
+
+        <Textarea label="Observações do atendimento" placeholder="Detalhes adicionais…" />
       </form>
-    </>
+    </Modal>
   );
 }

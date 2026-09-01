@@ -6,12 +6,10 @@ import AuthPage from './pages/auth/AuthPage.jsx';
 import Dashboard from './pages/dashboard/Dashboard.jsx';
 import ClientesList from './pages/clientes/ClientesList.jsx';
 import ClienteDetail from './pages/clientes/ClienteDetail.jsx';
-import ClienteForm from './pages/clientes/ClienteForm.jsx';
 import ParceirosList from './pages/parceiros/ParceirosList.jsx';
 import ParceiroDetail from './pages/parceiros/ParceiroDetail.jsx';
 import ObitosList from './pages/obitos/ObitosList.jsx';
 import ObitoDetail from './pages/obitos/ObitoDetail.jsx';
-import ObitoForm from './pages/obitos/ObitoForm.jsx';
 import GuiasList from './pages/guias/GuiasList.jsx';
 import GuiaDetail from './pages/guias/GuiaDetail.jsx';
 import PlanosHome from './pages/planos/PlanosHome.jsx';
@@ -47,15 +45,12 @@ export default function App() {
         <Route index element={<Dashboard />} />
 
         <Route path="clientes" element={<ClientesList />} />
-        <Route path="clientes/novo" element={<ClienteForm />} />
         <Route path="clientes/:id" element={<ClienteDetail />} />
-        <Route path="clientes/:id/editar" element={<ClienteForm />} />
 
         <Route path="parceiros" element={<ParceirosList />} />
         <Route path="parceiros/:id" element={<ParceiroDetail />} />
 
         <Route path="obitos" element={<ObitosList />} />
-        <Route path="obitos/novo" element={<ObitoForm />} />
         <Route path="obitos/:id" element={<ObitoDetail />} />
 
         <Route path="guias" element={<GuiasList />} />

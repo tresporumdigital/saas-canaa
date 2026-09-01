@@ -14,6 +14,7 @@ import { carnesDoContrato } from '../../mock/carnes.js';
 import { notasFiscais } from '../../mock/notasFiscais.js';
 import { cpf, phone, date, dateTime, money } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
+import ClienteFormModal from './ClienteFormModal.jsx';
 
 const TABS = [
   { id: 'geral', label: 'Visão geral' },
@@ -30,6 +31,7 @@ export default function ClienteDetail() {
   const { toast } = useToast();
   const [tab, setTab] = useState('geral');
   const [confirmInativar, setConfirmInativar] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const cliente = clienteById(id);
   if (!cliente) {
@@ -49,7 +51,7 @@ export default function ClienteDetail() {
         subtitle={`${cpf(cliente.cpf)} · ${phone(cliente.telefone)} · ${cliente.email}`}
         actions={
           <>
-            <Button variant="secondary" icon="pencil" to={`/clientes/${cliente.id}/editar`}>Editar</Button>
+            <Button variant="secondary" icon="pencil" onClick={() => setEditing(true)}>Editar</Button>
             <Button variant="ghost" onClick={() => setConfirmInativar(true)} disabled={cliente.status === 'Inativo'}>
               {cliente.status === 'Inativo' ? 'Inativo' : 'Inativar cadastro'}
             </Button>
@@ -237,6 +239,8 @@ export default function ClienteDetail() {
           onClose={() => setConfirmInativar(false)}
         />
       )}
+
+      {editing && <ClienteFormModal clienteId={cliente.id} onClose={() => setEditing(false)} />}
     </>
   );
 }

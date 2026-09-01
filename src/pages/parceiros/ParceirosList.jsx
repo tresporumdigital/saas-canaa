@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
 import { Card, DataTable, StatusMenu, Button } from '../../components/index.js';
@@ -8,12 +8,14 @@ import { parceiros } from '../../mock/parceiros.js';
 import { guiasDoParceiro } from '../../mock/guias.js';
 import { cnpj } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
+import ParceiroFormModal from './ParceiroFormModal.jsx';
 
 export default function ParceirosList() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const base = useMemo(() => parceiros.map((p) => ({ ...p, guias: guiasDoParceiro(p.id).length })), []);
   const [rows, setStatus] = useRowStatus(base);
+  const [showNew, setShowNew] = useState(false);
 
   return (
     <>
@@ -21,7 +23,7 @@ export default function ParceirosList() {
         crumbs={[{ label: 'Início', to: '/' }, { label: 'Parceiros' }]}
         title="Parceiros comerciais"
         subtitle="Contatos, acordos comerciais e histórico completo de atendimentos realizados por cada parceiro."
-        actions={<Button variant="primary" icon="plus" onClick={() => navigate('/parceiros')}>Novo parceiro</Button>}
+        actions={<Button variant="primary" icon="plus" onClick={() => setShowNew(true)}>Novo parceiro</Button>}
       />
       <Card>
         <DataTable
@@ -50,6 +52,8 @@ export default function ParceirosList() {
           ]}
         />
       </Card>
+
+      {showNew && <ParceiroFormModal onClose={() => setShowNew(false)} />}
     </>
   );
 }
