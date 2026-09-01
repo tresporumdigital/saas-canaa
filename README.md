@@ -58,7 +58,7 @@ npm run preview  # serve o build
 |---|---|
 | **Núcleo** | Painel, Clientes, Parceiros, Registro de Óbito, Guias de Atendimento, Backups |
 | **Receita** | Planos e contratos, Gerador de Carnês, Pagamento Integrado, Controle Financeiro |
-| **Operação** | Empréstimo de Equipamentos, Vendas de Equipamentos, Notas Fiscais |
+| **Operação** | Empréstimo de Equipamentos, Vendas de Equipamentos, Cadastro de Equipamentos, Notas Fiscais |
 | **Expansão** | Leads do Site, Portal do Parceiro |
 | **Config** | Usuários, Perfis e Permissões, Parâmetros |
 
