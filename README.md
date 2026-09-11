@@ -81,6 +81,11 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
   é bem-sucedida e destravam para preenchimento manual só se o CEP não for encontrado.
 - Cadastro de cliente é um assistente de 3 pop-ups (titular → dependentes → contrato); o
   contrato ainda não tem modelo definido, então essa etapa mostra um aviso no lugar do PDF.
+- Registrar óbito é um assistente de 4 pop-ups (tipo/falecido → serviços → nota de
+  falecimento → nota fiscal). Para atendimento "Plano", busca o contrato pelo titular e
+  deixa escolher o titular ou um dependente como a pessoa falecida, puxando os dados.
+  A nota de falecimento é gerada como imagem (canvas, com a foto opcional) e pode ser
+  baixada; a nota fiscal pode ficar para depois.
 - Em Guias de Atendimento, "Gerar guia" abre um pop-up para escolher cliente + parceiro
   e cria a guia na lista (só em memória).
 - Autenticação é **mock** (sem backend); a sessão vive só no navegador.

@@ -64,6 +64,22 @@ export function numberToMoneyInput(n) {
   return maskMoney(String(Math.round(Number(n || 0) * 100)));
 }
 
+// Máscara de percentual, mesma lógica "de calculadora" da máscara de dinheiro.
+export function maskPercent(v) {
+  const digits = String(v || '').replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  const cents = digits === '' ? 0 : Number(digits);
+  return `${(cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+}
+
+export function percentToNumber(v) {
+  const digits = String(v || '').replace(/\D/g, '');
+  return digits === '' ? 0 : Number(digits) / 100;
+}
+
+export function numberToPercentInput(n) {
+  return maskPercent(String(Math.round(Number(n || 0) * 100)));
+}
+
 export function isValidEmail(v) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || '').trim());
 }
