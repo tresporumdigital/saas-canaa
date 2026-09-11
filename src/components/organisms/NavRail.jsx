@@ -7,7 +7,7 @@ export default function NavRail({ groups, activeGroupId, onPickGroup }) {
   return (
     <nav className="nav-rail" aria-label="Grupos de módulos">
       <div className="logo-mark"><Icon name="check-circle" size={20} /></div>
-      {groups.filter((g) => g.id !== 'config').map((g) => (
+      {groups.map((g) => (
         <button
           key={g.id}
           className={`rail-btn ${activeGroupId === g.id ? 'active' : ''}`}
@@ -23,17 +23,6 @@ export default function NavRail({ groups, activeGroupId, onPickGroup }) {
         <Icon name="bell" />
         <span className="dot-badge" />
       </button>
-      {groups.filter((g) => g.id === 'config').map((g) => (
-        <button
-          key={g.id}
-          className={`rail-btn ${activeGroupId === g.id ? 'active' : ''}`}
-          onClick={() => onPickGroup(g)}
-          title={g.label}
-          aria-label={g.label}
-        >
-          <Icon name={g.icon} />
-        </button>
-      ))}
     </nav>
   );
 }

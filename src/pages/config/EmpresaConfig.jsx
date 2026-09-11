@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
-  Card, DataTable, Badge, Button, DefList, Modal, Icon,
+  Card, DataTable, Badge, Button, DefList, Modal, Icon, Avatar,
 } from '../../components/index.js';
-import { empresa, unidades } from '../../mock/sistema.js';
-import EmpresaFormModal from './EmpresaFormModal.jsx';
+import { unidades } from '../../mock/sistema.js';
 import UnidadeFormModal from './UnidadeFormModal.jsx';
 
 const enderecoLinha = (e) =>
@@ -12,7 +11,6 @@ const enderecoLinha = (e) =>
 
 export default function EmpresaConfig() {
   const [unidade, setUnidade] = useState(null);
-  const [editEmpresa, setEditEmpresa] = useState(false);
   const [editUnidade, setEditUnidade] = useState(null);
   const [novaUnidade, setNovaUnidade] = useState(false);
   const [novasUnidades, setNovasUnidades] = useState([]);
@@ -21,29 +19,10 @@ export default function EmpresaConfig() {
   return (
     <>
       <PageHeader
-        crumbs={[{ label: 'Início', to: '/' }, { label: 'Empresa e Unidades' }]}
-        title="Empresa e Unidades"
-        subtitle="Dados cadastrais da matriz e as unidades (filiais e escritórios) da Funerária Canaã."
-        actions={<Button variant="secondary" icon="pencil" onClick={() => setEditEmpresa(true)}>Editar dados</Button>}
+        crumbs={[{ label: 'Início', to: '/' }, { label: 'Unidades' }]}
+        title="Unidades"
+        subtitle="Filiais e escritórios da Funerária Canaã."
       />
-
-      <Card title="Dados da empresa">
-        <DefList items={[
-          { label: 'Razão social', value: empresa.razaoSocial },
-          { label: 'Nome fantasia', value: empresa.nomeFantasia },
-          { label: 'CNPJ', value: empresa.cnpj },
-          { label: 'Inscrição estadual', value: empresa.inscricaoEstadual },
-          { label: 'Inscrição municipal', value: empresa.inscricaoMunicipal },
-          { label: 'Regime tributário', value: empresa.regimeTributario },
-          { label: 'CNAE principal', value: empresa.cnae },
-          { label: 'Endereço', value: enderecoLinha(empresa.endereco) },
-          { label: 'Telefone', value: empresa.telefone },
-          { label: 'E-mail', value: empresa.email },
-          { label: 'Site', value: empresa.site },
-          { label: 'Responsável legal', value: empresa.responsavelLegal },
-          { label: 'Contabilidade', value: empresa.contador },
-        ]} />
-      </Card>
 
       <Card title={`Unidades (${rows.length})`}>
         <DataTable
@@ -54,6 +33,7 @@ export default function EmpresaConfig() {
           pageSize={10}
           toolbarExtra={<Button variant="primary" icon="plus" onClick={() => setNovaUnidade(true)}>Nova unidade</Button>}
           columns={[
+            { key: 'foto', header: '', render: (r) => <Avatar name={r.nome} src={r.foto} size="sm" /> },
             { key: 'nome', header: 'Unidade', sortable: true },
             { key: 'tipo', header: 'Tipo', sortable: true, render: (r) => <Badge variant={r.tipo === 'Matriz' ? 'info' : 'neutral'}>{r.tipo}</Badge> },
             { key: 'cnpj', header: 'CNPJ' },
@@ -90,6 +70,9 @@ export default function EmpresaConfig() {
             </>
           )}
         >
+          <div className="row" style={{ marginBottom: 'var(--space-4)' }}>
+            <Avatar name={unidade.nome} src={unidade.foto} size="lg" />
+          </div>
           <DefList items={[
             { label: 'Tipo', value: <Badge variant={unidade.tipo === 'Matriz' ? 'info' : 'neutral'}>{unidade.tipo}</Badge> },
             { label: 'Status', value: <Badge variant={unidade.status === 'Ativa' ? 'success' : 'neutral'}>{unidade.status}</Badge> },
@@ -106,7 +89,6 @@ export default function EmpresaConfig() {
         </Modal>
       )}
 
-      {editEmpresa && <EmpresaFormModal empresa={empresa} onClose={() => setEditEmpresa(false)} />}
       {editUnidade && <UnidadeFormModal unidade={editUnidade} onClose={() => setEditUnidade(null)} />}
       {novaUnidade && (
         <UnidadeFormModal

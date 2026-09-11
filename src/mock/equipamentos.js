@@ -2,16 +2,16 @@
 // RF-40..RF-56.
 
 export const equipamentosProduto = [
-  { id: 'EQ-CDR', descricao: 'Cadeira de rodas dobrável', categoria: 'Mobilidade', precoCusto: 420, precoVenda: 890, estoque: 6, estoqueMinimo: 4, locavel: true },
-  { id: 'EQ-CMH', descricao: 'Cama hospitalar manual 2 manivelas', categoria: 'Leito', precoCusto: 1650, precoVenda: 3290, estoque: 2, estoqueMinimo: 2, locavel: true },
-  { id: 'EQ-CLP', descricao: 'Colchão pneumático antiescaras', categoria: 'Leito', precoCusto: 240, precoVenda: 520, estoque: 3, estoqueMinimo: 3, locavel: true },
-  { id: 'EQ-AND', descricao: 'Andador alumínio dobrável', categoria: 'Mobilidade', precoCusto: 130, precoVenda: 320, estoque: 9, estoqueMinimo: 4, locavel: true },
-  { id: 'EQ-CBN', descricao: 'Cadeira de banho', categoria: 'Higiene', precoCusto: 180, precoVenda: 410, estoque: 4, estoqueMinimo: 3, locavel: true },
-  { id: 'EQ-MUL', descricao: 'Par de muletas axilares', categoria: 'Mobilidade', precoCusto: 60, precoVenda: 160, estoque: 12, estoqueMinimo: 6, locavel: false },
-  { id: 'EQ-OXI', descricao: 'Concentrador de oxigênio 5L', categoria: 'Respiratório', precoCusto: 2100, precoVenda: 4200, estoque: 1, estoqueMinimo: 2, locavel: true },
-  { id: 'EQ-NEB', descricao: 'Nebulizador ultrassônico', categoria: 'Respiratório', precoCusto: 95, precoVenda: 240, estoque: 7, estoqueMinimo: 4, locavel: false },
-  { id: 'EQ-SPS', descricao: 'Suporte de soro com rodízios', categoria: 'Leito', precoCusto: 110, precoVenda: 260, estoque: 5, estoqueMinimo: 3, locavel: true },
-  { id: 'EQ-BEN', descricao: 'Bengala ortopédica regulável', categoria: 'Mobilidade', precoCusto: 25, precoVenda: 70, estoque: 15, estoqueMinimo: 8, locavel: false },
+  { id: 'EQ-CDR', descricao: 'Cadeira de rodas dobrável', categoria: 'Mobilidade', precoCusto: 420, precoVenda: 890, estoque: 6, estoqueMinimo: 4, locavel: true, foto: null },
+  { id: 'EQ-CMH', descricao: 'Cama hospitalar manual 2 manivelas', categoria: 'Leito', precoCusto: 1650, precoVenda: 3290, estoque: 2, estoqueMinimo: 2, locavel: true, foto: null },
+  { id: 'EQ-CLP', descricao: 'Colchão pneumático antiescaras', categoria: 'Leito', precoCusto: 240, precoVenda: 520, estoque: 3, estoqueMinimo: 3, locavel: true, foto: null },
+  { id: 'EQ-AND', descricao: 'Andador alumínio dobrável', categoria: 'Mobilidade', precoCusto: 130, precoVenda: 320, estoque: 9, estoqueMinimo: 4, locavel: true, foto: null },
+  { id: 'EQ-CBN', descricao: 'Cadeira de banho', categoria: 'Higiene', precoCusto: 180, precoVenda: 410, estoque: 4, estoqueMinimo: 3, locavel: true, foto: null },
+  { id: 'EQ-MUL', descricao: 'Par de muletas axilares', categoria: 'Mobilidade', precoCusto: 60, precoVenda: 160, estoque: 12, estoqueMinimo: 6, locavel: false, foto: null },
+  { id: 'EQ-OXI', descricao: 'Concentrador de oxigênio 5L', categoria: 'Respiratório', precoCusto: 2100, precoVenda: 4200, estoque: 1, estoqueMinimo: 2, locavel: true, foto: null },
+  { id: 'EQ-NEB', descricao: 'Nebulizador ultrassônico', categoria: 'Respiratório', precoCusto: 95, precoVenda: 240, estoque: 7, estoqueMinimo: 4, locavel: false, foto: null },
+  { id: 'EQ-SPS', descricao: 'Suporte de soro com rodízios', categoria: 'Leito', precoCusto: 110, precoVenda: 260, estoque: 5, estoqueMinimo: 3, locavel: true, foto: null },
+  { id: 'EQ-BEN', descricao: 'Bengala ortopédica regulável', categoria: 'Mobilidade', precoCusto: 25, precoVenda: 70, estoque: 15, estoqueMinimo: 8, locavel: false, foto: null },
 ];
 
 export const equipamentoProdutoById = (id) => equipamentosProduto.find((p) => p.id === id);

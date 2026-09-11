@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import { Card, Tabs, DataTable, Badge, StatusMenu, Button } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -6,6 +6,7 @@ import useRowStatus from '../../hooks/useRowStatus.js';
 import { usuarios, perfisPermissoes, parametros } from '../../mock/sistema.js';
 import { dateTime } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
+import UsuarioFormModal from './UsuarioFormModal.jsx';
 
 const TABS = [
   { id: 'usuarios', label: 'Usuários' },
@@ -16,7 +17,10 @@ const TABS = [
 export default function Configuracoes() {
   const { toast } = useToast();
   const [tab, setTab] = useState('usuarios');
-  const [usuariosRows, setUsuarioStatus] = useRowStatus(usuarios);
+  const [novoUsuario, setNovoUsuario] = useState(false);
+  const [novosUsuarios, setNovosUsuarios] = useState([]);
+  const fonteUsuarios = useMemo(() => [...novosUsuarios, ...usuarios], [novosUsuarios]);
+  const [usuariosRows, setUsuarioStatus] = useRowStatus(fonteUsuarios);
 
   return (
     <>
@@ -24,7 +28,7 @@ export default function Configuracoes() {
         crumbs={[{ label: 'Início', to: '/' }, { label: 'Usuários' }]}
         title="Usuários"
         subtitle="Controle de acesso, matriz de permissões por perfil e parâmetros de negócio do sistema."
-        actions={<Button variant="primary" icon="plus" onClick={() => toast('Formulário de novo usuário (simulação).')}>Novo usuário</Button>}
+        actions={<Button variant="primary" icon="plus" onClick={() => setNovoUsuario(true)}>Novo usuário</Button>}
       />
 
       <Tabs tabs={TABS} active={tab} onChange={setTab} />
@@ -92,6 +96,10 @@ export default function Configuracoes() {
             </tbody>
           </table>
         </Card>
+      )}
+
+      {novoUsuario && (
+        <UsuarioFormModal onClose={() => setNovoUsuario(false)} onCreate={(u) => setNovosUsuarios((l) => [u, ...l])} />
       )}
     </>
   );

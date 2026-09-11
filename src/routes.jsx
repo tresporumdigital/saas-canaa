@@ -14,12 +14,11 @@ export const NAV = [
       { path: '/parceiros', label: 'Parceiros', icon: 'briefcase', roles: ['admin', 'atendente', 'financeiro'] },
       { path: '/obitos', label: 'Registro de Óbito', icon: 'doc', roles: ['admin', 'atendente'] },
       { path: '/guias', label: 'Guias de Atendimento', icon: 'send', roles: ['admin', 'atendente', 'financeiro'] },
-      { path: '/backups', label: 'Backups', icon: 'database', roles: ['admin'] },
     ],
   },
   {
     id: 'receita',
-    label: 'Receita',
+    label: 'Financeiro',
     icon: 'wallet',
     modules: [
       { path: '/planos', label: 'Planos', icon: 'shield', roles: ['admin', 'atendente', 'financeiro'] },
@@ -53,8 +52,10 @@ export const NAV = [
     label: 'Configurações',
     icon: 'gear',
     modules: [
+      { path: '/empresa', label: 'Unidades', icon: 'briefcase', roles: ['admin'] },
+      { path: '/configuracoes/planos', label: 'Planos', icon: 'shield', roles: ['admin'] },
+      { path: '/backups', label: 'Backup', icon: 'database', roles: ['admin'] },
       { path: '/configuracoes', label: 'Usuários', icon: 'users', end: true, roles: ['admin'] },
-      { path: '/empresa', label: 'Empresa e Unidades', icon: 'briefcase', roles: ['admin'] },
     ],
   },
 ];

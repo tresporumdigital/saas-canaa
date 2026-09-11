@@ -28,6 +28,7 @@ import PortalParceiro from './pages/portal/PortalParceiro.jsx';
 import Backups from './pages/backups/Backups.jsx';
 import Configuracoes from './pages/config/Configuracoes.jsx';
 import EmpresaConfig from './pages/config/EmpresaConfig.jsx';
+import PlanosConfig from './pages/config/PlanosConfig.jsx';
 import NotFound from './pages/NotFound.jsx';
 
 export default function App() {
@@ -76,6 +77,7 @@ export default function App() {
         <Route path="portal-parceiro" element={<PortalParceiro />} />
         <Route path="backups" element={<Backups />} />
         <Route path="configuracoes" element={<Configuracoes />} />
+        <Route path="configuracoes/planos" element={<PlanosConfig />} />
         <Route path="empresa" element={<EmpresaConfig />} />
 
         <Route path="404" element={<NotFound />} />

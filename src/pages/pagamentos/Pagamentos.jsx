@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
-  Card, Tabs, DataTable, StatusMenu, Button, StatCard, Alert, Modal, Textarea, Input, DefList, Drawer,
+  Card, Tabs, DataTable, StatusMenu, Button, StatCard, Alert, Modal, Textarea, Input, Select, DefList, Drawer,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import useRowStatus from '../../hooks/useRowStatus.js';
 import { pagamentos, filaExcecoes, logApiBancaria } from '../../mock/pagamentos.js';
-import { money, dateTime, number } from '../../lib/format.js';
+import { clientes } from '../../mock/clientes.js';
+import { contratosDoCliente, parcelasDoContrato } from '../../mock/contratos.js';
+import { money, dateTime, date, number } from '../../lib/format.js';
+import { maskMoney, moneyToNumber, numberToMoneyInput } from '../../lib/masks.js';
 import { STATUS_SETS } from '../../lib/status.js';
 
 const TABS = [
@@ -18,13 +21,53 @@ const TABS = [
 export default function Pagamentos() {
   const { toast } = useToast();
   const [tab, setTab] = useState('conciliacao');
-  const [baixa, setBaixa] = useState(false);
   const [pagamentosRows, setPagamentoStatus] = useRowStatus(pagamentos);
   const [excecao, setExcecao] = useState(null);
+  const [pagamentoDetalhe, setPagamentoDetalhe] = useState(null);
+
+  const [baixa, setBaixa] = useState(false);
+  const [clienteBaixaId, setClienteBaixaId] = useState('');
+  const [contratoBaixa, setContratoBaixa] = useState(null);
+  const [buscouBaixa, setBuscouBaixa] = useState(false);
+  const [parcelaId, setParcelaId] = useState('');
+  const [valorBaixa, setValorBaixa] = useState('');
+  const [dataBaixa, setDataBaixa] = useState('2026-08-27');
+  const [justificativaBaixa, setJustificativaBaixa] = useState('');
 
   const excecoes = filaExcecoes();
   const conciliados = pagamentos.filter((p) => p.status === 'Conciliado');
   const totalConciliado = conciliados.reduce((s, p) => s + p.valor, 0);
+
+  const clienteBaixa = clientes.find((c) => c.id === clienteBaixaId);
+  const parcelas = contratoBaixa ? parcelasDoContrato(contratoBaixa) : [];
+  const parcelaSelecionada = parcelas.find((p) => p.id === parcelaId);
+
+  const fecharBaixa = () => {
+    setBaixa(false);
+    setClienteBaixaId(''); setContratoBaixa(null); setBuscouBaixa(false);
+    setParcelaId(''); setValorBaixa(''); setDataBaixa('2026-08-27'); setJustificativaBaixa('');
+  };
+
+  const buscarContratoBaixa = () => {
+    const c = clienteBaixa ? contratosDoCliente(clienteBaixa.id)[0] : null;
+    setContratoBaixa(c || null);
+    setBuscouBaixa(true);
+    setParcelaId(''); setValorBaixa('');
+  };
+
+  const selecionarParcela = (id) => {
+    setParcelaId(id);
+    const p = parcelas.find((x) => x.id === id);
+    if (p) setValorBaixa(numberToMoneyInput(p.valor));
+  };
+
+  const baixaValida = Boolean(parcelaSelecionada) && moneyToNumber(valorBaixa) > 0 && dataBaixa && justificativaBaixa.trim().length >= 10;
+
+  const confirmarBaixa = () => {
+    if (!baixaValida) return;
+    toast(`Baixa manual da parcela ${parcelaSelecionada.competencia} registrada com usuário responsável e data/hora (RN-04).`);
+    fecharBaixa();
+  };
 
   return (
     <>
@@ -49,6 +92,7 @@ export default function Pagamentos() {
             rows={pagamentosRows}
             searchKeys={['id', 'clienteNome', 'parcelaRef']}
             pageSize={12}
+            onRowClick={(r) => setPagamentoDetalhe(r)}
             columns={[
               { key: 'id', header: 'Pagamento', sortable: true },
               { key: 'clienteNome', header: 'Cliente / origem', sortable: true },
@@ -109,6 +153,21 @@ export default function Pagamentos() {
         </Card>
       )}
 
+      {pagamentoDetalhe && (
+        <Drawer title={`Pagamento ${pagamentoDetalhe.id}`} onClose={() => setPagamentoDetalhe(null)}>
+          <DefList items={[
+            { label: 'Cliente / origem', value: pagamentoDetalhe.clienteNome },
+            { label: 'Parcela', value: pagamentoDetalhe.parcelaRef || '—' },
+            { label: 'Meio', value: pagamentoDetalhe.meio },
+            { label: 'Valor recebido', value: money(pagamentoDetalhe.valor) },
+            { label: 'Recebido em', value: dateTime(pagamentoDetalhe.recebidoEm) },
+            { label: 'Identificador', value: pagamentoDetalhe.identificador },
+            { label: 'Status', value: pagamentoDetalhe.status },
+            { label: 'Observação', value: pagamentoDetalhe.observacao || '—' },
+          ]} />
+        </Drawer>
+      )}
+
       {excecao && (
         <Drawer title={`Exceção — ${excecao.id}`} onClose={() => setExcecao(null)}
           actions={<Button size="sm" variant="primary" onClick={() => { toast('Exceção tratada e vinculada manualmente (simulação).'); setExcecao(null); }}>Tratar</Button>}>
@@ -123,17 +182,64 @@ export default function Pagamentos() {
       )}
 
       {baixa && (
-        <Modal title="Baixa manual de pagamento" onClose={() => setBaixa(false)}
-          footer={<>
-            <Button size="sm" variant="secondary" onClick={() => setBaixa(false)}>Cancelar</Button>
-            <Button size="sm" variant="primary" onClick={() => { toast('Baixa manual registrada com usuário responsável e data/hora (RN-04).'); setBaixa(false); }}>Confirmar baixa</Button>
-          </>}>
-          <div className="field-grid">
-            <Input label="Parcela / cobrança" placeholder="CTR-2026-....-P.." />
-            <Input label="Valor recebido" placeholder="R$" />
-            <Input label="Data do recebimento" type="date" defaultValue="2026-08-27" />
+        <Modal
+          title="Baixa manual de pagamento"
+          onClose={fecharBaixa}
+          wide
+          footer={(
+            <>
+              <Button size="sm" variant="secondary" onClick={fecharBaixa}>Cancelar</Button>
+              <Button size="sm" variant="primary" disabled={!baixaValida} onClick={confirmarBaixa}>Confirmar baixa</Button>
+            </>
+          )}
+        >
+          <div className="stack" style={{ gap: 'var(--space-4)' }}>
+            <div>
+              <div className="card-title">Contrato</div>
+              <Select
+                label="Titular do contrato"
+                value={clienteBaixaId}
+                onChange={(e) => { setClienteBaixaId(e.target.value); setBuscouBaixa(false); setContratoBaixa(null); setParcelaId(''); setValorBaixa(''); }}
+              >
+                <option value="">Selecione um cliente…</option>
+                {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </Select>
+              <div style={{ marginTop: 'var(--space-3)' }}>
+                <Button variant="secondary" icon="search" type="button" onClick={buscarContratoBaixa} disabled={!clienteBaixaId}>Buscar</Button>
+              </div>
+              {buscouBaixa && contratoBaixa && (
+                <Alert variant="info" title={`Contrato nº ${contratoBaixa.id}`}>Situação: {contratoBaixa.situacao}</Alert>
+              )}
+              {buscouBaixa && !contratoBaixa && (
+                <Alert variant="warning">Este cliente não possui contrato de plano.</Alert>
+              )}
+            </div>
+
+            {contratoBaixa && (
+              <Select label="Parcela" value={parcelaId} onChange={(e) => selecionarParcela(e.target.value)}>
+                <option value="">Selecione a parcela…</option>
+                {parcelas.map((p) => (
+                  <option key={p.id} value={p.id}>{p.competencia} — vence {date(p.vencimento)} — {p.status}</option>
+                ))}
+              </Select>
+            )}
+
+            {parcelaSelecionada && (
+              <>
+                <div className="field-grid">
+                  <Input label="Valor recebido" value={valorBaixa} onChange={(e) => setValorBaixa(maskMoney(e.target.value))} placeholder="R$ 0,00" />
+                  <Input label="Data do recebimento" type="date" value={dataBaixa} onChange={(e) => setDataBaixa(e.target.value)} />
+                </div>
+                <Textarea
+                  label="Justificativa (obrigatória)"
+                  value={justificativaBaixa}
+                  onChange={(e) => setJustificativaBaixa(e.target.value)}
+                  placeholder="Pagamento por fora — dinheiro / transferência direta…"
+                  hint={justificativaBaixa.trim().length < 10 ? 'Mínimo de 10 caracteres.' : ' '}
+                />
+              </>
+            )}
           </div>
-          <Textarea label="Justificativa (obrigatória)" placeholder="Pagamento por fora — dinheiro / transferência direta…" />
         </Modal>
       )}
     </>

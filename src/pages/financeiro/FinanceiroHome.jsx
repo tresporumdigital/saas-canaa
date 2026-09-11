@@ -13,6 +13,12 @@ import { money, date, number } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
 import NovaContaModal from './NovaContaModal.jsx';
 
+const addMonths = (isoDate, n) => {
+  const d = new Date(`${isoDate}T00:00:00`);
+  d.setMonth(d.getMonth() + n);
+  return d.toISOString().slice(0, 10);
+};
+
 const TABS = [
   { id: 'visao', label: 'Visão geral' },
   { id: 'receber', label: 'Contas a receber' },
@@ -206,8 +212,22 @@ export default function FinanceiroHome() {
           tipo={novaConta}
           onClose={() => setNovaConta(null)}
           onCreate={(conta) => {
-            if (novaConta === 'receber') setNovasReceber((l) => [conta, ...l]);
-            else setNovasPagar((l) => [conta, ...l]);
+            if (novaConta === 'receber') {
+              setNovasReceber((l) => [conta, ...l]);
+              toast(`Conta ${conta.id} lançada (simulação — sem persistência).`);
+              return;
+            }
+            if (conta.recorrente && conta.recorrencias > 1) {
+              const linhas = Array.from({ length: conta.recorrencias }, (_, i) => ({
+                ...conta,
+                id: `${conta.id}-${String(i + 1).padStart(2, '0')}`,
+                vencimento: addMonths(conta.vencimento, i),
+              }));
+              setNovasPagar((l) => [...linhas, ...l]);
+              toast(`${conta.recorrencias} contas recorrentes lançadas a partir de ${conta.id} (simulação — sem persistência).`);
+              return;
+            }
+            setNovasPagar((l) => [conta, ...l]);
             toast(`Conta ${conta.id} lançada (simulação — sem persistência).`);
           }}
         />

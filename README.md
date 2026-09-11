@@ -56,11 +56,11 @@ npm run preview  # serve o build
 
 | Grupo | Módulos |
 |---|---|
-| **Núcleo** | Painel, Clientes, Parceiros, Registro de Óbito, Guias de Atendimento, Backups |
-| **Receita** | Planos e contratos, Gerador de Carnês, Pagamento Integrado, Controle Financeiro |
+| **Núcleo** | Painel, Clientes, Parceiros, Registro de Óbito, Guias de Atendimento |
+| **Financeiro** | Planos e contratos, Gerador de Carnês, Pagamento Integrado, Controle Financeiro |
 | **Operação** | Empréstimo de Equipamentos, Vendas de Equipamentos, Cadastro de Equipamentos, Notas Fiscais |
 | **Expansão** | Leads do Site, Portal do Parceiro |
-| **Config** | Usuários, Perfis e Permissões, Parâmetros, Empresa e Unidades |
+| **Configurações** | Unidades, Planos, Backup, Usuários (perfis/permissões e parâmetros ficam na aba de Usuários) |
 
 Profundidade: **Painel, Clientes, Óbitos, Guias, Planos e Financeiro** têm listagem + detalhe +
 formulários; os demais têm listagem funcional + detalhe/drawer.
@@ -89,6 +89,19 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
 - Em Guias de Atendimento, "Gerar guia" busca o contrato pelo titular, deixa escolher o
   beneficiário (titular ou dependente) e o parceiro, cria a guia na lista (só em memória)
   e mostra o PDF da guia para imprimir ou baixar.
+- "Configurações" agora tem seu próprio ícone no trilho de navegação, na ordem normal
+  logo abaixo de "Expansão" (antes ficava isolado no rodapé). Reúne Unidades (sem bloco
+  de empresa principal — só a lista, com foto por unidade), Planos (cadastro dos planos
+  oferecidos), Backup e Usuários (com pop-up de novo usuário).
+- Em Pagamentos, "Baixa manual" busca o contrato pelo titular e, ao escolher a parcela,
+  preenche o valor e sugere a data; a lista de Conciliação também abre um pop-up com os
+  dados do pagamento ao clicar na linha.
+- Em Controle Financeiro, "Nova conta a pagar" tem a opção de marcar como recorrente
+  (gera N lançamentos mensais); categoria e centro de custo são pop-overs de seleção.
+- Em Empréstimo de Equipamentos, "Registrar saída" abre um catálogo com foto dos
+  equipamentos disponíveis; escolher um leva ao formulário de dados do empréstimo. As
+  listas de empréstimos e do inventário mostram a foto do produto e o nº de inventário,
+  e a lista de empréstimos abre um pop-up com os dados ao clicar na linha.
 - Autenticação é **mock** (sem backend); a sessão vive só no navegador.
 - Data de referência do protótipo: **27/08/2026**.
 - `design-system/`, `PRD.md` e `visual/` não são alterados por este frontend.

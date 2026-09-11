@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Modal, Button, Input, Select, Checkbox, FieldRow, EnderecoFields } from '../../components/index.js';
+import { useRef, useState } from 'react';
+import { Modal, Button, Input, Select, Checkbox, FieldRow, EnderecoFields, Avatar } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { maskCNPJ, maskPhone, isValidEmail } from '../../lib/masks.js';
 
@@ -33,6 +33,13 @@ export default function UnidadeFormModal({ unidade, onClose, onCreate }) {
   const [endereco, setEndereco] = useState(() => (
     editando ? { ...unidade.endereco } : { ...enderecoVazio }
   ));
+  const [foto, setFoto] = useState(editando ? (unidade.foto || null) : null);
+  const fileInputRef = useRef(null);
+  const onFotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFoto(URL.createObjectURL(file));
+  };
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const setMasked = (k, maskFn) => (e) => setForm((f) => ({ ...f, [k]: maskFn(e.target.value) }));
   const emailValido = !form.email || isValidEmail(form.email);
@@ -58,6 +65,7 @@ export default function UnidadeFormModal({ unidade, onClose, onCreate }) {
         alvara: form.alvara || '—',
         salasVelorio: Number(form.salasVelorio) || 0,
         capela: form.capela,
+        foto,
         endereco: { ...endereco },
       });
       toast(`Unidade ${form.nome} cadastrada (simulação — sem persistência).`);
@@ -80,6 +88,17 @@ export default function UnidadeFormModal({ unidade, onClose, onCreate }) {
       )}
     >
       <form id="unidade-form" onSubmit={submit} className="stack" style={{ gap: 'var(--space-5)' }}>
+        <div>
+          <div className="card-title">Foto da unidade</div>
+          <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onFotoChange} />
+          <div className="row" style={{ gap: 'var(--space-3)', alignItems: 'center' }}>
+            <Avatar name={form.nome || 'Unidade'} src={foto} size="lg" />
+            <Button variant="secondary" type="button" onClick={() => fileInputRef.current?.click()}>
+              {foto ? 'Trocar foto' : 'Selecionar foto'}
+            </Button>
+          </div>
+        </div>
+
         <FieldRow>
           <Input label="Nome da unidade" value={form.nome} onChange={set('nome')} required />
           <Select label="Tipo" value={form.tipo} onChange={set('tipo')} options={TIPOS} />

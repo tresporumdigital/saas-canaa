@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
-  Card, DataTable, Badge, Button, Modal, Input, Select, Checkbox, FieldRow,
+  Card, DataTable, Badge, Button, Modal, Input, Select, Checkbox, FieldRow, Avatar,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { equipamentosProduto } from '../../mock/equipamentos.js';
@@ -20,6 +20,13 @@ export default function EquipamentosCadastro() {
     descricao: '', categoria: 'Mobilidade', precoCusto: '', precoVenda: '',
     estoque: '', estoqueMinimo: '', locavel: true,
   });
+  const [foto, setFoto] = useState(null);
+  const fileInputRef = useRef(null);
+  const onFotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFoto(URL.createObjectURL(file));
+  };
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const pronto = form.descricao.trim() && moneyToNumber(form.precoVenda) > 0;
 
@@ -36,10 +43,12 @@ export default function EquipamentosCadastro() {
       estoque: Number(form.estoque) || 0,
       estoqueMinimo: Number(form.estoqueMinimo) || 0,
       locavel: form.locavel,
+      foto,
     };
     setNovos((l) => [equip, ...l]);
     toast(`Equipamento ${equip.descricao} cadastrado (simulação — sem persistência).`);
     setForm({ descricao: '', categoria: 'Mobilidade', precoCusto: '', precoVenda: '', estoque: '', estoqueMinimo: '', locavel: true });
+    setFoto(null);
     setNovo(false);
   };
 
@@ -59,6 +68,7 @@ export default function EquipamentosCadastro() {
           searchPlaceholder="Buscar por equipamento, categoria ou código…"
           pageSize={12}
           columns={[
+            { key: 'foto', header: '', render: (r) => <Avatar name={r.descricao} src={r.foto} size="sm" /> },
             { key: 'id', header: 'Código', sortable: true },
             { key: 'descricao', header: 'Equipamento', sortable: true },
             { key: 'categoria', header: 'Categoria', sortable: true },
@@ -85,6 +95,16 @@ export default function EquipamentosCadastro() {
           )}
         >
           <form id="equip-form" onSubmit={criar} className="stack" style={{ gap: 'var(--space-4)' }}>
+            <div>
+              <div className="card-title">Foto do produto</div>
+              <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onFotoChange} />
+              <div className="row" style={{ gap: 'var(--space-3)', alignItems: 'center' }}>
+                <Avatar name={form.descricao || 'Equipamento'} src={foto} size="lg" />
+                <Button variant="secondary" type="button" onClick={() => fileInputRef.current?.click()}>
+                  {foto ? 'Trocar foto' : 'Selecionar foto'}
+                </Button>
+              </div>
+            </div>
             <FieldRow>
               <Input label="Descrição" value={form.descricao} onChange={set('descricao')} required />
               <Select label="Categoria" value={form.categoria} onChange={set('categoria')} options={CATEGORIAS} />
