@@ -10,6 +10,7 @@ import {
 } from '../../mock/equipamentos.js';
 import { clientes } from '../../mock/clientes.js';
 import { money, date, number } from '../../lib/format.js';
+import { maskMoney, moneyToNumber, numberToMoneyInput } from '../../lib/masks.js';
 
 const TABS = [
   { id: 'vendas', label: 'Vendas' },
@@ -35,7 +36,7 @@ export default function EquipamentosVendas() {
 
   const equipSel = equipamentosProduto.find((p) => p.id === form.equipId);
   const clienteSel = clientes.find((c) => c.id === form.clienteId);
-  const vendaPronta = clienteSel && equipSel && Number(form.valor) > 0;
+  const vendaPronta = clienteSel && equipSel && moneyToNumber(form.valor) > 0;
 
   const registrarVenda = (e) => {
     e.preventDefault();
@@ -47,7 +48,7 @@ export default function EquipamentosVendas() {
       clienteNome: clienteSel.nome,
       vendedor: 'Balcão',
       formaPagamento: form.formaPagamento,
-      itens: [{ descricao: equipSel.descricao, qtd: 1, valorUnit: Number(form.valor) }],
+      itens: [{ descricao: equipSel.descricao, qtd: 1, valorUnit: moneyToNumber(form.valor) }],
       desconto: 0,
       custo: equipSel.precoCusto,
       notaFiscalId: null,
@@ -198,13 +199,13 @@ export default function EquipamentosVendas() {
                 value={form.equipId}
                 onChange={(e) => setForm((f) => {
                   const p = equipamentosProduto.find((x) => x.id === e.target.value);
-                  return { ...f, equipId: e.target.value, valor: p ? String(p.precoVenda) : f.valor };
+                  return { ...f, equipId: e.target.value, valor: p ? numberToMoneyInput(p.precoVenda) : f.valor };
                 })}
               >
                 <option value="">Selecione um equipamento…</option>
                 {equipamentosProduto.map((p) => <option key={p.id} value={p.id}>{p.descricao} — {money(p.precoVenda)}</option>)}
               </Select>
-              <Input label="Valor (R$)" type="number" min="0" step="0.01" value={form.valor} onChange={setF('valor')} required />
+              <Input label="Valor (R$)" value={form.valor} onChange={(e) => setForm((f) => ({ ...f, valor: maskMoney(e.target.value) }))} placeholder="R$ 0,00" required />
               <Select label="Forma de pagamento" value={form.formaPagamento} onChange={setF('formaPagamento')} options={FORMAS_PAGAMENTO} />
             </FieldRow>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Modal, Button, Select, Input, Alert } from '../../components/index.js';
 import { clientes } from '../../mock/clientes.js';
 import { money } from '../../lib/format.js';
+import { maskMoney, moneyToNumber } from '../../lib/masks.js';
 
 const SERVICOS = [
   'Plano funerário — mensalidade',
@@ -22,7 +23,7 @@ export default function GerarNotaModal({ onClose, onGenerate }) {
   const [valor, setValor] = useState('');
 
   const cliente = clientes.find((c) => c.id === clienteId);
-  const valorNum = Number(valor);
+  const valorNum = moneyToNumber(valor);
   const pronto = Boolean(cliente && valorNum > 0);
   const aliquota = tipo === 'NFS-e' ? 0.05 : 0.18;
   const impostos = pronto ? valorNum * aliquota : 0;
@@ -70,7 +71,7 @@ export default function GerarNotaModal({ onClose, onGenerate }) {
         <Select label="Tipo de nota" value={tipo} onChange={(e) => setTipo(e.target.value)}
           options={['NFS-e', 'NF-e']} />
         <Select label="Serviço / item" value={servico} onChange={(e) => setServico(e.target.value)} options={SERVICOS} />
-        <Input label="Valor (R$)" type="number" min="0" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} required />
+        <Input label="Valor (R$)" value={valor} onChange={(e) => setValor(maskMoney(e.target.value))} placeholder="R$ 0,00" required />
         {pronto && (
           <Alert variant="info">
             {tipo} para <strong>{cliente.nome}</strong> — {servico}. Impostos estimados {money(impostos)} ({(aliquota * 100).toFixed(0)}%).

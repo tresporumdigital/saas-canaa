@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Modal, Button, Input, Select, FieldRow } from '../../components/index.js';
+import { maskMoney, moneyToNumber } from '../../lib/masks.js';
 
 // Pop-up para lançar uma nova conta a receber ou a pagar.
 export default function NovaContaModal({ tipo, onClose, onCreate }) {
@@ -13,7 +14,7 @@ export default function NovaContaModal({ tipo, onClose, onCreate }) {
     status: 'Em aberto',
   });
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-  const pronto = form.descricao.trim() && Number(form.valor) > 0;
+  const pronto = form.descricao.trim() && moneyToNumber(form.valor) > 0;
 
   const submit = (e) => {
     e.preventDefault();
@@ -27,7 +28,7 @@ export default function NovaContaModal({ tipo, onClose, onCreate }) {
       categoria: form.categoria.trim() || (receber ? 'Outras receitas' : 'Outras despesas'),
       centroCusto: form.centroCusto,
       vencimento: form.vencimento,
-      valor: Number(form.valor),
+      valor: moneyToNumber(form.valor),
       status: form.status,
     });
     onClose();
@@ -51,7 +52,7 @@ export default function NovaContaModal({ tipo, onClose, onCreate }) {
           <Input label="Categoria" value={form.categoria} onChange={set('categoria')} placeholder={receber ? 'Ex.: Mensalidade de plano' : 'Ex.: Ocupação'} />
           <Input label="Centro de custo" value={form.centroCusto} onChange={set('centroCusto')} />
           <Input label="Vencimento" type="date" value={form.vencimento} onChange={set('vencimento')} />
-          <Input label="Valor (R$)" type="number" min="0" step="0.01" value={form.valor} onChange={set('valor')} required />
+          <Input label="Valor (R$)" value={form.valor} onChange={(e) => setForm((f) => ({ ...f, valor: maskMoney(e.target.value) }))} placeholder="R$ 0,00" required />
           <Select label="Status" value={form.status} onChange={set('status')}
             options={receber ? ['Em aberto', 'Pago', 'Vencido', 'Negociado'] : ['Em aberto', 'Pago', 'Vencido', 'Negociado']} />
         </FieldRow>

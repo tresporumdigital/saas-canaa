@@ -6,6 +6,7 @@ import {
 import { useToast } from '../../context/ToastContext.jsx';
 import { equipamentosProduto } from '../../mock/equipamentos.js';
 import { money } from '../../lib/format.js';
+import { maskMoney, moneyToNumber } from '../../lib/masks.js';
 
 const CATEGORIAS = ['Mobilidade', 'Leito', 'Higiene', 'Respiratório'];
 
@@ -20,7 +21,7 @@ export default function EquipamentosCadastro() {
     estoque: '', estoqueMinimo: '', locavel: true,
   });
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-  const pronto = form.descricao.trim() && Number(form.precoVenda) > 0;
+  const pronto = form.descricao.trim() && moneyToNumber(form.precoVenda) > 0;
 
   const criar = (e) => {
     e.preventDefault();
@@ -30,8 +31,8 @@ export default function EquipamentosCadastro() {
       id: `EQ-${sigla}${String(Date.now()).slice(-3)}`,
       descricao: form.descricao.trim(),
       categoria: form.categoria,
-      precoCusto: Number(form.precoCusto) || 0,
-      precoVenda: Number(form.precoVenda),
+      precoCusto: moneyToNumber(form.precoCusto),
+      precoVenda: moneyToNumber(form.precoVenda),
       estoque: Number(form.estoque) || 0,
       estoqueMinimo: Number(form.estoqueMinimo) || 0,
       locavel: form.locavel,
@@ -87,8 +88,8 @@ export default function EquipamentosCadastro() {
             <FieldRow>
               <Input label="Descrição" value={form.descricao} onChange={set('descricao')} required />
               <Select label="Categoria" value={form.categoria} onChange={set('categoria')} options={CATEGORIAS} />
-              <Input label="Preço de custo (R$)" type="number" min="0" step="0.01" value={form.precoCusto} onChange={set('precoCusto')} />
-              <Input label="Preço de venda (R$)" type="number" min="0" step="0.01" value={form.precoVenda} onChange={set('precoVenda')} required />
+              <Input label="Preço de custo (R$)" value={form.precoCusto} onChange={(e) => setForm((f) => ({ ...f, precoCusto: maskMoney(e.target.value) }))} placeholder="R$ 0,00" />
+              <Input label="Preço de venda (R$)" value={form.precoVenda} onChange={(e) => setForm((f) => ({ ...f, precoVenda: maskMoney(e.target.value) }))} placeholder="R$ 0,00" required />
               <Input label="Estoque inicial" type="number" min="0" value={form.estoque} onChange={set('estoque')} />
               <Input label="Estoque mínimo" type="number" min="0" value={form.estoqueMinimo} onChange={set('estoqueMinimo')} />
             </FieldRow>

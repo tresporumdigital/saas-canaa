@@ -31,6 +31,7 @@ export { EmptyState } from './molecules/EmptyState.jsx';
 export { Breadcrumb } from './molecules/Breadcrumb.jsx';
 export { Pagination } from './molecules/Pagination.jsx';
 export { SkeletonRows } from './molecules/SkeletonRows.jsx';
+export { default as EnderecoFields } from './molecules/EnderecoFields.jsx';
 
 /* ---------------- Organisms ---------------- */
 export { default as DataTable } from './organisms/DataTable.jsx';

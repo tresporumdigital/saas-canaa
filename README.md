@@ -76,6 +76,11 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
 - Cadastro/edição de clientes, parceiros e registros de óbito abrem em pop-up sobre a
   página atual (lista ou ficha), sem navegar para uma rota separada.
 - Os campos de seleção são pop-overs próprios do sistema (sem `<select>` nativo).
+- CPF, CNPJ, RG, CEP, telefone e valores em R$ têm máscara de digitação (`src/lib/masks.js`).
+  O CEP busca o endereço via ViaCEP: rua/bairro/cidade/UF ficam bloqueados enquanto a busca
+  é bem-sucedida e destravam para preenchimento manual só se o CEP não for encontrado.
+- Cadastro de cliente é um assistente de 3 pop-ups (titular → dependentes → contrato); o
+  contrato ainda não tem modelo definido, então essa etapa mostra um aviso no lugar do PDF.
 - Em Guias de Atendimento, "Gerar guia" abre um pop-up para escolher cliente + parceiro
   e cria a guia na lista (só em memória).
 - Autenticação é **mock** (sem backend); a sessão vive só no navegador.

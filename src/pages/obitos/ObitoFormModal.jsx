@@ -4,6 +4,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { clientes } from '../../mock/clientes.js';
 import { contratosDoCliente } from '../../mock/contratos.js';
 import { planoById } from '../../mock/planos.js';
+import { maskPhone } from '../../lib/masks.js';
 
 // Pop-up de registro de novo atendimento de óbito.
 export default function ObitoFormModal({ onClose }) {
@@ -16,6 +17,7 @@ export default function ObitoFormModal({ onClose }) {
     solicitante: '', parentesco: '', telefone: '',
   });
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const setMasked = (k, maskFn) => (e) => setForm((f) => ({ ...f, [k]: maskFn(e.target.value) }));
 
   const cliente = clientes.find((c) => c.id === clienteId);
   const contrato = cliente ? contratosDoCliente(cliente.id)[0] : null;
@@ -93,7 +95,7 @@ export default function ObitoFormModal({ onClose }) {
           <FieldRow>
             <Input label="Nome do responsável" value={form.solicitante} onChange={set('solicitante')} required />
             <Input label="Parentesco" value={form.parentesco} onChange={set('parentesco')} />
-            <Input label="Telefone" value={form.telefone} onChange={set('telefone')} />
+            <Input label="Telefone" value={form.telefone} onChange={setMasked('telefone', maskPhone)} placeholder="(00) 00000-0000" />
           </FieldRow>
         </div>
 

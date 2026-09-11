@@ -319,6 +319,9 @@ button.stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2p
   background: var(--color-bg-raised); color: var(--color-text-primary); width: 100%;
 }
 .field textarea { resize: vertical; min-height: 84px; }
+.field input:disabled, .field select:disabled, .field textarea:disabled {
+  background: var(--color-bg-sunken); color: var(--color-text-secondary); cursor: not-allowed;
+}
 .field.error input, .field.error select, .field.error textarea { border-color: var(--color-danger); }
 .field.success input, .field.success select, .field.success textarea { border-color: var(--color-success); }
 .field .help { font-size: var(--text-xs); color: var(--color-text-secondary); }

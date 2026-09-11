@@ -1,117 +1,67 @@
 import { useState } from 'react';
-import { Modal, Button, Input, Select, FieldRow, Alert, Icon } from '../../components/index.js';
+import { Modal, Button, Input, FieldRow, EnderecoFields } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { clientes, clienteById } from '../../mock/index.js';
-import { planosProduto } from '../../mock/planos.js';
-import { cpf as fmtCpf, money } from '../../lib/format.js';
+import { clienteById } from '../../mock/index.js';
+import { maskCPF, maskRG, maskPhone, isValidEmail } from '../../lib/masks.js';
 
-// Pop-up de cadastro/edição de cliente — dados pessoais, endereço e, no cadastro, contratação de plano.
+// Pop-up de edição de um cliente já cadastrado — dados pessoais e endereço.
+// Cadastro de cliente novo agora é feito em 3 etapas por NovoClienteWizard.jsx.
 export default function ClienteFormModal({ clienteId, onClose }) {
   const { toast } = useToast();
-  const editing = Boolean(clienteId);
-  const base = editing ? clienteById(clienteId) : null;
+  const base = clienteById(clienteId);
 
   const [form, setForm] = useState(() => ({
     nome: base?.nome || '',
-    cpf: base ? fmtCpf(base.cpf) : '',
+    cpf: base ? maskCPF(base.cpf) : '',
     rg: base?.rg || '',
     nascimento: base?.nascimento || '',
-    telefone: base?.telefone || '',
+    telefone: base ? maskPhone(base.telefone) : '',
     email: base?.email || '',
+  }));
+  const [endereco, setEndereco] = useState(() => ({
     cep: base?.endereco.cep || '',
     logradouro: base?.endereco.logradouro || '',
     numero: base?.endereco.numero || '',
     bairro: base?.endereco.bairro || '',
-    cidade: base?.endereco.cidade || 'São Paulo',
-    uf: base?.endereco.uf || 'SP',
-    planoId: '',
-    planoInicio: '2026-09-01',
-    planoVencimento: '10',
+    cidade: base?.endereco.cidade || '',
+    uf: base?.endereco.uf || '',
   }));
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-
-  const cpfDigits = form.cpf.replace(/\D/g, '');
-  const duplicado = !editing && cpfDigits.length === 11 && clientes.find((c) => c.cpf === cpfDigits);
-  const planoEscolhido = planosProduto.find((p) => p.id === form.planoId);
+  const setMasked = (k, maskFn) => (e) => setForm((f) => ({ ...f, [k]: maskFn(e.target.value) }));
+  const emailValido = !form.email || isValidEmail(form.email);
 
   const submit = (e) => {
     e.preventDefault();
-    if (duplicado) return;
-    if (editing) {
-      toast('Cliente atualizado (simulação — sem persistência).');
-    } else if (planoEscolhido) {
-      toast(`Cliente cadastrado e ${planoEscolhido.nome} contratado (simulação — sem persistência).`);
-    } else {
-      toast('Cliente cadastrado (simulação — sem persistência).');
-    }
+    if (!emailValido) return;
+    toast('Cliente atualizado (simulação — sem persistência).');
     onClose();
   };
 
   return (
     <Modal
-      title={editing ? `Editar ${base?.nome}` : 'Novo cliente'}
+      title={`Editar ${base?.nome}`}
       onClose={onClose}
       wide
       footer={(
         <>
           <Button variant="secondary" type="button" onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" type="submit" form="cliente-form" disabled={Boolean(duplicado)}>
-            {editing ? 'Salvar alterações' : 'Cadastrar cliente'}
-          </Button>
+          <Button variant="primary" type="submit" form="cliente-form">Salvar alterações</Button>
         </>
       )}
     >
       <form id="cliente-form" onSubmit={submit} className="stack" style={{ gap: 'var(--space-5)' }}>
-        {duplicado && (
-          <Alert variant="warning" title="CPF já cadastrado">
-            O CPF {fmtCpf(cpfDigits)} pertence a <strong>{duplicado.nome}</strong>.{' '}
-            <a href={`#/clientes/${duplicado.id}`}>Abrir cadastro existente <Icon name="external" size={12} /></a>
-          </Alert>
-        )}
-
         <FieldRow>
           <Input label="Nome completo" value={form.nome} onChange={set('nome')} required />
-          <Input label="CPF" value={form.cpf} onChange={set('cpf')} required
-            error={duplicado ? 'CPF já cadastrado — cadastro duplicado bloqueado.' : undefined} />
-          <Input label="RG" value={form.rg} onChange={set('rg')} />
+          <Input label="CPF" value={form.cpf} onChange={setMasked('cpf', maskCPF)} placeholder="000.000.000-00" required />
+          <Input label="RG" value={form.rg} onChange={setMasked('rg', maskRG)} placeholder="00.000.000-0" />
           <Input label="Data de nascimento" type="date" value={form.nascimento} onChange={set('nascimento')} />
-          <Input label="Telefone" value={form.telefone} onChange={set('telefone')} required />
-          <Input label="E-mail" type="email" value={form.email} onChange={set('email')} />
-          <Input label="CEP" value={form.cep} onChange={set('cep')} />
-          <Input label="Logradouro" value={form.logradouro} onChange={set('logradouro')} />
-          <Input label="Número" value={form.numero} onChange={set('numero')} />
-          <Input label="Bairro" value={form.bairro} onChange={set('bairro')} />
-          <Input label="Cidade" value={form.cidade} onChange={set('cidade')} />
-          <Select label="UF" value={form.uf} onChange={set('uf')} options={['SP', 'RJ', 'MG', 'PR', 'SC', 'RS', 'BA', 'GO']} />
+          <Input label="Telefone" value={form.telefone} onChange={setMasked('telefone', maskPhone)} placeholder="(00) 00000-0000" required />
+          <Input label="E-mail" type="email" value={form.email} onChange={set('email')}
+            error={!emailValido ? 'E-mail em formato inválido.' : undefined} />
         </FieldRow>
 
-        {!editing && (
-          <div>
-            <div className="card-title">Plano (opcional)</div>
-            <FieldRow>
-              <Select label="Contratar plano" value={form.planoId} onChange={set('planoId')}>
-                <option value="">Não contratar agora</option>
-                {planosProduto.map((p) => (
-                  <option key={p.id} value={p.id}>{p.nome} — {money(p.valorMensal)}/mês</option>
-                ))}
-              </Select>
-              {planoEscolhido && (
-                <>
-                  <Input label="Início do plano" type="date" value={form.planoInicio} onChange={set('planoInicio')} />
-                  <Select label="Dia de vencimento" value={form.planoVencimento} onChange={set('planoVencimento')}
-                    options={['1', '5', '10', '15', '20', '25']} />
-                </>
-              )}
-            </FieldRow>
-            {planoEscolhido && (
-              <Alert variant="info">
-                {planoEscolhido.nome} · {money(planoEscolhido.valorMensal)}/mês · carência {planoEscolhido.carenciaDias} dias ·
-                até {planoEscolhido.limiteDependentes} dependentes. As 12 parcelas são geradas ao salvar.
-              </Alert>
-            )}
-          </div>
-        )}
+        <EnderecoFields value={endereco} onChange={setEndereco} />
       </form>
     </Modal>
   );

@@ -9,7 +9,7 @@ import { planoById } from '../../mock/planos.js';
 import { contratoById } from '../../mock/contratos.js';
 import { cpf, phone, date } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
-import ClienteFormModal from './ClienteFormModal.jsx';
+import NovoClienteWizard from './NovoClienteWizard.jsx';
 
 export default function ClientesList() {
   const navigate = useNavigate();
@@ -78,7 +78,7 @@ export default function ClientesList() {
         />
       </Card>
 
-      {showNew && <ClienteFormModal onClose={() => setShowNew(false)} />}
+      {showNew && <NovoClienteWizard onClose={() => setShowNew(false)} />}
     </>
   );
 }
