@@ -86,8 +86,9 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
   deixa escolher o titular ou um dependente como a pessoa falecida, puxando os dados.
   A nota de falecimento é gerada como imagem (canvas, com a foto opcional) e pode ser
   baixada; a nota fiscal pode ficar para depois.
-- Em Guias de Atendimento, "Gerar guia" abre um pop-up para escolher cliente + parceiro
-  e cria a guia na lista (só em memória).
+- Em Guias de Atendimento, "Gerar guia" busca o contrato pelo titular, deixa escolher o
+  beneficiário (titular ou dependente) e o parceiro, cria a guia na lista (só em memória)
+  e mostra o PDF da guia para imprimir ou baixar.
 - Autenticação é **mock** (sem backend); a sessão vive só no navegador.
 - Data de referência do protótipo: **27/08/2026**.
 - `design-system/`, `PRD.md` e `visual/` não são alterados por este frontend.
