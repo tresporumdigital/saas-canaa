@@ -102,6 +102,12 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
   equipamentos disponíveis; escolher um leva ao formulário de dados do empréstimo. As
   listas de empréstimos e do inventário mostram a foto do produto e o nº de inventário,
   e a lista de empréstimos abre um pop-up com os dados ao clicar na linha.
+- Em Vendas de Equipamentos, "Nova venda" segue o mesmo catálogo com foto do empréstimo;
+  ao escolher o equipamento, informa se é cliente cadastrado (puxa nome/CPF/telefone/
+  endereço) ou não (preenche à mão), e ao confirmar pergunta se quer emitir a nota fiscal
+  agora ou depois — quando emitida, o toast indica que foi enviada para o Financeiro.
+- Cadastro de Equipamentos tem abas separadas para Venda (produto com preço/estoque) e
+  Locação (produto + todos os números de inventário registrados de uma vez); ambos com foto.
 - Autenticação é **mock** (sem backend); a sessão vive só no navegador.
 - Data de referência do protótipo: **27/08/2026**.
 - `design-system/`, `PRD.md` e `visual/` não são alterados por este frontend.

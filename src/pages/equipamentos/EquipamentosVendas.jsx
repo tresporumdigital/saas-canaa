@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
   Card, Tabs, DataTable, Badge, Button, StatCard, Alert, Modal, Drawer, DefList,
-  Input, Select, FieldRow,
+  Input, Select, FieldRow, EnderecoFields, Avatar,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import {
@@ -10,7 +10,7 @@ import {
 } from '../../mock/equipamentos.js';
 import { clientes } from '../../mock/clientes.js';
 import { money, date, number } from '../../lib/format.js';
-import { maskMoney, moneyToNumber, numberToMoneyInput } from '../../lib/masks.js';
+import { maskMoney, moneyToNumber, numberToMoneyInput, maskCPF, maskPhone } from '../../lib/masks.js';
 
 const TABS = [
   { id: 'vendas', label: 'Vendas' },
@@ -19,24 +19,69 @@ const TABS = [
 ];
 
 const FORMAS_PAGAMENTO = ['Pix', 'Dinheiro', 'Boleto', 'Cartão 2x', 'Cartão 3x', 'Boleto 3x'];
+const enderecoVazio = { cep: '', logradouro: '', numero: '', bairro: '', cidade: '', uf: '' };
+const compradorVazio = { nome: '', cpf: '', telefone: '' };
 
 export default function EquipamentosVendas() {
   const { toast } = useToast();
   const [tab, setTab] = useState('vendas');
   const [venda, setVenda] = useState(null);
-  const [nova, setNova] = useState(false);
   const [novasVendas, setNovasVendas] = useState([]);
-  const [form, setForm] = useState({ clienteId: '', equipId: '', valor: '', formaPagamento: 'Pix' });
-  const setF = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  // Fluxo de "Nova venda": 0 fechado · 1 catálogo · 2 dados · 3 nota fiscal
+  const [passo, setPasso] = useState(0);
+  const [equipSel, setEquipSel] = useState(null);
+  const [ehCliente, setEhCliente] = useState('Sim');
+  const [clienteId, setClienteId] = useState('');
+  const [comprador, setComprador] = useState(compradorVazio);
+  const [enderecoVenda, setEnderecoVenda] = useState(enderecoVazio);
+  const [formaPagamento, setFormaPagamento] = useState('Pix');
+  const [valor, setValor] = useState('');
+  const [ultimaVenda, setUltimaVenda] = useState(null);
 
   const rowsVendas = useMemo(() => [...novasVendas, ...vendasEquipamento], [novasVendas]);
   const abaixoMin = equipamentosAbaixoDoMinimo();
   const totalMes = rowsVendas.reduce((s, v) => s + vendaTotais(v).total, 0);
   const margemMes = rowsVendas.reduce((s, v) => s + vendaTotais(v).margem, 0);
 
-  const equipSel = equipamentosProduto.find((p) => p.id === form.equipId);
-  const clienteSel = clientes.find((c) => c.id === form.clienteId);
-  const vendaPronta = clienteSel && equipSel && moneyToNumber(form.valor) > 0;
+  const fecharVenda = () => {
+    setPasso(0);
+    setEquipSel(null);
+    setEhCliente('Sim');
+    setClienteId('');
+    setComprador(compradorVazio);
+    setEnderecoVenda(enderecoVazio);
+    setFormaPagamento('Pix');
+    setValor('');
+  };
+
+  const escolherEquip = (p) => {
+    setEquipSel(p);
+    setValor(numberToMoneyInput(p.precoVenda));
+    setPasso(2);
+  };
+
+  const escolherCliente = (id) => {
+    setClienteId(id);
+    const c = clientes.find((x) => x.id === id);
+    if (c) {
+      setComprador({ nome: c.nome, cpf: maskCPF(c.cpf), telefone: maskPhone(c.telefone) });
+      setEnderecoVenda({ ...c.endereco });
+    }
+  };
+
+  const mudarEhCliente = (v) => {
+    setEhCliente(v);
+    setClienteId('');
+    setComprador(compradorVazio);
+    setEnderecoVenda(enderecoVazio);
+  };
+
+  const vendaPronta = Boolean(
+    equipSel && comprador.nome.trim() && comprador.cpf.replace(/\D/g, '').length === 11
+    && comprador.telefone.replace(/\D/g, '').length >= 10 && moneyToNumber(valor) > 0
+    && (ehCliente !== 'Sim' || clienteId),
+  );
 
   const registrarVenda = (e) => {
     e.preventDefault();
@@ -44,19 +89,27 @@ export default function EquipamentosVendas() {
     const nv = {
       id: `VEQ-2026-9${String(Date.now()).slice(-3)}`,
       data: '2026-09-01',
-      clienteId: clienteSel.id,
-      clienteNome: clienteSel.nome,
+      clienteId: ehCliente === 'Sim' ? clienteId : null,
+      clienteNome: comprador.nome.trim(),
       vendedor: 'Balcão',
-      formaPagamento: form.formaPagamento,
-      itens: [{ descricao: equipSel.descricao, qtd: 1, valorUnit: moneyToNumber(form.valor) }],
+      formaPagamento,
+      itens: [{ descricao: equipSel.descricao, qtd: 1, valorUnit: moneyToNumber(valor) }],
       desconto: 0,
       custo: equipSel.precoCusto,
       notaFiscalId: null,
     };
     setNovasVendas((l) => [nv, ...l]);
-    toast(`Venda ${nv.id} registrada para ${clienteSel.nome} (simulação — sem persistência).`);
-    setForm({ clienteId: '', equipId: '', valor: '', formaPagamento: 'Pix' });
-    setNova(false);
+    toast(`Venda ${nv.id} registrada para ${nv.clienteNome} (simulação — sem persistência).`);
+    setUltimaVenda(nv);
+    setPasso(3);
+  };
+
+  const finalizarComNota = (emitir) => {
+    toast(emitir
+      ? `Nota fiscal da venda ${ultimaVenda.id} gerada e enviada para o Financeiro (fila de Notas Fiscais — simulação).`
+      : `Venda ${ultimaVenda.id} registrada. A nota fiscal poderá ser emitida depois, em Notas Fiscais (simulação).`);
+    setUltimaVenda(null);
+    fecharVenda();
   };
 
   return (
@@ -65,7 +118,7 @@ export default function EquipamentosVendas() {
         crumbs={[{ label: 'Início', to: '/' }, { label: 'Vendas de Equipamentos' }]}
         title="Vendas de Equipamentos"
         subtitle="Controle de estoque, venda e faturamento de equipamentos de apoio à convalescência."
-        actions={<Button variant="primary" icon="plus" onClick={() => setNova(true)}>Nova venda</Button>}
+        actions={<Button variant="primary" icon="plus" onClick={() => setPasso(1)}>Nova venda</Button>}
       />
 
       <div className="grid cols-3">
@@ -176,42 +229,70 @@ export default function EquipamentosVendas() {
         </Drawer>
       )}
 
-      {nova && (
+      {passo === 1 && (
+        <Modal title="Selecione o equipamento" onClose={fecharVenda} wide footer={<Button variant="secondary" onClick={fecharVenda}>Cancelar</Button>}>
+          <div className="grid cols-3">
+            {equipamentosProduto.map((p) => (
+              <button key={p.id} type="button" className="equip-card" onClick={() => escolherEquip(p)}>
+                <Avatar name={p.descricao} src={p.foto} size="lg" />
+                <span className="equip-card-nome">{p.descricao}</span>
+                <span className="equip-card-patrimonio">{money(p.precoVenda)}</span>
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
+
+      {passo === 2 && equipSel && (
         <Modal
-          title="Nova venda de equipamento"
-          onClose={() => setNova(false)}
+          title={`Nova venda — ${equipSel.descricao}`}
+          onClose={fecharVenda}
           wide
           footer={(
             <>
-              <Button variant="secondary" type="button" onClick={() => setNova(false)}>Cancelar</Button>
+              <Button variant="secondary" type="button" onClick={() => setPasso(1)}>Trocar equipamento</Button>
+              <Button variant="secondary" type="button" onClick={fecharVenda}>Cancelar</Button>
               <Button variant="primary" type="submit" form="venda-form" disabled={!vendaPronta}>Confirmar venda</Button>
             </>
           )}
         >
           <form id="venda-form" onSubmit={registrarVenda} className="stack" style={{ gap: 'var(--space-4)' }}>
-            <FieldRow>
-              <Select label="Cliente" value={form.clienteId} onChange={setF('clienteId')}>
+            <div className="row" style={{ gap: 'var(--space-3)', alignItems: 'center' }}>
+              <Avatar name={equipSel.descricao} src={equipSel.foto} size="md" />
+              <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>{money(equipSel.precoVenda)} de tabela</div>
+            </div>
+
+            <Select label="É um cliente cadastrado?" value={ehCliente} onChange={(e) => mudarEhCliente(e.target.value)} options={['Sim', 'Não']} />
+
+            {ehCliente === 'Sim' && (
+              <Select label="Cliente (titular do plano)" value={clienteId} onChange={(e) => escolherCliente(e.target.value)}>
                 <option value="">Selecione um cliente…</option>
                 {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
               </Select>
-              <Select
-                label="Equipamento"
-                value={form.equipId}
-                onChange={(e) => setForm((f) => {
-                  const p = equipamentosProduto.find((x) => x.id === e.target.value);
-                  return { ...f, equipId: e.target.value, valor: p ? numberToMoneyInput(p.precoVenda) : f.valor };
-                })}
-              >
-                <option value="">Selecione um equipamento…</option>
-                {equipamentosProduto.map((p) => <option key={p.id} value={p.id}>{p.descricao} — {money(p.precoVenda)}</option>)}
-              </Select>
-              <Input label="Valor (R$)" value={form.valor} onChange={(e) => setForm((f) => ({ ...f, valor: maskMoney(e.target.value) }))} placeholder="R$ 0,00" required />
-              <Select label="Forma de pagamento" value={form.formaPagamento} onChange={setF('formaPagamento')} options={FORMAS_PAGAMENTO} />
+            )}
+
+            <FieldRow>
+              <Input label="Nome do comprador" value={comprador.nome} onChange={(e) => setComprador((c) => ({ ...c, nome: e.target.value }))} required />
+              <Input label="CPF" value={comprador.cpf} onChange={(e) => setComprador((c) => ({ ...c, cpf: maskCPF(e.target.value) }))} placeholder="000.000.000-00" required />
+              <Input label="Telefone" value={comprador.telefone} onChange={(e) => setComprador((c) => ({ ...c, telefone: maskPhone(e.target.value) }))} placeholder="(00) 00000-0000" required />
+              <Input label="Valor (R$)" value={valor} onChange={(e) => setValor(maskMoney(e.target.value))} placeholder="R$ 0,00" required />
+              <Select label="Forma de pagamento" value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} options={FORMAS_PAGAMENTO} />
             </FieldRow>
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>
-              Na confirmação, o estoque é baixado e a emissão de nota fiscal é acionada (simulação).
-            </p>
+
+            <EnderecoFields title="Endereço (para a nota fiscal)" value={enderecoVenda} onChange={setEnderecoVenda} />
           </form>
+        </Modal>
+      )}
+
+      {passo === 3 && ultimaVenda && (
+        <Modal title="Venda registrada" onClose={() => finalizarComNota(false)} wide footer={null}>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
+            Emitir nota fiscal desta venda agora?
+          </p>
+          <div className="row" style={{ gap: 'var(--space-3)', justifyContent: 'center', marginTop: 'var(--space-4)' }}>
+            <Button variant="primary" icon="receipt" type="button" onClick={() => finalizarComNota(true)}>Emitir agora</Button>
+            <Button variant="secondary" icon="clock" type="button" onClick={() => finalizarComNota(false)}>Emitir depois</Button>
+          </div>
         </Modal>
       )}
     </>
