@@ -1,12 +1,11 @@
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
 import {
   Card, Badge, Button, DefList, CoverageBanner, DataTable, EmptyState, Icon, Alert,
 } from '../../components/index.js';
-import { obitoById } from '../../mock/obitos.js';
-import { guiasDoObito } from '../../mock/guias.js';
-import { useClientesCache, useParceirosCache } from '../../lib/api.js';
-import { date, dateTime, money } from '../../lib/format.js';
+import { apiFetch, useGuiasCache, useParceirosCache } from '../../lib/api.js';
+import { cpf, date, dateTime, money } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
 
 function coberturaChecks(cob) {
@@ -22,25 +21,41 @@ function coberturaChecks(cob) {
 export default function ObitoDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const clientes = useClientesCache();
   const parceiros = useParceirosCache();
-  const clienteById = (cid) => clientes.find((c) => c.id === cid);
   const parceiroById = (pid) => parceiros.find((p) => p.id === pid);
-  const ob = obitoById(id);
-  if (!ob) return <EmptyState icon="doc" title="Atendimento não encontrado" action={<Button to="/obitos">Voltar</Button>} />;
+  const guiasTodas = useGuiasCache();
+  const [ob, setOb] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState(null);
 
-  const guias = guiasDoObito(ob.id);
-  const cliente = ob.vinculo.clienteId ? clienteById(ob.vinculo.clienteId) : null;
+  const carregar = useCallback(() => {
+    setLoading(true);
+    apiFetch(`/obitos/detail.php?id=${encodeURIComponent(id)}`)
+      .then((row) => { setOb(row); setErro(null); })
+      .catch((e) => setErro(e.message))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  useEffect(() => { carregar(); }, [carregar]);
+
+  if (loading) return null;
+  if (erro || !ob) return <EmptyState icon="doc" title="Atendimento não encontrado" action={<Button to="/obitos">Voltar</Button>} />;
+
+  const guias = guiasTodas.filter((g) => g.obitoId === ob.id);
+  const cliente = ob.vinculo.clienteId ? { id: ob.vinculo.clienteId } : null;
   const checks = coberturaChecks(ob.cobertura);
   const cobertos = ob.servicos.filter((s) => s.coberto);
   const cobrados = ob.servicos.filter((s) => !s.coberto);
+  const solicitanteLinha = ob.solicitante?.nome
+    ? `${ob.solicitante.nome}${ob.solicitante.parentesco ? ` (${ob.solicitante.parentesco})` : ''}`
+    : '—';
 
   return (
     <>
       <PageHeader
         crumbs={[{ label: 'Início', to: '/' }, { label: 'Registro de Óbito', to: '/obitos' }, { label: ob.id }]}
         title={ob.falecido.nome}
-        subtitle={`${ob.id} · aberto em ${dateTime(ob.abertoEm)} · responsável: ${ob.responsavel}`}
+        subtitle={`${ob.id} · aberto em ${dateTime(ob.abertoEm)} · responsável: ${ob.responsavel || '—'}`}
         actions={
           <>
             <Badge variant={statusVariant(ob.status)}>{ob.status}</Badge>
@@ -61,23 +76,23 @@ export default function ObitoDetail() {
         <Card title="Dados do falecido">
           <DefList items={[
             { label: 'Nome', value: ob.falecido.nome },
-            { label: 'CPF', value: ob.falecido.cpf },
-            { label: 'Nascimento', value: date(ob.falecido.nascimento) },
+            { label: 'CPF', value: ob.falecido.cpf ? cpf(ob.falecido.cpf) : '—' },
+            { label: 'Nascimento', value: ob.falecido.nascimento ? date(ob.falecido.nascimento) : '—' },
             { label: 'Data/hora do óbito', value: dateTime(ob.falecido.obitoEm) },
-            { label: 'Local do óbito', value: ob.falecido.localObito },
-            { label: 'Causa declarada', value: ob.falecido.causaDeclarada },
-            { label: 'Nº da declaração de óbito', value: ob.falecido.numeroDO },
+            { label: 'Local do óbito', value: ob.falecido.localObito || '—' },
+            { label: 'Causa declarada', value: ob.falecido.causaDeclarada || '—' },
+            { label: 'Nº da declaração de óbito', value: ob.falecido.numeroDO || '—' },
             { label: 'Cartório', value: ob.falecido.cartorio || 'A definir' },
           ]} />
         </Card>
         <Card title="Solicitante e locais">
           <DefList items={[
-            { label: 'Solicitante', value: `${ob.solicitante.nome} (${ob.solicitante.parentesco})` },
-            { label: 'Telefone', value: ob.solicitante.telefone },
+            { label: 'Solicitante', value: solicitanteLinha },
+            { label: 'Telefone', value: ob.solicitante?.telefone || '—' },
             { label: 'Vínculo', value: ob.vinculo.tipo + (ob.vinculo.dependenteNome ? ` — ${ob.vinculo.dependenteNome}` : '') },
             { label: 'Contrato', value: ob.vinculo.contratoId || '—' },
-            { label: 'Local de velório', value: ob.locais.velorio },
-            { label: 'Sepultamento/cremação', value: ob.locais.sepultamento },
+            { label: 'Local de velório', value: ob.locais?.velorio || '—' },
+            { label: 'Sepultamento/cremação', value: ob.locais?.sepultamento || '—' },
           ]} />
         </Card>
       </div>
@@ -115,7 +130,7 @@ export default function ObitoDetail() {
 
       <Card title={`Guias acionadas (${guias.length})`}>
         {guias.length === 0 ? (
-          <EmptyState icon="send" title="Nenhuma guia emitida" >Selecione parceiros para gerar as guias a partir deste atendimento.</EmptyState>
+          <EmptyState icon="send" title="Nenhuma guia emitida">Gere guias em "Guias de Atendimento" para os parceiros acionados neste atendimento.</EmptyState>
         ) : (
           <DataTable
             searchable={false}

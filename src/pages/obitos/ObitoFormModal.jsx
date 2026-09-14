@@ -3,7 +3,7 @@ import {
   Modal, Button, Input, Select, FieldRow, Alert, Icon, Card, Checkbox, EmptyState,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { useClientesCache, useContratosCache, usePlanosCache } from '../../lib/api.js';
+import { apiFetch, useClientesCache, useContratosCache, usePlanosCache } from '../../lib/api.js';
 import { maskCPF, maskRG, maskMoney, moneyToNumber } from '../../lib/masks.js';
 import { date as fmtDate, dateTime as fmtDateTime, money } from '../../lib/format.js';
 import { gerarNotaFalecimento } from '../../lib/notaFalecimento.js';
@@ -18,7 +18,7 @@ const servicoVazio = () => ({ tipo: SERVICOS_PRESET[0], outro: '', incluido: fal
 const falecidoVazio = { nome: '', nascimento: '', cpf: '', rg: '' };
 
 // Pop-up de registro de óbito em 4 etapas: tipo/falecido, serviço, nota de falecimento e nota fiscal.
-export default function ObitoFormModal({ onClose }) {
+export default function ObitoFormModal({ onClose, onCreated }) {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const clientes = useClientesCache();
@@ -49,7 +49,7 @@ export default function ObitoFormModal({ onClose }) {
   const pessoasDoContrato = useMemo(() => {
     if (!clienteBusca) return [];
     const titular = { id: 'titular', nome: clienteBusca.nome, cpf: clienteBusca.cpf, rg: clienteBusca.rg, nascimento: clienteBusca.nascimento };
-    const deps = (clienteBusca.dependentes || []).map((d, i) => ({ id: `dep-${i}`, nome: d.nome, cpf: d.cpf, rg: '', nascimento: d.nascimento }));
+    const deps = (clienteBusca.dependentes || []).map((d) => ({ id: d.id, nome: d.nome, cpf: d.cpf, rg: d.rg || '', nascimento: d.nascimento }));
     return [titular, ...deps];
   }, [clienteBusca]);
 
@@ -117,11 +117,35 @@ export default function ObitoFormModal({ onClose }) {
   };
 
   // ---- Passo 4: finalização ----
-  const finalizar = (comNotaFiscal) => {
-    toast(comNotaFiscal
-      ? 'Óbito registrado e nota fiscal enviada para emissão (simulação — sem persistência).'
-      : 'Óbito registrado. A nota fiscal poderá ser gerada depois, em Notas Fiscais (simulação — sem persistência).');
-    onClose();
+  const [salvando, setSalvando] = useState(false);
+  const finalizar = async (comNotaFiscal) => {
+    if (salvando) return;
+    setSalvando(true);
+    try {
+      await apiFetch('/obitos/index.php', {
+        method: 'POST',
+        body: {
+          tipoAtendimento,
+          clienteId: tipoAtendimento === 'Plano' ? clienteBusca?.id : null,
+          contratoId: tipoAtendimento === 'Plano' ? contrato?.id : null,
+          beneficiarioId: tipoAtendimento === 'Plano' ? falecidoSelId : null,
+          falecido: { ...falecido, cpf: falecido.cpf.replace(/\D/g, '') },
+          obitoEm,
+          servicos: servicos
+            .filter((s) => (s.tipo === 'Outro' ? s.outro.trim() : true))
+            .map((s) => ({ nome: s.tipo === 'Outro' ? s.outro.trim() : s.tipo, coberto: s.incluido, valor: s.incluido ? 0 : moneyToNumber(s.valor) })),
+        },
+      });
+      toast(comNotaFiscal
+        ? 'Óbito registrado. A geração de nota fiscal ainda não está disponível (fase futura) — fica pendente em Notas Fiscais.'
+        : 'Óbito registrado. A nota fiscal poderá ser gerada depois, em Notas Fiscais.');
+      onCreated?.();
+      onClose();
+    } catch (e) {
+      toast(e.message, { kind: 'danger' });
+    } finally {
+      setSalvando(false);
+    }
   };
 
   const passoLabel = (
@@ -338,8 +362,8 @@ export default function ObitoFormModal({ onClose }) {
         Deseja gerar a nota fiscal deste atendimento agora ou deixar para depois?
       </p>
       <div className="row" style={{ gap: 'var(--space-3)', justifyContent: 'center', marginTop: 'var(--space-4)' }}>
-        <Button variant="primary" icon="receipt" type="button" onClick={() => finalizar(true)}>Gerar nota fiscal agora</Button>
-        <Button variant="secondary" icon="clock" type="button" onClick={() => finalizar(false)}>Gerar depois</Button>
+        <Button variant="primary" icon="receipt" type="button" loading={salvando} onClick={() => finalizar(true)}>Gerar nota fiscal agora</Button>
+        <Button variant="secondary" icon="clock" type="button" disabled={salvando} onClick={() => finalizar(false)}>Gerar depois</Button>
       </div>
     </Modal>
   );

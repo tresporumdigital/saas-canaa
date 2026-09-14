@@ -4,8 +4,7 @@ import { PageHeader } from '../../components/index.js';
 import { Card, DataTable, StatusMenu, Button, EmptyState } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import useRowStatus from '../../hooks/useRowStatus.js';
-import { apiFetch, useParceirosList } from '../../lib/api.js';
-import { guiasDoParceiro } from '../../mock/guias.js';
+import { apiFetch, useGuiasCache, useParceirosList } from '../../lib/api.js';
 import { cnpj } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
 import ParceiroFormModal from './ParceiroFormModal.jsx';
@@ -14,7 +13,10 @@ export default function ParceirosList() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { rows: parceiros, loading, error, reload } = useParceirosList();
-  const base = useMemo(() => parceiros.map((p) => ({ ...p, guias: guiasDoParceiro(p.id).length })), [parceiros]);
+  const guiasTodas = useGuiasCache();
+  const base = useMemo(() => parceiros.map((p) => ({
+    ...p, guias: guiasTodas.filter((g) => g.parceiroId === p.id).length,
+  })), [parceiros, guiasTodas]);
   const [rows, setStatusLocal] = useRowStatus(base);
   const [showNew, setShowNew] = useState(false);
 

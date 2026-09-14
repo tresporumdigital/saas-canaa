@@ -1,15 +1,13 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
 import {
   Card, Badge, Button, DefList, Timeline, EmptyState, Alert, Modal, Textarea, PrintDocument,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { guiaById, CICLO_GUIA } from '../../mock/guias.js';
-import { obitoById } from '../../mock/obitos.js';
-import { useParceirosCache } from '../../lib/api.js';
-import { dateTime, money, date } from '../../lib/format.js';
-import { statusVariant } from '../../lib/status.js';
+import { apiFetch, reloadGuiasCache, useParceirosCache } from '../../lib/api.js';
+import { dateTime, money } from '../../lib/format.js';
+import { CICLO_GUIA, statusVariant } from '../../lib/status.js';
 
 export default function GuiaDetail() {
   const { id } = useParams();
@@ -17,14 +15,27 @@ export default function GuiaDetail() {
   const [showPrint, setShowPrint] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
   const [justificativa, setJustificativa] = useState('');
+  const [cancelando, setCancelando] = useState(false);
   const parceiros = useParceirosCache();
   const parceiroById = (pid) => parceiros.find((p) => p.id === pid);
+  const [g, setG] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState(null);
 
-  const g = guiaById(id);
-  if (!g) return <EmptyState icon="send" title="Guia não encontrada" action={<Button to="/guias">Voltar</Button>} />;
+  const carregar = useCallback(() => {
+    setLoading(true);
+    apiFetch(`/guias/detail.php?id=${encodeURIComponent(id)}`)
+      .then((row) => { setG(row); setErro(null); })
+      .catch((e) => setErro(e.message))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  useEffect(() => { carregar(); }, [carregar]);
+
+  if (loading) return null;
+  if (erro || !g) return <EmptyState icon="send" title="Guia não encontrada" action={<Button to="/guias">Voltar</Button>} />;
 
   const parceiro = parceiroById(g.parceiroId);
-  const obito = obitoById(g.obitoId);
   const idxAtual = CICLO_GUIA.indexOf(g.status);
 
   const steps = CICLO_GUIA.map((label, i) => {
@@ -36,6 +47,26 @@ export default function GuiaDetail() {
       state: g.status === 'Cancelada' ? (i <= 1 ? 'done' : 'todo') : i < idxAtual ? 'done' : i === idxAtual ? 'current' : 'todo',
     };
   });
+
+  const confirmarCancelamento = async () => {
+    if (justificativa.trim().length < 10 || cancelando) return;
+    setCancelando(true);
+    try {
+      await apiFetch(`/guias/status.php?id=${encodeURIComponent(g.id)}`, {
+        method: 'PATCH',
+        body: { status: 'Cancelada', justificativa },
+      });
+      toast('Guia cancelada e registrada em log.', { kind: 'warning' });
+      setShowCancel(false);
+      setJustificativa('');
+      carregar();
+      reloadGuiasCache();
+    } catch (e) {
+      toast(e.message, { kind: 'danger' });
+    } finally {
+      setCancelando(false);
+    }
+  };
 
   return (
     <>
@@ -63,14 +94,14 @@ export default function GuiaDetail() {
       <div className="grid cols-2">
         <Card title="Dados da guia">
           <DefList items={[
-            { label: 'Cliente', value: g.clienteNome },
-            { label: 'Vínculo', value: g.clienteVinculo },
-            { label: 'Atendimento', value: obito ? <Link to={`/obitos/${obito.id}`}>{obito.id}</Link> : '—' },
+            { label: 'Cliente', value: g.clienteNome || '—' },
+            { label: 'Vínculo', value: g.clienteVinculo || '—' },
+            { label: 'Atendimento', value: g.obitoId ? <Link to={`/obitos/${g.obitoId}`}>{g.obitoId}</Link> : '—' },
             { label: 'Parceiro acionado', value: <Link to={`/parceiros/${g.parceiroId}`}>{parceiro?.nomeFantasia}</Link> },
             { label: 'Serviço solicitado', value: g.servico },
             { label: 'Valor acordado', value: money(g.valorAcordado) },
             { label: 'Emitida em', value: dateTime(g.emitidaEm) },
-            { label: 'Responsável pela emissão', value: g.emitidaPor },
+            { label: 'Responsável pela emissão', value: g.emitidaPor || '—' },
             { label: 'Cobertura do plano', value: g.coberto ? 'Coberto' : 'Não coberto — cobrança à parte' },
           ]} />
         </Card>
@@ -92,11 +123,11 @@ export default function GuiaDetail() {
             <table>
               <tbody>
                 <tr><th>Cliente</th><td>{g.clienteNome}</td><th>Vínculo</th><td>{g.clienteVinculo}</td></tr>
-                <tr><th>Atendimento</th><td>{g.obitoId}</td><th>Emissão</th><td>{dateTime(g.emitidaEm)}</td></tr>
+                <tr><th>Atendimento</th><td>{g.obitoId || '—'}</td><th>Emissão</th><td>{dateTime(g.emitidaEm)}</td></tr>
                 <tr><th>Parceiro</th><td>{parceiro?.razaoSocial}</td><th>CNPJ</th><td>{parceiro?.cnpj}</td></tr>
                 <tr><th>Serviço solicitado</th><td colSpan={3}>{g.servico}</td></tr>
                 <tr><th>Plano / cobertura</th><td>{g.coberto ? 'Coberto pelo plano' : 'Cobrança à parte'}</td><th>Valor acordado</th><td>{money(g.valorAcordado)}</td></tr>
-                <tr><th>Responsável pela emissão</th><td colSpan={3}>{g.emitidaPor}</td></tr>
+                <tr><th>Responsável pela emissão</th><td colSpan={3}>{g.emitidaPor || '—'}</td></tr>
               </tbody>
             </table>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>
@@ -114,8 +145,8 @@ export default function GuiaDetail() {
         <Modal title="Cancelar guia" onClose={() => setShowCancel(false)}
           footer={<>
             <Button size="sm" variant="secondary" onClick={() => setShowCancel(false)}>Voltar</Button>
-            <Button size="sm" variant="danger" disabled={justificativa.trim().length < 10}
-              onClick={() => { toast('Guia cancelada e registrada em log (simulação).', { kind: 'warning' }); setShowCancel(false); }}>
+            <Button size="sm" variant="danger" disabled={justificativa.trim().length < 10} loading={cancelando}
+              onClick={confirmarCancelamento}>
               Confirmar cancelamento
             </Button>
           </>}>

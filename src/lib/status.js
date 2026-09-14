@@ -77,3 +77,6 @@ export const STATUS_SETS = {
   unidadeEquipamento: ['Disponível', 'Emprestado', 'Em manutenção', 'Baixado'],
   contaFinanceira: ['Pago', 'Em aberto', 'Vencido', 'Negociado'],
 };
+
+// Ciclo de vida de uma guia (sem o estado terminal "Cancelada", que é à parte).
+export const CICLO_GUIA = STATUS_SETS.guia.filter((s) => s !== 'Cancelada');

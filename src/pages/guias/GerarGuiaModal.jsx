@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Modal, Button, Select, Alert, PrintDocument } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { useClientesCache, useContratosCache, useParceirosCache } from '../../lib/api.js';
+import { apiFetch, useClientesCache, useContratosCache, useParceirosCache } from '../../lib/api.js';
 import { dateTime, money } from '../../lib/format.js';
 
 // Pop-up: busca o contrato pelo titular, escolhe o beneficiário (titular ou dependente)
@@ -32,36 +32,50 @@ export default function GerarGuiaModal({ onClose, onGenerate }) {
   const beneficiarios = useMemo(() => {
     if (!clienteBusca) return [];
     const titular = { id: 'titular', nome: clienteBusca.nome, vinculo: 'Titular' };
-    const deps = (clienteBusca.dependentes || []).map((d, i) => ({ id: `dep-${i}`, nome: d.nome, vinculo: 'Dependente' }));
+    const deps = (clienteBusca.dependentes || []).map((d) => ({ id: d.id, nome: d.nome, vinculo: 'Dependente' }));
     return [titular, ...deps];
   }, [clienteBusca]);
 
   const beneficiario = beneficiarios.find((b) => b.id === beneficiarioId);
   const pronto = Boolean(contrato && beneficiario && parceiro);
+  const [salvando, setSalvando] = useState(false);
 
-  const gerar = (e) => {
+  const gerar = async (e) => {
     e.preventDefault();
-    if (!pronto) return;
+    if (!pronto || salvando) return;
+    setSalvando(true);
     const servico = parceiro.acordo?.servicosCobertos?.[0] || parceiro.tipoParceria;
     const valor = parceiro.acordo?.tipo === 'Fixo por atendimento' ? parceiro.acordo.valor : 0;
-    const id = `GA-2026-9${String(Date.now()).slice(-4)}`;
-    const nova = {
-      id,
-      clienteNome: beneficiario.nome,
-      clienteVinculo: beneficiario.vinculo,
-      contratoId: contrato.id,
-      parceiroId: parceiro.id,
-      servico,
-      valorAcordado: valor,
-      emitidaEm: new Date().toISOString(),
-      emitidaPor: 'Geração manual',
-      status: 'Emitida',
-      coberto: true,
-      historico: [],
-      pdfNumero: id.replace('GA-', ''),
-    };
-    onGenerate(nova);
-    setGuiaGerada(nova);
+    try {
+      const { id } = await apiFetch('/guias/index.php', {
+        method: 'POST',
+        body: {
+          contratoId: contrato.id, parceiroId: parceiro.id,
+          clienteNome: beneficiario.nome, clienteVinculo: beneficiario.vinculo,
+          servico, valorAcordado: valor, coberto: true,
+        },
+      });
+      const nova = {
+        id,
+        clienteNome: beneficiario.nome,
+        clienteVinculo: beneficiario.vinculo,
+        contratoId: contrato.id,
+        parceiroId: parceiro.id,
+        servico,
+        valorAcordado: valor,
+        emitidaEm: new Date().toISOString(),
+        emitidaPor: 'Geração manual',
+        status: 'Emitida',
+        coberto: true,
+        pdfNumero: id.replace('GA-', ''),
+      };
+      onGenerate(nova);
+      setGuiaGerada(nova);
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    } finally {
+      setSalvando(false);
+    }
   };
 
   if (guiaGerada) {
@@ -108,7 +122,7 @@ export default function GerarGuiaModal({ onClose, onGenerate }) {
       footer={(
         <>
           <Button variant="secondary" type="button" onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" type="submit" form="gerar-guia-form" disabled={!pronto}>Gerar</Button>
+          <Button variant="primary" type="submit" form="gerar-guia-form" disabled={!pronto} loading={salvando}>Gerar</Button>
         </>
       )}
     >

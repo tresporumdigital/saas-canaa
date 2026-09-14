@@ -1,6 +1,4 @@
 import { TODAY } from '../lib/format.js';
-import { obitos, obitoById, obitosDoCliente } from './obitos.js';
-import { guias, guiaById, guiasDoParceiro, guiasDoObito, CICLO_GUIA } from './guias.js';
 import {
   equipamentosProduto, equipamentoProdutoById, equipamentosAbaixoDoMinimo,
   unidadesEquipamento, unidadeByPatrimonio, emprestimos, emprestimoById,
@@ -21,8 +19,6 @@ import {
   backupExecucoes, ultimoBackup, auditoria,
 } from './sistema.js';
 
-export * from './obitos.js';
-export * from './guias.js';
 export * from './equipamentos.js';
 export * from './carnes.js';
 export * from './notasFiscais.js';
@@ -62,7 +58,7 @@ export function inadimplenciaTotal() {
   return agingInadimplencia.reduce((s, b) => s + b.value, 0);
 }
 
-export function guiasPorParceiro() {
+export function guiasPorParceiro(guias) {
   const map = {};
   guias.forEach((g) => {
     map[g.parceiroId] = map[g.parceiroId] || { parceiroId: g.parceiroId, total: 0, valor: 0 };
@@ -73,9 +69,10 @@ export function guiasPorParceiro() {
 }
 
 // ---------- Dados do dashboard ----------
-// `parceiros`/`contratos`/`planos`/`pagamentosReais` vêm dos caches/listas reativos da API —
-// não são mais mockados, então o chamador (Dashboard.jsx) precisa repassar as listas.
-export function dashboardData(periodo = 'mes', parceiros = [], contratos = [], planos = [], pagamentosReais = []) {
+// `parceiros`/`contratos`/`planos`/`pagamentosReais`/`obitosReais`/`guiasReais` vêm dos
+// caches/listas reativos da API — não são mais mockados, então o chamador (Dashboard.jsx)
+// precisa repassar as listas.
+export function dashboardData(periodo = 'mes', parceiros = [], contratos = [], planos = [], pagamentosReais = [], obitosReais = [], guiasReais = []) {
   const parceiroById = (id) => parceiros.find((p) => p.id === id);
   const planoById = (id) => planos.find((p) => p.id === id);
   const contratoValor = (c) => planoById(c.planoId)?.valorMensal || 0;
@@ -96,7 +93,7 @@ export function dashboardData(periodo = 'mes', parceiros = [], contratos = [], p
   const atrasadasDevolucao = emprestimosAtrasados().length;
   const vendidosNoMes = vendasEquipamento.filter((v) => inPeriodo(v.data, periodo)).length;
 
-  const obitosPeriodo = obitos.filter((o) => inPeriodo(o.abertoEm, periodo));
+  const obitosPeriodo = obitosReais.filter((o) => inPeriodo(o.abertoEm, periodo));
 
   const nfPendentes = notasFiscais.filter((n) => n.status === 'Pendente' || n.status === 'Rejeitada').length;
 
@@ -115,7 +112,7 @@ export function dashboardData(periodo = 'mes', parceiros = [], contratos = [], p
     },
     atendimentos: {
       obitos: obitosPeriodo.length,
-      porParceiro: guiasPorParceiro().slice(0, 4).map((g) => ({
+      porParceiro: guiasPorParceiro(guiasReais).slice(0, 4).map((g) => ({
         parceiro: parceiroById(g.parceiroId)?.nomeFantasia || g.parceiroId,
         total: g.total,
       })),

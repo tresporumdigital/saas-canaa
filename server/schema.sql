@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS clientes (
 
 CREATE TABLE IF NOT EXISTS dependentes (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NULL UNIQUE,
   cliente_id INT UNSIGNED NOT NULL,
   nome VARCHAR(160) NOT NULL, cpf CHAR(11), rg VARCHAR(20), telefone VARCHAR(20),
   parentesco VARCHAR(40), nascimento DATE,
@@ -152,4 +153,71 @@ CREATE TABLE IF NOT EXISTS pagamentos (
   criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (parcela_id) REFERENCES contrato_parcelas(id) ON DELETE SET NULL,
   FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Fase 4: Registro de Óbito + Guias de Atendimento
+
+CREATE TABLE IF NOT EXISTS obitos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NOT NULL UNIQUE,
+  status ENUM('Aberto','Em andamento','Concluído') NOT NULL DEFAULT 'Aberto',
+  aberto_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  responsavel_usuario_id INT UNSIGNED NULL,
+  falecido_nome VARCHAR(160) NOT NULL,
+  falecido_cpf CHAR(11) NULL,
+  falecido_nascimento DATE NULL,
+  falecido_obito_em DATETIME NOT NULL,
+  falecido_local_obito VARCHAR(160) NULL,
+  falecido_causa_declarada VARCHAR(255) NULL,
+  falecido_numero_do VARCHAR(80) NULL,
+  falecido_cartorio VARCHAR(160) NULL,
+  vinculo_tipo ENUM('Titular','Dependente','Particular') NOT NULL,
+  cliente_id INT UNSIGNED NULL,
+  contrato_id INT UNSIGNED NULL,
+  dependente_id INT UNSIGNED NULL,
+  solicitante_nome VARCHAR(160) NULL, solicitante_parentesco VARCHAR(60) NULL, solicitante_telefone VARCHAR(20) NULL,
+  local_velorio VARCHAR(160) NULL, local_sepultamento VARCHAR(160) NULL,
+  cobertura_plano_ativo TINYINT(1) NULL, cobertura_carencia_cumprida TINYINT(1) NULL,
+  cobertura_dependente_incluido TINYINT(1) NULL, cobertura_adimplente TINYINT(1) NULL,
+  valor_total DECIMAL(10,2) NOT NULL DEFAULT 0,
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+  FOREIGN KEY (contrato_id) REFERENCES contratos(id),
+  FOREIGN KEY (dependente_id) REFERENCES dependentes(id),
+  FOREIGN KEY (responsavel_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS obito_servicos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  obito_id INT UNSIGNED NOT NULL,
+  nome VARCHAR(160) NOT NULL, coberto TINYINT(1) NOT NULL DEFAULT 0, valor DECIMAL(10,2) NOT NULL DEFAULT 0,
+  FOREIGN KEY (obito_id) REFERENCES obitos(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS guias (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NOT NULL UNIQUE,
+  obito_id INT UNSIGNED NULL,
+  parceiro_id INT UNSIGNED NOT NULL,
+  cliente_id INT UNSIGNED NULL,
+  cliente_nome_snapshot VARCHAR(160) NULL,
+  cliente_vinculo_snapshot VARCHAR(20) NULL,
+  servico VARCHAR(160) NOT NULL,
+  valor_acordado DECIMAL(10,2) NOT NULL,
+  emitida_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  emitida_por_usuario_id INT UNSIGNED NULL,
+  status ENUM('Emitida','Enviada','Aceita','Em execução','Concluída','Faturada','Cancelada') NOT NULL DEFAULT 'Emitida',
+  coberto TINYINT(1) NOT NULL DEFAULT 0,
+  cancelada_justificativa TEXT NULL,
+  FOREIGN KEY (obito_id) REFERENCES obitos(id) ON DELETE SET NULL,
+  FOREIGN KEY (parceiro_id) REFERENCES parceiros(id),
+  FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+  FOREIGN KEY (emitida_por_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS guia_historico (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  guia_id INT UNSIGNED NOT NULL,
+  status VARCHAR(40) NOT NULL, quando DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, quem VARCHAR(160) NULL,
+  FOREIGN KEY (guia_id) REFERENCES guias(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

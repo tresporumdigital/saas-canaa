@@ -30,11 +30,11 @@ function formatar_cliente(array $c): array {
 if ($method === 'GET') {
     $clientes = $pdo->query('SELECT * FROM clientes ORDER BY id DESC')->fetchAll();
 
-    $deps = $pdo->query('SELECT id, cliente_id, nome, cpf, rg, telefone, parentesco, nascimento FROM dependentes')->fetchAll();
+    $deps = $pdo->query('SELECT codigo, cliente_id, nome, cpf, rg, telefone, parentesco, nascimento FROM dependentes')->fetchAll();
     $depsPorCliente = [];
     foreach ($deps as $d) {
         $depsPorCliente[$d['cliente_id']][] = [
-            'nome' => $d['nome'], 'cpf' => $d['cpf'], 'rg' => $d['rg'],
+            'id' => $d['codigo'], 'nome' => $d['nome'], 'cpf' => $d['cpf'], 'rg' => $d['rg'],
             'telefone' => $d['telefone'], 'parentesco' => $d['parentesco'], 'nascimento' => $d['nascimento'],
         ];
     }
@@ -82,10 +82,11 @@ if ($method === 'POST') {
         foreach (($body['dependentes'] ?? []) as $dep) {
             $depNome = trim($dep['nome'] ?? '');
             if ($depNome === '') continue;
+            $depCodigo = gerar_codigo($pdo, 'dependentes', 'DEP', 4);
             $pdo->prepare(
-                'INSERT INTO dependentes (cliente_id, nome, cpf, rg, telefone, parentesco, nascimento) VALUES (?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO dependentes (codigo, cliente_id, nome, cpf, rg, telefone, parentesco, nascimento) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
             )->execute([
-                $clienteId, $depNome,
+                $depCodigo, $clienteId, $depNome,
                 only_digits($dep['cpf'] ?? '') ?: null,
                 $dep['rg'] ?? null,
                 only_digits($dep['telefone'] ?? '') ?: null,

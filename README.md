@@ -1,13 +1,13 @@
 # Sistema de Gestão Funerária Canaã — Frontend + Backend
 
-Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-3 do backend, os
+Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-4 do backend, os
 módulos **Clientes, Parceiros, Unidades, Usuários** (+ login), **Planos (catálogo), Contratos,
-Parcelas** e a **baixa manual de Pagamentos** são reais, com API própria em PHP/PDO (`server/`,
-publicada em `/api/`) e banco MySQL/MariaDB na Hostinger — sem dado de exemplo pré-carregado, é
-um banco de produção mesmo. Os demais módulos (Carnês, Conciliação bancária automática,
-Financeiro, Óbitos, Guias, Equipamentos, Notas Fiscais, Leads, Portal do Parceiro etc.) ainda
-são **mockados** em `src/mock/` (referências cruzadas consistentes entre si) até serem migrados
-em fases seguintes.
+Parcelas**, a **baixa manual de Pagamentos** e **Registro de Óbito + Guias de Atendimento** são
+reais, com API própria em PHP/PDO (`server/`, publicada em `/api/`) e banco MySQL/MariaDB na
+Hostinger — sem dado de exemplo pré-carregado, é um banco de produção mesmo. Os demais módulos
+(Carnês, Conciliação bancária automática, Financeiro, Equipamentos, Notas Fiscais, Leads, Portal
+do Parceiro etc.) ainda são **mockados** em `src/mock/` (referências cruzadas consistentes entre
+si) até serem migrados em fases seguintes.
 
 **Online:** https://backoffice.funerariacanaa.com/
 
@@ -43,9 +43,13 @@ redireciona para lá.
   pagamentos "batidos automaticamente com o banco" — só a baixa manual é uma ação real do
   usuário, a conciliação bancária automática continua sendo uma simulação (não há gateway de
   pagamento configurado).
-- Códigos gerados (`CLI-`, `PAR-`, `CTR-2026-`...) para entidades cujo id ainda é referenciado
-  por módulos mockados começam num número alto (ex.: contratos reais começam em `CTR-2026-1001`)
-  para nunca colidir com os ids fictícios `0001..0020` usados nos mocks ainda não migrados.
+- Códigos gerados (`CLI-`, `PAR-`, `CTR-2026-`, `DEP-`, `OB-2026-`, `GA-2026-`...) para entidades
+  cujo id ainda é referenciado por módulos mockados começam num número alto (ex.: contratos
+  reais começam em `CTR-2026-1001`, óbitos em `OB-2026-1001`, guias em `GA-2026-01000`) para
+  nunca colidir com os ids fictícios usados nos mocks ainda não migrados.
+- Óbito calcula a "cobertura" (plano ativo, carência cumprida, beneficiário incluído,
+  adimplência) no servidor, a partir dos dados reais de contrato/parcelas no momento do
+  registro (`server/obitos/index.php`) — não é mais um cálculo simulado no frontend.
 
 ## Design
 
@@ -100,10 +104,10 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
 
 ## Observações
 
-- Em **Clientes, Parceiros, Unidades, Usuários, Planos, Contratos e na baixa manual de
-  Pagamentos**, criar/editar/mudar status já persiste de verdade no banco (API própria) — os
-  demais módulos continuam em simulação: ações disparam um _toast_ de confirmação, sem gravar
-  nada.
+- Em **Clientes, Parceiros, Unidades, Usuários, Planos, Contratos, na baixa manual de
+  Pagamentos e em Registro de Óbito + Guias de Atendimento**, criar/editar/mudar status já
+  persiste de verdade no banco (API própria) — os demais módulos continuam em simulação: ações
+  disparam um _toast_ de confirmação, sem gravar nada.
 - Nas listagens ainda mockadas, o badge de status é clicável: abre os status pré-definidos da
   tela e troca o status da linha (só em memória, sem persistência). Nas listagens já migradas,
   a troca de status é uma chamada real à API (com rollback visual se falhar).
@@ -119,12 +123,18 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
   não cadastrado" só porque não existe modelo de PDF definido, não porque falte persistência.
 - Registrar óbito é um assistente de 4 pop-ups (tipo/falecido → serviços → nota de
   falecimento → nota fiscal). Para atendimento "Plano", busca o contrato pelo titular e
-  deixa escolher o titular ou um dependente como a pessoa falecida, puxando os dados.
-  A nota de falecimento é gerada como imagem (canvas, com a foto opcional) e pode ser
-  baixada; a nota fiscal pode ficar para depois.
+  deixa escolher o titular ou um dependente real (com `codigo` próprio, `DEP-0001...`) como a
+  pessoa falecida, puxando os dados. Ao concluir, óbito + serviços são gravados no banco numa
+  transação, com a validação de cobertura calculada a partir do contrato/parcelas reais. A nota
+  de falecimento é gerada como imagem (canvas, com a foto opcional) e pode ser baixada; a etapa
+  de nota fiscal continua um _toast_ (Notas Fiscais ainda não foi migrado).
 - Em Guias de Atendimento, "Gerar guia" busca o contrato pelo titular, deixa escolher o
-  beneficiário (titular ou dependente) e o parceiro, cria a guia na lista (só em memória)
-  e mostra o PDF da guia para imprimir ou baixar.
+  beneficiário (titular ou dependente) e o parceiro, grava a guia no banco (com o primeiro
+  registro de histórico "Emitida") e mostra o PDF da guia para imprimir ou baixar. A troca de
+  status segue o ciclo real (`Emitida → ... → Faturada`) com histórico gravado a cada mudança;
+  cancelar exige uma justificativa (mínimo 10 caracteres), registrada em log de auditoria. Guias
+  geradas por aqui não ficam vinculadas a um óbito (`obito_id` nulo) — o formulário nunca teve um
+  seletor de "qual atendimento" para isso.
 - "Configurações" agora tem seu próprio ícone no trilho de navegação, na ordem normal
   logo abaixo de "Expansão" (antes ficava isolado no rodapé). Reúne Unidades (lista real, com
   foto por unidade — sem bloco de empresa principal), Planos (catálogo real — cadastrar um

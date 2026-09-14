@@ -14,8 +14,14 @@ if (!$cliente) json_error('Cliente não encontrado.', 404);
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    $dep = $pdo->prepare('SELECT nome, cpf, rg, telefone, parentesco, nascimento FROM dependentes WHERE cliente_id = ?');
+    $dep = $pdo->prepare('SELECT codigo, nome, cpf, rg, telefone, parentesco, nascimento FROM dependentes WHERE cliente_id = ?');
     $dep->execute([$cliente['id']]);
+    $dependentes = array_map(function ($d) {
+        return [
+            'id' => $d['codigo'], 'nome' => $d['nome'], 'cpf' => $d['cpf'], 'rg' => $d['rg'],
+            'telefone' => $d['telefone'], 'parentesco' => $d['parentesco'], 'nascimento' => $d['nascimento'],
+        ];
+    }, $dep->fetchAll());
 
     $hist = $pdo->prepare(
         'SELECT h.quando, h.oque, u.nome AS quem
@@ -39,7 +45,7 @@ if ($method === 'GET') {
             'bairro' => $cliente['bairro'], 'cidade' => $cliente['cidade'],
             'uf' => $cliente['uf'], 'cep' => $cliente['cep'],
         ],
-        'dependentes' => $dep->fetchAll(),
+        'dependentes' => $dependentes,
         'historico' => $hist->fetchAll(),
     ]);
 }

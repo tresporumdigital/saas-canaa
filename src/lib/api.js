@@ -138,6 +138,8 @@ const clientesCache = createListCache('/clientes/index.php');
 const parceirosCache = createListCache('/parceiros/index.php');
 const planosCache = createListCache('/planos/index.php');
 const contratosCache = createListCache('/contratos/index.php');
+const obitosCache = createListCache('/obitos/index.php');
+const guiasCache = createListCache('/guias/index.php');
 
 export function useClientesCache() {
   return useCacheRows(clientesCache);
@@ -165,8 +167,28 @@ export function useContratosCacheState() {
   return useCacheState(contratosCache);
 }
 
+export function useObitosCache() {
+  return useCacheRows(obitosCache);
+}
+
+export function useGuiasCache() {
+  return useCacheRows(guiasCache);
+}
+
+export function useObitosCacheState() {
+  return useCacheState(obitosCache);
+}
+
+export function useGuiasCacheState() {
+  return useCacheState(guiasCache);
+}
+
 // Para código fora de componentes/hooks (ex.: depois de um POST em outra tela) que precisa
-// invalidar o cache compartilhado de contratos para quem só lê (ClientesList, ClienteDetail...).
+// invalidar um cache compartilhado para quem só lê em outro lugar (ClientesList, ClienteDetail...).
 export function reloadContratosCache() {
   return contratosCache.reload();
+}
+
+export function reloadGuiasCache() {
+  return guiasCache.reload();
 }

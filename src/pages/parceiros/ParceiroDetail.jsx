@@ -4,8 +4,7 @@ import { PageHeader } from '../../components/index.js';
 import {
   Card, Badge, Button, Tabs, DefList, DataTable, EmptyState, Icon,
 } from '../../components/index.js';
-import { apiFetch } from '../../lib/api.js';
-import { guiasDoParceiro } from '../../mock/guias.js';
+import { apiFetch, useGuiasCache } from '../../lib/api.js';
 import { baixasDoParceiro, extratoParceiro } from '../../mock/portal.js';
 import { cnpj, dateTime, money, date, percent } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
@@ -26,6 +25,7 @@ export default function ParceiroDetail() {
   const [p, setP] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
+  const guiasTodas = useGuiasCache();
 
   const carregar = useCallback(() => {
     setLoading(true);
@@ -40,7 +40,7 @@ export default function ParceiroDetail() {
   if (loading) return null;
   if (erro || !p) return <EmptyState icon="briefcase" title="Parceiro não encontrado" action={<Button to="/parceiros">Voltar</Button>} />;
 
-  const guias = guiasDoParceiro(p.id);
+  const guias = guiasTodas.filter((g) => g.parceiroId === p.id);
   const baixas = baixasDoParceiro(p.id);
   const extrato = extratoParceiro(p.id);
   const remun = p.acordo.tipo === 'Fixo por atendimento' ? money(p.acordo.valor) : percent(p.acordo.valor);
