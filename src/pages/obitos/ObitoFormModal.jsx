@@ -3,9 +3,7 @@ import {
   Modal, Button, Input, Select, FieldRow, Alert, Icon, Card, Checkbox, EmptyState,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { useClientesCache } from '../../lib/api.js';
-import { contratosDoCliente } from '../../mock/contratos.js';
-import { planoById } from '../../mock/planos.js';
+import { useClientesCache, useContratosCache, usePlanosCache } from '../../lib/api.js';
 import { maskCPF, maskRG, maskMoney, moneyToNumber } from '../../lib/masks.js';
 import { date as fmtDate, dateTime as fmtDateTime, money } from '../../lib/format.js';
 import { gerarNotaFalecimento } from '../../lib/notaFalecimento.js';
@@ -24,6 +22,10 @@ export default function ObitoFormModal({ onClose }) {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const clientes = useClientesCache();
+  const contratos = useContratosCache();
+  const contratosDoCliente = (clienteId) => contratos.filter((c) => c.clienteId === clienteId);
+  const planosProduto = usePlanosCache();
+  const planoById = (id) => planosProduto.find((p) => p.id === id);
 
   // ---- Passo 1: tipo de atendimento + dados do falecido ----
   const [tipoAtendimento, setTipoAtendimento] = useState('');

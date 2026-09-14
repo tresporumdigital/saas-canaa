@@ -1,13 +1,11 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { PageHeader } from '../../components/index.js';
 import {
   Card, Badge, Button, DefList, DataTable, EmptyState, Tag, Modal, Input, Textarea,
 } from '../../components/index.js';
+import { PageHeader } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { contratoById, parcelasDoContrato, contratoValor } from '../../mock/contratos.js';
-import { useClientesCache } from '../../lib/api.js';
-import { planoById } from '../../mock/planos.js';
+import { apiFetch, usePlanosCache } from '../../lib/api.js';
 import { carnesDoContrato } from '../../mock/carnes.js';
 import { money, date } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
@@ -16,25 +14,38 @@ export default function ContratoDetail() {
   const { id } = useParams();
   const { toast } = useToast();
   const [showAcordo, setShowAcordo] = useState(false);
-  const clientes = useClientesCache();
+  const planosProduto = usePlanosCache();
+  const planoById = (pid) => planosProduto.find((p) => p.id === pid);
+  const [ct, setCt] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState(null);
 
-  const ct = contratoById(id);
-  if (!ct) return <EmptyState icon="shield" title="Contrato não encontrado" action={<Button to="/planos">Voltar</Button>} />;
+  const carregar = useCallback(() => {
+    setLoading(true);
+    apiFetch(`/contratos/detail.php?id=${encodeURIComponent(id)}`)
+      .then((row) => { setCt(row); setErro(null); })
+      .catch((e) => setErro(e.message))
+      .finally(() => setLoading(false));
+  }, [id]);
 
-  const cliente = clientes.find((c) => c.id === ct.clienteId);
+  useEffect(() => { carregar(); }, [carregar]);
+
+  if (loading) return null;
+  if (erro || !ct) return <EmptyState icon="shield" title="Contrato não encontrado" action={<Button to="/planos">Voltar</Button>} />;
+
   const plano = planoById(ct.planoId);
-  const parcelas = parcelasDoContrato(ct);
-  const carnes = carnesDoContrato(ct.id);
+  const parcelas = ct.parcelas;
   const pagas = parcelas.filter((p) => p.status === 'Pago').length;
   const emAberto = parcelas.filter((p) => p.status === 'Vencido' || p.status === 'Em aberto');
   const divida = emAberto.reduce((s, p) => s + p.valor, 0);
+  const carnes = carnesDoContrato(ct.id);
 
   return (
     <>
       <PageHeader
         crumbs={[{ label: 'Início', to: '/' }, { label: 'Planos', to: '/planos' }, { label: ct.id }]}
         title={`Contrato ${ct.id}`}
-        subtitle={`${plano?.nome} · ${cliente?.nome}`}
+        subtitle={`${plano?.nome} · ${ct.clienteId}`}
         actions={
           <>
             <Badge variant={statusVariant(ct.situacao)}>{ct.situacao}</Badge>
@@ -49,13 +60,13 @@ export default function ContratoDetail() {
       <div className="grid cols-2">
         <Card title="Dados do contrato">
           <DefList items={[
-            { label: 'Cliente', value: <Link to={`/clientes/${cliente?.id}`}>{cliente?.nome}</Link> },
+            { label: 'Cliente', value: <Link to={`/clientes/${ct.clienteId}`}>{ct.clienteId}</Link> },
             { label: 'Plano', value: plano?.nome },
-            { label: 'Mensalidade', value: money(contratoValor(ct)) },
+            { label: 'Mensalidade', value: money(plano?.valorMensal) },
             { label: 'Início de vigência', value: date(ct.inicio) },
             { label: 'Dia de vencimento', value: `dia ${ct.diaVencimento}` },
             { label: 'Forma de pagamento', value: ct.formaPagamento },
-            { label: 'Vendedor', value: ct.vendedor },
+            { label: 'Vendedor', value: ct.vendedor || '—' },
             { label: 'Renovação', value: 'Automática ao fim da vigência, com reajuste ' + plano?.reajuste },
             ...(ct.canceladoEm ? [{ label: 'Cancelamento', value: `${date(ct.canceladoEm)} — ${ct.motivoCancelamento}` }] : []),
           ]} />

@@ -5,10 +5,8 @@ import {
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useRole } from '../../context/RoleContext.jsx';
-import { useClientesCache, useParceirosCache } from '../../lib/api.js';
+import { useClientesCache, useContratosCache, useParceirosCache, usePlanosCache } from '../../lib/api.js';
 import { baixasDoParceiro, extratoParceiro } from '../../mock/portal.js';
-import { contratosDoCliente } from '../../mock/contratos.js';
-import { planoById } from '../../mock/planos.js';
 import { money, dateTime, cpf } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
 
@@ -30,6 +28,9 @@ export default function PortalParceiro() {
   const [resultado, setResultado] = useState(null);
   const clientes = useClientesCache();
   const parceiros = useParceirosCache();
+  const contratos = useContratosCache();
+  const planosProduto = usePlanosCache();
+  const planoById = (id) => planosProduto.find((p) => p.id === id);
 
   const parceiro = parceiros.find((p) => p.id === PARCEIRO_DEMO);
   if (!parceiro) return null;
@@ -41,7 +42,7 @@ export default function PortalParceiro() {
     const termo = busca.replace(/\D/g, '');
     const cli = clientes.find((c) => c.cpf.includes(termo) || c.nome.toLowerCase().includes(busca.toLowerCase()));
     if (!cli) { setResultado({ erro: true }); return; }
-    const ct = contratosDoCliente(cli.id)[0];
+    const ct = contratos.find((c) => c.clienteId === cli.id);
     setResultado({
       nome: cli.nome,
       cpf: cli.cpf,

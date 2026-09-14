@@ -3,8 +3,7 @@ import {
   Modal, Button, Input, Select, FieldRow, Alert, Icon, Card, EmptyState, EnderecoFields,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { apiFetch } from '../../lib/api.js';
-import { planosProduto } from '../../mock/planos.js';
+import { apiFetch, reloadContratosCache, usePlanosCache } from '../../lib/api.js';
 import { money } from '../../lib/format.js';
 import { maskCPF, maskRG, maskPhone, isValidEmail } from '../../lib/masks.js';
 
@@ -16,6 +15,7 @@ const dependenteVazio = () => ({ nome: '', cpf: '', rg: '', telefone: '', parent
 // Pop-up de cadastro de novo cliente em 3 etapas: titular, dependentes e contrato.
 export default function NovoClienteWizard({ existentes = [], onClose, onCreated }) {
   const { toast } = useToast();
+  const planosProduto = usePlanosCache();
   const [step, setStep] = useState(1);
   const [salvando, setSalvando] = useState(false);
 
@@ -47,15 +47,29 @@ export default function NovoClienteWizard({ existentes = [], onClose, onCreated 
     if (salvando) return;
     setSalvando(true);
     try {
-      await apiFetch('/clientes/index.php', {
+      const { id: clienteId } = await apiFetch('/clientes/index.php', {
         method: 'POST',
         body: { ...form, cpf: cpfDigits, endereco, dependentes },
       });
-      // Contratação de plano ainda não está ligada ao backend nesta fase.
-      const msg = planoEscolhido
-        ? `Cliente cadastrado. Contratação de ${planoEscolhido.nome} ainda não é persistida (fase futura).`
-        : 'Cliente cadastrado com sucesso.';
-      toast(msg);
+
+      if (planoEscolhido) {
+        try {
+          await apiFetch('/contratos/index.php', {
+            method: 'POST',
+            body: {
+              clienteId, planoId: form.planoId, inicio: form.planoInicio,
+              diaVencimento: form.planoVencimento, formaPagamento: 'Boleto',
+            },
+          });
+          reloadContratosCache();
+          toast(`Cliente cadastrado e ${planoEscolhido.nome} contratado.`);
+        } catch (erroContrato) {
+          // Cliente já foi criado — não deixa o cadastro "preso" por causa do contrato.
+          toast(`Cliente cadastrado, mas houve um erro ao contratar o plano: ${erroContrato.message}`, { kind: 'warning' });
+        }
+      } else {
+        toast('Cliente cadastrado com sucesso.');
+      }
       onCreated?.();
     } catch (e) {
       toast(e.message, { kind: 'danger' });

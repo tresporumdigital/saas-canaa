@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Modal, Button, Select, Alert, PrintDocument } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { useClientesCache, useParceirosCache } from '../../lib/api.js';
-import { contratosDoCliente } from '../../mock/contratos.js';
+import { useClientesCache, useContratosCache, useParceirosCache } from '../../lib/api.js';
 import { dateTime, money } from '../../lib/format.js';
 
 // Pop-up: busca o contrato pelo titular, escolhe o beneficiário (titular ou dependente)
@@ -11,6 +10,8 @@ export default function GerarGuiaModal({ onClose, onGenerate }) {
   const { toast } = useToast();
   const clientes = useClientesCache();
   const parceiros = useParceirosCache();
+  const contratos = useContratosCache();
+  const contratosDoCliente = (clienteId) => contratos.filter((c) => c.clienteId === clienteId);
   const [clienteBuscaId, setClienteBuscaId] = useState('');
   const [contrato, setContrato] = useState(null);
   const [buscou, setBuscou] = useState(false);

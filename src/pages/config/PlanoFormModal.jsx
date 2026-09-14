@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Modal, Button, Input, FieldRow } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
+import { apiFetch } from '../../lib/api.js';
 import { maskMoney, moneyToNumber, numberToMoneyInput } from '../../lib/masks.js';
 
 const vazio = { nome: '', valorMensal: '', carenciaDias: '90', limiteDependentes: '4', reajuste: 'IPCA anual', coberturas: '' };
 
 // Pop-up de cadastro/edição de um plano (produto) oferecido nas unidades.
-export default function PlanoFormModal({ plano, onClose, onCreate, onUpdate }) {
+export default function PlanoFormModal({ plano, onClose, onSaved }) {
   const editando = Boolean(plano);
+  const [salvando, setSalvando] = useState(false);
   const [form, setForm] = useState(() => (
     editando ? {
       nome: plano.nome,
@@ -22,9 +24,10 @@ export default function PlanoFormModal({ plano, onClose, onCreate, onUpdate }) {
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const pronto = form.nome.trim() && moneyToNumber(form.valorMensal) > 0;
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    if (!pronto) return;
+    if (!pronto || salvando) return;
+    setSalvando(true);
     const dados = {
       nome: form.nome.trim(),
       valorMensal: moneyToNumber(form.valorMensal),
@@ -33,14 +36,20 @@ export default function PlanoFormModal({ plano, onClose, onCreate, onUpdate }) {
       reajuste: form.reajuste,
       coberturas: form.coberturas.split(',').map((c) => c.trim()).filter(Boolean),
     };
-    if (editando) {
-      onUpdate({ ...plano, ...dados });
-      toast(`Plano ${dados.nome} atualizado (simulação — sem persistência).`);
-    } else {
-      onCreate({ id: `PL-9${String(Date.now()).slice(-3)}`, ...dados });
-      toast(`Plano ${dados.nome} cadastrado (simulação — sem persistência).`);
+    try {
+      if (editando) {
+        await apiFetch(`/planos/detail.php?id=${encodeURIComponent(plano.id)}`, { method: 'PUT', body: dados });
+        toast(`Plano ${dados.nome} atualizado.`);
+      } else {
+        await apiFetch('/planos/index.php', { method: 'POST', body: dados });
+        toast(`Plano ${dados.nome} cadastrado.`);
+      }
+      onSaved?.();
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    } finally {
+      setSalvando(false);
     }
-    onClose();
   };
 
   return (
@@ -51,7 +60,7 @@ export default function PlanoFormModal({ plano, onClose, onCreate, onUpdate }) {
       footer={(
         <>
           <Button variant="secondary" type="button" onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" type="submit" form="plano-form" disabled={!pronto}>
+          <Button variant="primary" type="submit" form="plano-form" disabled={!pronto} loading={salvando}>
             {editando ? 'Salvar alterações' : 'Cadastrar plano'}
           </Button>
         </>

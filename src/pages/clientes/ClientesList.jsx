@@ -4,9 +4,7 @@ import { PageHeader } from '../../components/index.js';
 import { Card, DataTable, StatusMenu, Button, EmptyState } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import useRowStatus from '../../hooks/useRowStatus.js';
-import { apiFetch, useClientesList } from '../../lib/api.js';
-import { contratosDoCliente } from '../../mock/index.js';
-import { planoById } from '../../mock/planos.js';
+import { apiFetch, useClientesList, useContratosCache, usePlanosCache } from '../../lib/api.js';
 import { cpf, phone, date } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
 import NovoClienteWizard from './NovoClienteWizard.jsx';
@@ -18,21 +16,22 @@ export default function ClientesList() {
   const q = params.get('q') || '';
   const [showNew, setShowNew] = useState(false);
   const { rows: clientes, loading, error, reload } = useClientesList();
+  const contratos = useContratosCache();
+  const planos = usePlanosCache();
 
-  // Plano/contrato ainda é mockado nesta fase — a junção fica igual à de antes.
   const base = useMemo(() => clientes.map((c) => {
-    const contratos = contratosDoCliente(c.id);
-    const principal = contratos[0];
+    const principal = contratos.find((ct) => ct.clienteId === c.id);
     return {
       ...c,
-      planoNome: principal ? planoById(principal.planoId)?.nome : '—',
+      contratoId: principal?.id || null,
+      planoNome: principal ? planos.find((p) => p.id === principal.planoId)?.nome : '—',
       situacaoPlano: principal ? principal.situacao : 'Sem plano',
       dependentesCount: c.dependentes.length,
     };
-  }), [clientes]);
+  }), [clientes, contratos, planos]);
 
   const [rowsCadastro, setCadastroLocal] = useRowStatus(base, { key: 'status' });
-  const [rows, setSituacao] = useRowStatus(rowsCadastro, { key: 'situacaoPlano' });
+  const [rows, setSituacaoLocal] = useRowStatus(rowsCadastro, { key: 'situacaoPlano' });
 
   const alterarCadastro = async (r, next) => {
     setCadastroLocal(r.id, next);
@@ -41,6 +40,21 @@ export default function ClientesList() {
       toast(`Cadastro de ${r.nome} definido como "${next}".`);
     } catch (e) {
       setCadastroLocal(r.id, r.status);
+      toast(e.message, { kind: 'danger' });
+    }
+  };
+
+  const alterarSituacaoPlano = async (r, next) => {
+    if (!r.contratoId) {
+      toast(`${r.nome} ainda não tem um plano contratado.`, { kind: 'warning' });
+      return;
+    }
+    setSituacaoLocal(r.id, next);
+    try {
+      await apiFetch(`/contratos/status.php?id=${encodeURIComponent(r.contratoId)}`, { method: 'PATCH', body: { situacao: next } });
+      toast(`Situação de plano de ${r.nome} alterada para "${next}".`);
+    } catch (e) {
+      setSituacaoLocal(r.id, r.situacaoPlano);
       toast(e.message, { kind: 'danger' });
     }
   };
@@ -59,7 +73,7 @@ export default function ClientesList() {
       <StatusMenu
         value={r.situacaoPlano}
         options={STATUS_SETS.clientePlano}
-        onChange={(next) => { setSituacao(r.id, next); toast(`Situação de plano de ${r.nome} alterada para "${next}".`); }}
+        onChange={(next) => alterarSituacaoPlano(r, next)}
       />
     ) },
     { key: 'status', header: 'Cadastro', render: (r) => (

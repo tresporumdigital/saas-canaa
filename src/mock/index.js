@@ -1,6 +1,4 @@
 import { TODAY } from '../lib/format.js';
-import { planosProduto, planoById } from './planos.js';
-import { contratos, contratoById, contratosDoCliente, contratoValor, parcelasDoContrato } from './contratos.js';
 import { obitos, obitoById, obitosDoCliente } from './obitos.js';
 import { guias, guiaById, guiasDoParceiro, guiasDoObito, CICLO_GUIA } from './guias.js';
 import {
@@ -23,8 +21,6 @@ import {
   backupExecucoes, ultimoBackup, auditoria,
 } from './sistema.js';
 
-export * from './planos.js';
-export * from './contratos.js';
 export * from './obitos.js';
 export * from './guias.js';
 export * from './equipamentos.js';
@@ -50,15 +46,16 @@ export function inPeriodo(iso, periodo = 'mes') {
 const PERIODO_LABEL = { hoje: 'hoje', semana: 'nos últimos 7 dias', mes: 'no mês', custom: 'no trimestre' };
 
 // ---------- Seletores derivados ----------
-export const contratosAtivos = () => contratos.filter((c) => c.situacao === 'Ativo' || c.situacao === 'Em atraso');
-export const contratosInadimplentes = () => contratos.filter((c) => c.situacao === 'Em atraso' || c.situacao === 'Suspenso');
+// `contratos`/`planos` vêm do cache reativo da API (useContratosCache/usePlanosCache) — não são
+// mais mockados, então quem chama precisa repassar as listas (mesmo padrão de `parceiros`).
+export const contratosAtivos = (contratos) => contratos.filter((c) => c.situacao === 'Ativo' || c.situacao === 'Em atraso');
+export const contratosInadimplentes = (contratos) => contratos.filter((c) => c.situacao === 'Em atraso' || c.situacao === 'Suspenso');
 
-export function todasParcelas() {
-  return contratos.flatMap((c) => parcelasDoContrato(c).map((p) => ({ ...p, clienteId: c.clienteId, situacaoContrato: c.situacao })));
-}
-
-export function parcelasVencidas() {
-  return todasParcelas().filter((p) => p.status === 'Vencido' || p.status === 'Em aberto');
+// A listagem de contratos já traz o total de parcelas "Em aberto" por contrato (calculado no
+// servidor); somar essa coluna evita ter que buscar o detalhe (com as parcelas) de cada um só
+// para montar um número do Painel.
+export function parcelasEmAbertoTotal(contratos) {
+  return contratos.reduce((s, c) => s + (c.parcelasEmAberto || 0), 0);
 }
 
 export function inadimplenciaTotal() {
@@ -76,19 +73,22 @@ export function guiasPorParceiro() {
 }
 
 // ---------- Dados do dashboard ----------
-// `parceiros` vem do cache reativo da API (useParceirosCache) — clientes/parceiros não são
-// mais mockados, então o chamador (Dashboard.jsx) precisa repassar a lista.
-export function dashboardData(periodo = 'mes', parceiros = []) {
+// `parceiros`/`contratos`/`planos` vêm dos caches reativos da API — não são mais mockados,
+// então o chamador (Dashboard.jsx) precisa repassar as listas.
+export function dashboardData(periodo = 'mes', parceiros = [], contratos = [], planos = []) {
   const parceiroById = (id) => parceiros.find((p) => p.id === id);
-  const ativos = contratosAtivos().length;
-  const avgMensalidade = contratosAtivos().reduce((s, c) => s + contratoValor(c), 0) / Math.max(1, ativos);
+  const planoById = (id) => planos.find((p) => p.id === id);
+  const contratoValor = (c) => planoById(c.planoId)?.valorMensal || 0;
+
+  const ativos = contratosAtivos(contratos).length;
+  const avgMensalidade = contratosAtivos(contratos).reduce((s, c) => s + contratoValor(c), 0) / Math.max(1, ativos);
   const receitaRecebida = pagamentos.filter((p) => inPeriodo(p.recebidoEm, periodo) && p.status !== 'Exceção').reduce((s, p) => s + p.valor, 0);
   const receitaPrevista = ativos * avgMensalidade;
   const inad = inadimplenciaTotal();
   const inadPct = inad / (receitaPrevista + inad);
 
-  const novos = { hoje: 1, semana: 2, mes: 4, custom: 11 }[periodo] ?? 4;
-  const cancelamentos = { hoje: 0, semana: 1, mes: 1, custom: 3 }[periodo] ?? 1;
+  const novos = contratos.filter((c) => inPeriodo(c.criadoEm, periodo)).length;
+  const cancelamentos = contratos.filter((c) => c.situacao === 'Cancelado' && inPeriodo(c.canceladoEm, periodo)).length;
 
   const emprestadas = unidadesEquipamento.filter((u) => u.status === 'Emprestado').length;
   const atrasadasDevolucao = emprestimosAtrasados().length;
@@ -119,7 +119,7 @@ export function dashboardData(periodo = 'mes', parceiros = []) {
       })),
     },
     alertas: [
-      { tipo: 'danger', icon: 'receipt', label: `${parcelasVencidas().length} carnês/parcelas vencidos`, to: '/financeiro' },
+      { tipo: 'danger', icon: 'receipt', label: `${parcelasEmAbertoTotal(contratos)} carnês/parcelas em aberto`, to: '/financeiro' },
       { tipo: 'warning', icon: 'wheelchair', label: `${atrasadasDevolucao} devoluções de equipamento atrasadas`, to: '/emprestimos' },
       { tipo: 'info', icon: 'refresh', label: '4 planos a renovar nos próximos 30 dias', to: '/planos' },
       { tipo: 'warning', icon: 'doc', label: `${nfPendentes} notas fiscais pendentes ou rejeitadas`, to: '/notas-fiscais' },

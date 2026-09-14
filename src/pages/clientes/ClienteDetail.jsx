@@ -5,12 +5,10 @@ import {
   Card, Badge, Button, Tabs, DefList, DataTable, Avatar, EmptyState, Icon, ConfirmDialog,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { apiFetch } from '../../lib/api.js';
+import { apiFetch, useContratosCache, usePlanosCache } from '../../lib/api.js';
 import {
-  contratosDoCliente, obitosDoCliente, emprestimosDoCliente,
+  obitosDoCliente, emprestimosDoCliente,
 } from '../../mock/index.js';
-import { planoById } from '../../mock/planos.js';
-import { parcelasDoContrato, contratoValor } from '../../mock/contratos.js';
 import { notasFiscais } from '../../mock/notasFiscais.js';
 import { cpf, phone, date, dateTime, money } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
@@ -35,6 +33,9 @@ export default function ClienteDetail() {
   const [cliente, setCliente] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
+  const contratosGlobal = useContratosCache();
+  const planosProduto = usePlanosCache();
+  const [parcelasPorContrato, setParcelasPorContrato] = useState({});
 
   const carregar = useCallback(() => {
     setLoading(true);
@@ -46,12 +47,27 @@ export default function ClienteDetail() {
 
   useEffect(() => { carregar(); }, [carregar]);
 
+  // Busca as parcelas de cada contrato do cliente sob demanda (não vêm na listagem).
+  useEffect(() => {
+    if (!cliente) return;
+    contratosGlobal
+      .filter((c) => c.clienteId === cliente.id)
+      .forEach((ct) => {
+        if (parcelasPorContrato[ct.id]) return;
+        apiFetch(`/contratos/detail.php?id=${encodeURIComponent(ct.id)}`)
+          .then((full) => setParcelasPorContrato((m) => ({ ...m, [ct.id]: full.parcelas })))
+          .catch(() => {});
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cliente, contratosGlobal]);
+
   if (loading) return null;
   if (erro || !cliente) {
     return <EmptyState icon="users" title="Cliente não encontrado" action={<Button to="/clientes">Voltar à lista</Button>} />;
   }
 
-  const contratos = contratosDoCliente(cliente.id);
+  const planoById = (pid) => planosProduto.find((p) => p.id === pid);
+  const contratos = contratosGlobal.filter((c) => c.clienteId === cliente.id);
   const atendimentos = obitosDoCliente(cliente.id);
   const emprestimos = emprestimosDoCliente(cliente.id);
   const notas = notasFiscais.filter((n) => n.clienteNome === cliente.nome);
@@ -148,13 +164,13 @@ export default function ClienteDetail() {
           {contratos.length === 0 ? (
             <EmptyState icon="shield" title="Sem planos contratados" action={<Button variant="primary" to="/planos/contratar">Contratar plano</Button>} />
           ) : contratos.map((ct) => {
-            const parcelas = parcelasDoContrato(ct);
+            const parcelas = parcelasPorContrato[ct.id] || [];
             return (
               <Card key={ct.id} title={`${planoById(ct.planoId)?.nome} — ${ct.id}`}
                 action={<Link className="link" to={`/planos/contratos/${ct.id}`}>Abrir contrato <Icon name="chevron-right" size={12} /></Link>}>
                 <DefList items={[
                   { label: 'Situação', value: <Badge variant={statusVariant(ct.situacao)}>{ct.situacao}</Badge> },
-                  { label: 'Mensalidade', value: money(contratoValor(ct)) },
+                  { label: 'Mensalidade', value: money(planoById(ct.planoId)?.valorMensal) },
                   { label: 'Início', value: date(ct.inicio) },
                   { label: 'Vencimento', value: `dia ${ct.diaVencimento}` },
                   { label: 'Forma de pagamento', value: ct.formaPagamento },

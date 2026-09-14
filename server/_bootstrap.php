@@ -97,3 +97,21 @@ function gerar_codigo(PDO $pdo, string $tabela, string $prefixo, int $largura, i
     }
     return $prefixo . '-' . str_pad((string) $numero, $largura, '0', STR_PAD_LEFT);
 }
+
+// "2026-09-01" -> "set/26", no mesmo formato que o mock/contratos.js sempre usou.
+function formatar_competencia(string $dataYmd): string {
+    $meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    $partes = explode('-', $dataYmd);
+    $mes = (int) $partes[1];
+    $ano = substr($partes[0], 2, 2);
+    return $meses[$mes - 1] . '/' . $ano;
+}
+
+// Status "Vencido" não é gravado — é calculado na leitura, a partir do status gravado e do
+// vencimento, do mesmo jeito que o mock computava isso em cima de uma janela de datas fixa.
+function status_parcela_exibido(string $statusGravado, string $vencimento): string {
+    if ($statusGravado === 'Em aberto' && $vencimento < date('Y-m-d')) {
+        return 'Vencido';
+    }
+    return $statusGravado;
+}

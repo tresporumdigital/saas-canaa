@@ -89,3 +89,48 @@ CREATE TABLE IF NOT EXISTS parceiro_contatos (
   nome VARCHAR(120), funcao VARCHAR(80), telefone VARCHAR(20), email VARCHAR(160),
   FOREIGN KEY (parceiro_id) REFERENCES parceiros(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Fase 2: Planos, Contratos, Parcelas
+
+CREATE TABLE IF NOT EXISTS planos_produto (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NOT NULL UNIQUE,
+  nome VARCHAR(120) NOT NULL,
+  valor_mensal DECIMAL(10,2) NOT NULL,
+  carencia_dias SMALLINT UNSIGNED DEFAULT 0,
+  limite_dependentes SMALLINT UNSIGNED DEFAULT 0,
+  reajuste VARCHAR(80),
+  coberturas JSON,
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS contratos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NOT NULL UNIQUE,
+  cliente_id INT UNSIGNED NOT NULL,
+  plano_id INT UNSIGNED NOT NULL,
+  inicio DATE NOT NULL,
+  dia_vencimento TINYINT UNSIGNED NOT NULL,
+  forma_pagamento ENUM('Boleto','Pix','Cartão recorrente') NOT NULL,
+  vendedor_usuario_id INT UNSIGNED NULL,
+  situacao ENUM('Ativo','Em atraso','Suspenso','Cancelado','Encerrado') NOT NULL DEFAULT 'Ativo',
+  cancelado_em DATE NULL,
+  motivo_cancelamento TEXT NULL,
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+  FOREIGN KEY (plano_id) REFERENCES planos_produto(id),
+  FOREIGN KEY (vendedor_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS contrato_parcelas (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  contrato_id INT UNSIGNED NOT NULL,
+  numero TINYINT UNSIGNED NOT NULL,
+  competencia DATE NOT NULL,
+  vencimento DATE NOT NULL,
+  valor DECIMAL(10,2) NOT NULL,
+  status ENUM('Em aberto','Pago','Cancelado','Negociado') NOT NULL DEFAULT 'Em aberto',
+  pago_em DATETIME NULL,
+  forma VARCHAR(40) NULL,
+  FOREIGN KEY (contrato_id) REFERENCES contratos(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

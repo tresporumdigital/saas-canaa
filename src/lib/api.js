@@ -83,21 +83,26 @@ export function useUsuariosList() {
   return useApiList('/usuarios/index.php');
 }
 
-// Cache reativo compartilhado (useSyncExternalStore) para módulos ainda mockados que só
-// precisam ler a lista de clientes/parceiros (seletor de cliente, junções por id etc.) —
-// evita cada um desses lugares refazer o fetch, e cada um lê ficando "atualizado sozinho".
+// Cache reativo compartilhado (useSyncExternalStore) para módulos que só precisam ler uma
+// lista (seletor de cliente, junções por id etc.) sem cada lugar refazer o fetch — e a página
+// "dona" de cada entidade usa o mesmo cache (via useXCacheState) para já nascer sincronizada
+// com quem só lê, em vez de manter dois fetches paralelos e desatualizados entre si.
 function createListCache(path) {
-  let rows = [];
+  let state = { rows: [], loading: true, error: null };
   let promise = null;
   const listeners = new Set();
   const notify = () => listeners.forEach((l) => l());
 
+  const load = () => {
+    state = { ...state, loading: true, error: null };
+    notify();
+    return apiFetch(path)
+      .then((data) => { state = { rows: data || [], loading: false, error: null }; notify(); })
+      .catch((e) => { state = { rows: [], loading: false, error: e.message }; notify(); });
+  };
+
   const ensureLoaded = () => {
-    if (!promise) {
-      promise = apiFetch(path)
-        .then((data) => { rows = data || []; notify(); })
-        .catch(() => { rows = []; notify(); });
-    }
+    if (!promise) promise = load();
     return promise;
   };
 
@@ -107,21 +112,57 @@ function createListCache(path) {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    getSnapshot: () => rows,
+    getRows: () => state.rows,
+    getState: () => state,
     reload() {
-      promise = null;
-      return ensureLoaded();
+      promise = load();
+      return promise;
     },
   };
 }
 
+function useCacheRows(cache) {
+  return useSyncExternalStore(cache.subscribe, cache.getRows);
+}
+
+function useCacheState(cache) {
+  const state = useSyncExternalStore(cache.subscribe, cache.getState);
+  return { ...state, reload: cache.reload };
+}
+
 const clientesCache = createListCache('/clientes/index.php');
 const parceirosCache = createListCache('/parceiros/index.php');
+const planosCache = createListCache('/planos/index.php');
+const contratosCache = createListCache('/contratos/index.php');
 
 export function useClientesCache() {
-  return useSyncExternalStore(clientesCache.subscribe, clientesCache.getSnapshot);
+  return useCacheRows(clientesCache);
 }
 
 export function useParceirosCache() {
-  return useSyncExternalStore(parceirosCache.subscribe, parceirosCache.getSnapshot);
+  return useCacheRows(parceirosCache);
+}
+
+export function usePlanosCache() {
+  return useCacheRows(planosCache);
+}
+
+export function useContratosCache() {
+  return useCacheRows(contratosCache);
+}
+
+// Para as páginas "donas" (Configurações → Planos, Planos → Contratos): loading/error/reload
+// sobre o mesmo cache compartilhado, para que criar/editar já atualize quem só lê em outro lugar.
+export function usePlanosCacheState() {
+  return useCacheState(planosCache);
+}
+
+export function useContratosCacheState() {
+  return useCacheState(contratosCache);
+}
+
+// Para código fora de componentes/hooks (ex.: depois de um POST em outra tela) que precisa
+// invalidar o cache compartilhado de contratos para quem só lê (ClientesList, ClienteDetail...).
+export function reloadContratosCache() {
+  return contratosCache.reload();
 }

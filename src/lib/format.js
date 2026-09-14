@@ -15,7 +15,13 @@ export const percent = (v) => pct.format(Number(v || 0));
 
 export function date(iso) {
   if (!iso) return '—';
-  const d = new Date(iso);
+  // Uma data "pura" (YYYY-MM-DD, sem hora) é interpretada pelo construtor Date como UTC — em
+  // fusos atrás de UTC (todo o Brasil) isso derruba o dia exibido em 1 (ex.: início de contrato
+  // "2026-09-01" virava "31/08/2026"). Construindo com ano/mês/dia soltos, fica sempre local.
+  const soloDate = /^\d{4}-\d{2}-\d{2}$/.test(iso);
+  const d = soloDate
+    ? new Date(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)))
+    : new Date(iso);
   if (Number.isNaN(d.getTime())) return String(iso);
   return d.toLocaleDateString('pt-BR');
 }

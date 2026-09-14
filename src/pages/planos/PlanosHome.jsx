@@ -1,16 +1,11 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
-  Card, Tabs, DataTable, Badge, StatusMenu, Button, Tag, AgingBars, StatCard,
+  Card, Tabs, DataTable, Badge, StatusMenu, Button, Tag, AgingBars, StatCard, EmptyState,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import useRowStatus from '../../hooks/useRowStatus.js';
-import { planosProduto } from '../../mock/planos.js';
-import { contratos } from '../../mock/contratos.js';
-import { useClientesCache } from '../../lib/api.js';
-import { planoById } from '../../mock/planos.js';
-import { contratoValor } from '../../mock/contratos.js';
+import { apiFetch, useClientesCache, useContratosCacheState, usePlanosCache } from '../../lib/api.js';
 import { agingInadimplencia } from '../../mock/financeiro.js';
 import { money, date, number } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
@@ -27,11 +22,24 @@ export default function PlanosHome() {
   const [tab, setTab] = useState('contratos');
   const clientes = useClientesCache();
   const clienteById = (id) => clientes.find((c) => c.id === id);
-  const [contratosRows, setSituacao] = useRowStatus(contratos, { key: 'situacao' });
+  const planosProduto = usePlanosCache();
+  const planoById = (id) => planosProduto.find((p) => p.id === id);
+  const contratoValor = (ct) => planoById(ct.planoId)?.valorMensal || 0;
+  const { rows: contratosRows, loading, error, reload } = useContratosCacheState();
 
   const ativos = contratosRows.filter((c) => c.situacao === 'Ativo').length;
   const emAtraso = contratosRows.filter((c) => c.situacao === 'Em atraso' || c.situacao === 'Suspenso').length;
   const mrr = contratosRows.filter((c) => c.situacao !== 'Cancelado').reduce((s, c) => s + contratoValor(c), 0);
+
+  const alterarSituacao = async (ct, next) => {
+    try {
+      await apiFetch(`/contratos/status.php?id=${encodeURIComponent(ct.id)}`, { method: 'PATCH', body: { situacao: next } });
+      toast(`Contrato ${ct.id} definido como "${next}".`);
+      reload();
+    } catch (e) {
+      toast(e.message, { kind: 'danger' });
+    }
+  };
 
   return (
     <>
@@ -52,33 +60,40 @@ export default function PlanosHome() {
 
       {tab === 'contratos' && (
         <Card>
-          <DataTable
-            rows={contratosRows}
-            searchKeys={['id']}
-            searchPlaceholder="Buscar por nº do contrato…"
-            onRowClick={(r) => navigate(`/planos/contratos/${r.id}`)}
-            pageSize={12}
-            columns={[
-              { key: 'id', header: 'Contrato', sortable: true },
-              { key: 'cliente', header: 'Cliente', render: (r) => clienteById(r.clienteId)?.nome, sortValue: (r) => clienteById(r.clienteId)?.nome },
-              { key: 'plano', header: 'Plano', render: (r) => planoById(r.planoId)?.nome },
-              { key: 'inicio', header: 'Início', sortable: true, render: (r) => date(r.inicio) },
-              { key: 'valor', header: 'Mensalidade', align: 'right', render: (r) => money(contratoValor(r)) },
-              { key: 'situacao', header: 'Situação', sortable: true, render: (r) => (
-                <StatusMenu
-                  value={r.situacao}
-                  options={STATUS_SETS.contrato}
-                  onChange={(next) => { setSituacao(r.id, next); toast(`Contrato ${r.id} definido como "${next}".`); }}
-                />
-              ) },
-            ]}
-          />
+          {error ? (
+            <EmptyState icon="alert" title="Não foi possível carregar os contratos">{error}</EmptyState>
+          ) : (
+            <DataTable
+              rows={contratosRows}
+              emptyLabel={loading ? 'Carregando…' : 'Nenhum contrato ainda — use "Contratar plano".'}
+              searchKeys={['id']}
+              searchPlaceholder="Buscar por nº do contrato…"
+              onRowClick={(r) => navigate(`/planos/contratos/${r.id}`)}
+              pageSize={12}
+              columns={[
+                { key: 'id', header: 'Contrato', sortable: true },
+                { key: 'cliente', header: 'Cliente', render: (r) => clienteById(r.clienteId)?.nome, sortValue: (r) => clienteById(r.clienteId)?.nome },
+                { key: 'plano', header: 'Plano', render: (r) => planoById(r.planoId)?.nome },
+                { key: 'inicio', header: 'Início', sortable: true, render: (r) => date(r.inicio) },
+                { key: 'valor', header: 'Mensalidade', align: 'right', render: (r) => money(contratoValor(r)) },
+                { key: 'situacao', header: 'Situação', sortable: true, render: (r) => (
+                  <StatusMenu
+                    value={r.situacao}
+                    options={STATUS_SETS.contrato}
+                    onChange={(next) => alterarSituacao(r, next)}
+                  />
+                ) },
+              ]}
+            />
+          )}
         </Card>
       )}
 
       {tab === 'produtos' && (
         <div className="grid cols-2">
-          {planosProduto.map((p) => (
+          {planosProduto.length === 0 ? (
+            <EmptyState icon="shield" title="Nenhum plano cadastrado ainda" action={<Button to="/configuracoes/planos">Cadastrar plano</Button>} />
+          ) : planosProduto.map((p) => (
             <Card key={p.id} title={p.nome}>
               <div className="row between">
                 <span style={{ fontSize: 'var(--text-2xl)', fontWeight: 800 }}>{money(p.valorMensal)}<span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>/mês</span></span>
@@ -116,7 +131,7 @@ export default function PlanosHome() {
                   <StatusMenu
                     value={r.situacao}
                     options={STATUS_SETS.contrato}
-                    onChange={(next) => { setSituacao(r.id, next); toast(`Contrato ${r.id} definido como "${next}".`); }}
+                    onChange={(next) => alterarSituacao(r, next)}
                   />
                 ) },
                 { key: 'parcelasEmAberto', header: 'Parcelas em aberto', align: 'right' },

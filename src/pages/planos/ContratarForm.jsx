@@ -1,22 +1,33 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
-import { Card, Button, Input, Select, FieldRow, Alert, Tag } from '../../components/index.js';
+import { Card, Button, Input, Select, FieldRow, Alert, Tag, EmptyState } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { useClientesCache } from '../../lib/api.js';
-import { planosProduto, planoById } from '../../mock/planos.js';
+import { apiFetch, reloadContratosCache, useClientesCache, usePlanosCache, useUsuariosList } from '../../lib/api.js';
 import { money } from '../../lib/format.js';
 
 export default function ContratarForm() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const clientes = useClientesCache();
+  const planos = usePlanosCache();
+  const { rows: usuarios } = useUsuariosList();
+  const [salvando, setSalvando] = useState(false);
   const [form, setForm] = useState({
-    clienteId: '', planoId: 'PL-FAM', inicio: '2026-09-01', diaVencimento: '10',
-    formaPagamento: 'Boleto', vendedor: 'Sandra Duarte',
+    clienteId: '', planoId: '', inicio: '2026-09-01', diaVencimento: '10',
+    formaPagamento: 'Boleto', vendedorUsuarioId: '',
   });
+
+  // Assim que o catálogo carrega, pré-seleciona o primeiro plano disponível.
+  useEffect(() => {
+    if (planos.length > 0 && !form.planoId) {
+      setForm((f) => ({ ...f, planoId: planos[0].id }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planos]);
+
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-  const plano = planoById(form.planoId);
+  const plano = planos.find((p) => p.id === form.planoId);
 
   const parcelasPreview = useMemo(() => {
     const [y, m] = form.inicio.split('-').map(Number);
@@ -26,10 +37,34 @@ export default function ContratarForm() {
     });
   }, [form.inicio, form.diaVencimento]);
 
-  const submit = (e) => {
+  if (planos.length === 0) {
+    return (
+      <>
+        <PageHeader
+          crumbs={[{ label: 'Início', to: '/' }, { label: 'Planos', to: '/planos' }, { label: 'Contratar plano' }]}
+          title="Contratar plano"
+        />
+        <EmptyState icon="shield" title="Nenhum plano cadastrado ainda" action={<Button to="/configuracoes/planos">Cadastrar um plano</Button>}>
+          Cadastre ao menos um plano em Configurações → Planos antes de contratar.
+        </EmptyState>
+      </>
+    );
+  }
+
+  const submit = async (e) => {
     e.preventDefault();
-    toast('Plano contratado — 12 parcelas recorrentes geradas automaticamente (simulação).');
-    navigate('/planos');
+    if (!form.clienteId || salvando) return;
+    setSalvando(true);
+    try {
+      await apiFetch('/contratos/index.php', { method: 'POST', body: form });
+      reloadContratosCache();
+      toast('Plano contratado — 12 parcelas recorrentes geradas automaticamente.');
+      navigate('/planos');
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    } finally {
+      setSalvando(false);
+    }
   };
 
   return (
@@ -47,14 +82,16 @@ export default function ContratarForm() {
               {clientes.filter((c) => c.status === 'Ativo').map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
             </Select>
             <Select label="Produto de plano" value={form.planoId} onChange={set('planoId')}
-              options={planosProduto.map((p) => ({ value: p.id, label: `${p.nome} — ${money(p.valorMensal)}/mês` }))} />
+              options={planos.map((p) => ({ value: p.id, label: `${p.nome} — ${money(p.valorMensal)}/mês` }))} />
             <Input label="Data de início" type="date" value={form.inicio} onChange={set('inicio')} />
             <Select label="Dia de vencimento" value={form.diaVencimento} onChange={set('diaVencimento')}
               options={['1', '5', '10', '15', '20', '25']} />
             <Select label="Forma de pagamento" value={form.formaPagamento} onChange={set('formaPagamento')}
               options={['Boleto', 'Pix', 'Cartão recorrente']} />
-            <Select label="Vendedor responsável" value={form.vendedor} onChange={set('vendedor')}
-              options={['Sandra Duarte', 'Renato Aguiar']} />
+            <Select label="Vendedor responsável" value={form.vendedorUsuarioId} onChange={set('vendedorUsuarioId')}>
+              <option value="">Não informar</option>
+              {usuarios.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
+            </Select>
           </FieldRow>
         </Card>
 
@@ -83,7 +120,7 @@ export default function ContratarForm() {
 
         <div className="row" style={{ justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
           <Button variant="secondary" type="button" onClick={() => navigate(-1)}>Cancelar</Button>
-          <Button variant="primary" type="submit" disabled={!form.clienteId}>Contratar e gerar parcelas</Button>
+          <Button variant="primary" type="submit" disabled={!form.clienteId} loading={salvando}>Contratar e gerar parcelas</Button>
         </div>
       </form>
     </>

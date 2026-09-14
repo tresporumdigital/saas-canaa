@@ -6,8 +6,7 @@ import {
 import { useToast } from '../../context/ToastContext.jsx';
 import useRowStatus from '../../hooks/useRowStatus.js';
 import { pagamentos, filaExcecoes, logApiBancaria } from '../../mock/pagamentos.js';
-import { useClientesCache } from '../../lib/api.js';
-import { contratosDoCliente, parcelasDoContrato } from '../../mock/contratos.js';
+import { apiFetch, useClientesCache, useContratosCache } from '../../lib/api.js';
 import { money, dateTime, date, number } from '../../lib/format.js';
 import { maskMoney, moneyToNumber, numberToMoneyInput } from '../../lib/masks.js';
 import { STATUS_SETS } from '../../lib/status.js';
@@ -22,6 +21,7 @@ export default function Pagamentos() {
   const { toast } = useToast();
   const [tab, setTab] = useState('conciliacao');
   const clientes = useClientesCache();
+  const contratos = useContratosCache();
   const [pagamentosRows, setPagamentoStatus] = useRowStatus(pagamentos);
   const [excecao, setExcecao] = useState(null);
   const [pagamentoDetalhe, setPagamentoDetalhe] = useState(null);
@@ -30,6 +30,7 @@ export default function Pagamentos() {
   const [clienteBaixaId, setClienteBaixaId] = useState('');
   const [contratoBaixa, setContratoBaixa] = useState(null);
   const [buscouBaixa, setBuscouBaixa] = useState(false);
+  const [parcelas, setParcelas] = useState([]);
   const [parcelaId, setParcelaId] = useState('');
   const [valorBaixa, setValorBaixa] = useState('');
   const [dataBaixa, setDataBaixa] = useState('2026-08-27');
@@ -40,20 +41,27 @@ export default function Pagamentos() {
   const totalConciliado = conciliados.reduce((s, p) => s + p.valor, 0);
 
   const clienteBaixa = clientes.find((c) => c.id === clienteBaixaId);
-  const parcelas = contratoBaixa ? parcelasDoContrato(contratoBaixa) : [];
   const parcelaSelecionada = parcelas.find((p) => p.id === parcelaId);
 
   const fecharBaixa = () => {
     setBaixa(false);
     setClienteBaixaId(''); setContratoBaixa(null); setBuscouBaixa(false);
-    setParcelaId(''); setValorBaixa(''); setDataBaixa('2026-08-27'); setJustificativaBaixa('');
+    setParcelas([]); setParcelaId(''); setValorBaixa(''); setDataBaixa('2026-08-27'); setJustificativaBaixa('');
   };
 
-  const buscarContratoBaixa = () => {
-    const c = clienteBaixa ? contratosDoCliente(clienteBaixa.id)[0] : null;
+  const buscarContratoBaixa = async () => {
+    const c = clienteBaixa ? contratos.find((ct) => ct.clienteId === clienteBaixa.id) : null;
     setContratoBaixa(c || null);
     setBuscouBaixa(true);
-    setParcelaId(''); setValorBaixa('');
+    setParcelas([]); setParcelaId(''); setValorBaixa('');
+    if (c) {
+      try {
+        const full = await apiFetch(`/contratos/detail.php?id=${encodeURIComponent(c.id)}`);
+        setParcelas(full.parcelas);
+      } catch {
+        setParcelas([]);
+      }
+    }
   };
 
   const selecionarParcela = (id) => {
