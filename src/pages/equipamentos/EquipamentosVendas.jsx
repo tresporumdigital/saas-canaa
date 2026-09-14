@@ -8,7 +8,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import {
   equipamentosProduto, equipamentosAbaixoDoMinimo, vendasEquipamento, vendaTotais,
 } from '../../mock/equipamentos.js';
-import { clientes } from '../../mock/clientes.js';
+import { useClientesCache } from '../../lib/api.js';
 import { money, date, number } from '../../lib/format.js';
 import { maskMoney, moneyToNumber, numberToMoneyInput, maskCPF, maskPhone } from '../../lib/masks.js';
 
@@ -25,6 +25,7 @@ const compradorVazio = { nome: '', cpf: '', telefone: '' };
 export default function EquipamentosVendas() {
   const { toast } = useToast();
   const [tab, setTab] = useState('vendas');
+  const clientes = useClientesCache();
   const [venda, setVenda] = useState(null);
   const [novasVendas, setNovasVendas] = useState([]);
 

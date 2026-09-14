@@ -8,7 +8,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import useRowStatus from '../../hooks/useRowStatus.js';
 import { planosProduto } from '../../mock/planos.js';
 import { contratos } from '../../mock/contratos.js';
-import { clienteById } from '../../mock/clientes.js';
+import { useClientesCache } from '../../lib/api.js';
 import { planoById } from '../../mock/planos.js';
 import { contratoValor } from '../../mock/contratos.js';
 import { agingInadimplencia } from '../../mock/financeiro.js';
@@ -25,6 +25,8 @@ export default function PlanosHome() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [tab, setTab] = useState('contratos');
+  const clientes = useClientesCache();
+  const clienteById = (id) => clientes.find((c) => c.id === id);
   const [contratosRows, setSituacao] = useRowStatus(contratos, { key: 'situacao' });
 
   const ativos = contratosRows.filter((c) => c.situacao === 'Ativo').length;

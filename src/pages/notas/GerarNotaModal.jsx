@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Modal, Button, Select, Input, Alert } from '../../components/index.js';
-import { clientes } from '../../mock/clientes.js';
+import { useClientesCache } from '../../lib/api.js';
 import { money } from '../../lib/format.js';
 import { maskMoney, moneyToNumber } from '../../lib/masks.js';
 
@@ -17,6 +17,7 @@ const SERVICOS = [
 
 // Pop-up: gera uma nota fiscal (NFS-e / NF-e) pré-preenchida para um cliente.
 export default function GerarNotaModal({ onClose, onGenerate }) {
+  const clientes = useClientesCache();
   const [clienteId, setClienteId] = useState('');
   const [tipo, setTipo] = useState('NFS-e');
   const [servico, setServico] = useState(SERVICOS[0]);

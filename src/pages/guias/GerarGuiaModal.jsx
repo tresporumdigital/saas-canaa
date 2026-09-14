@@ -1,15 +1,16 @@
 import { useMemo, useState } from 'react';
 import { Modal, Button, Select, Alert, PrintDocument } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { clientes } from '../../mock/clientes.js';
+import { useClientesCache, useParceirosCache } from '../../lib/api.js';
 import { contratosDoCliente } from '../../mock/contratos.js';
-import { parceiros } from '../../mock/parceiros.js';
 import { dateTime, money } from '../../lib/format.js';
 
 // Pop-up: busca o contrato pelo titular, escolhe o beneficiário (titular ou dependente)
 // e o parceiro, gera a guia (cupom de desconto) e mostra o PDF para imprimir ou baixar.
 export default function GerarGuiaModal({ onClose, onGenerate }) {
   const { toast } = useToast();
+  const clientes = useClientesCache();
+  const parceiros = useParceirosCache();
   const [clienteBuscaId, setClienteBuscaId] = useState('');
   const [contrato, setContrato] = useState(null);
   const [buscou, setBuscou] = useState(false);

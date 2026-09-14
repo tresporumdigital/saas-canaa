@@ -5,8 +5,7 @@ import {
 } from '../../components/index.js';
 import { obitoById } from '../../mock/obitos.js';
 import { guiasDoObito } from '../../mock/guias.js';
-import { clienteById } from '../../mock/clientes.js';
-import { parceiroById } from '../../mock/parceiros.js';
+import { useClientesCache, useParceirosCache } from '../../lib/api.js';
 import { date, dateTime, money } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
 
@@ -23,6 +22,10 @@ function coberturaChecks(cob) {
 export default function ObitoDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const clientes = useClientesCache();
+  const parceiros = useParceirosCache();
+  const clienteById = (cid) => clientes.find((c) => c.id === cid);
+  const parceiroById = (pid) => parceiros.find((p) => p.id === pid);
   const ob = obitoById(id);
   if (!ob) return <EmptyState icon="doc" title="Atendimento não encontrado" action={<Button to="/obitos">Voltar</Button>} />;
 

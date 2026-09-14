@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
-import { Card, DataTable, StatusMenu, Button } from '../../components/index.js';
+import { Card, DataTable, StatusMenu, Button, EmptyState } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import useRowStatus from '../../hooks/useRowStatus.js';
-import { clientes, contratosDoCliente } from '../../mock/index.js';
+import { apiFetch, useClientesList } from '../../lib/api.js';
+import { contratosDoCliente } from '../../mock/index.js';
 import { planoById } from '../../mock/planos.js';
-import { contratoById } from '../../mock/contratos.js';
 import { cpf, phone, date } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
 import NovoClienteWizard from './NovoClienteWizard.jsx';
@@ -17,7 +17,9 @@ export default function ClientesList() {
   const [params] = useSearchParams();
   const q = params.get('q') || '';
   const [showNew, setShowNew] = useState(false);
+  const { rows: clientes, loading, error, reload } = useClientesList();
 
+  // Plano/contrato ainda é mockado nesta fase — a junção fica igual à de antes.
   const base = useMemo(() => clientes.map((c) => {
     const contratos = contratosDoCliente(c.id);
     const principal = contratos[0];
@@ -27,10 +29,21 @@ export default function ClientesList() {
       situacaoPlano: principal ? principal.situacao : 'Sem plano',
       dependentesCount: c.dependentes.length,
     };
-  }), []);
+  }), [clientes]);
 
-  const [rowsCadastro, setCadastro] = useRowStatus(base, { key: 'status' });
+  const [rowsCadastro, setCadastroLocal] = useRowStatus(base, { key: 'status' });
   const [rows, setSituacao] = useRowStatus(rowsCadastro, { key: 'situacaoPlano' });
+
+  const alterarCadastro = async (r, next) => {
+    setCadastroLocal(r.id, next);
+    try {
+      await apiFetch(`/clientes/status.php?id=${encodeURIComponent(r.id)}`, { method: 'PATCH', body: { status: next } });
+      toast(`Cadastro de ${r.nome} definido como "${next}".`);
+    } catch (e) {
+      setCadastroLocal(r.id, r.status);
+      toast(e.message, { kind: 'danger' });
+    }
+  };
 
   const columns = [
     { key: 'nome', header: 'Cliente', sortable: true, render: (r) => (
@@ -53,7 +66,7 @@ export default function ClientesList() {
       <StatusMenu
         value={r.status}
         options={STATUS_SETS.clienteCadastro}
-        onChange={(next) => { setCadastro(r.id, next); toast(`Cadastro de ${r.nome} definido como "${next}".`); }}
+        onChange={(next) => alterarCadastro(r, next)}
       />
     ) },
   ];
@@ -67,18 +80,29 @@ export default function ClientesList() {
         actions={<Button variant="primary" icon="plus" onClick={() => setShowNew(true)}>Novo cliente</Button>}
       />
       <Card>
-        <DataTable
-          columns={columns}
-          rows={rows}
-          searchKeys={['nome', 'cpf', 'telefone', 'email', 'planoNome']}
-          searchPlaceholder="Buscar por nome, CPF, telefone…"
-          onRowClick={(r) => navigate(`/clientes/${r.id}`)}
-          pageSize={10}
-          initialQuery={q}
-        />
+        {error ? (
+          <EmptyState icon="alert" title="Não foi possível carregar os clientes">{error}</EmptyState>
+        ) : (
+          <DataTable
+            columns={columns}
+            rows={rows}
+            emptyLabel={loading ? 'Carregando…' : undefined}
+            searchKeys={['nome', 'cpf', 'telefone', 'email', 'planoNome']}
+            searchPlaceholder="Buscar por nome, CPF, telefone…"
+            onRowClick={(r) => navigate(`/clientes/${r.id}`)}
+            pageSize={10}
+            initialQuery={q}
+          />
+        )}
       </Card>
 
-      {showNew && <NovoClienteWizard onClose={() => setShowNew(false)} />}
+      {showNew && (
+        <NovoClienteWizard
+          existentes={clientes}
+          onClose={() => setShowNew(false)}
+          onCreated={() => { reload(); setShowNew(false); }}
+        />
+      )}
     </>
   );
 }

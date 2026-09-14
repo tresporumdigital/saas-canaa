@@ -3,7 +3,7 @@ import {
   Modal, Button, Input, Select, FieldRow, Alert, Icon, Card, Checkbox, EmptyState,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { clientes } from '../../mock/clientes.js';
+import { useClientesCache } from '../../lib/api.js';
 import { contratosDoCliente } from '../../mock/contratos.js';
 import { planoById } from '../../mock/planos.js';
 import { maskCPF, maskRG, maskMoney, moneyToNumber } from '../../lib/masks.js';
@@ -23,6 +23,7 @@ const falecidoVazio = { nome: '', nascimento: '', cpf: '', rg: '' };
 export default function ObitoFormModal({ onClose }) {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
+  const clientes = useClientesCache();
 
   // ---- Passo 1: tipo de atendimento + dados do falecido ----
   const [tipoAtendimento, setTipoAtendimento] = useState('');

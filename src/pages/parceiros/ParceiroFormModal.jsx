@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Modal, Button, Input, Select, FieldRow } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { parceiroById } from '../../mock/parceiros.js';
+import { apiFetch } from '../../lib/api.js';
 import { UF_LIST } from '../../lib/format.js';
 import {
-  maskCNPJ, maskPhone, isValidEmail, maskMoney, maskPercent, numberToMoneyInput, numberToPercentInput,
+  maskCNPJ, maskPhone, isValidEmail, maskMoney, maskPercent, numberToMoneyInput, numberToPercentInput, moneyToNumber, percentToNumber,
 } from '../../lib/masks.js';
 
 const CATEGORIAS = [
@@ -16,23 +16,23 @@ const TIPOS_DESCONTO = ['Valor fixo', 'Porcentagem (%)'];
 const isPercentual = (tipo) => tipo === 'Percentual' || tipo === 'Comissão de venda';
 
 // Pop-up de cadastro/edição de parceiro comercial.
-export default function ParceiroFormModal({ parceiroId, onClose }) {
+export default function ParceiroFormModal({ parceiro, onClose, onSaved }) {
   const { toast } = useToast();
-  const editing = Boolean(parceiroId);
-  const base = editing ? parceiroById(parceiroId) : null;
-  const contato = base?.contatos?.[0];
-  const basePercentual = base ? isPercentual(base.acordo.tipo) : false;
+  const editing = Boolean(parceiro);
+  const contato = parceiro?.contatos?.[0];
+  const basePercentual = parceiro ? isPercentual(parceiro.acordo.tipo) : false;
+  const [salvando, setSalvando] = useState(false);
 
   const [form, setForm] = useState(() => ({
-    razaoSocial: base?.razaoSocial || '',
-    nomeFantasia: base?.nomeFantasia || '',
-    cnpj: base ? maskCNPJ(base.cnpj) : '',
-    responsavel: base?.responsavel || '',
-    categoria: base?.tipoParceria || CATEGORIAS[0],
-    cidade: base?.cidade || 'São Paulo',
-    uf: base?.uf || 'SP',
-    tipoDesconto: base ? (basePercentual ? 'Porcentagem (%)' : 'Valor fixo') : '',
-    valorDesconto: base ? (basePercentual ? numberToPercentInput(base.acordo.valor * 100) : numberToMoneyInput(base.acordo.valor)) : '',
+    razaoSocial: parceiro?.razaoSocial || '',
+    nomeFantasia: parceiro?.nomeFantasia || '',
+    cnpj: parceiro ? maskCNPJ(parceiro.cnpj) : '',
+    responsavel: parceiro?.responsavel || '',
+    categoria: parceiro?.tipoParceria || CATEGORIAS[0],
+    cidade: parceiro?.cidade || 'São Paulo',
+    uf: parceiro?.uf || 'SP',
+    tipoDesconto: parceiro ? (basePercentual ? 'Porcentagem (%)' : 'Valor fixo') : '',
+    valorDesconto: parceiro ? (basePercentual ? numberToPercentInput(parceiro.acordo.valor * 100) : numberToMoneyInput(parceiro.acordo.valor)) : '',
     contatoNome: contato?.nome || '',
     contatoTelefone: contato ? maskPhone(contato.telefone) : '',
     contatoEmail: contato?.email || '',
@@ -42,22 +42,39 @@ export default function ParceiroFormModal({ parceiroId, onClose }) {
   const emailValido = !form.contatoEmail || isValidEmail(form.contatoEmail);
   const percentual = form.tipoDesconto === 'Porcentagem (%)';
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    if (!emailValido) return;
-    toast(editing ? 'Parceiro atualizado (simulação — sem persistência).' : 'Parceiro cadastrado (simulação — sem persistência).');
-    onClose();
+    if (!emailValido || salvando) return;
+    setSalvando(true);
+    try {
+      const valorDesconto = form.tipoDesconto
+        ? (percentual ? percentToNumber(form.valorDesconto) : moneyToNumber(form.valorDesconto))
+        : undefined;
+      const body = { ...form, cnpj: form.cnpj, valorDesconto };
+      if (editing) {
+        await apiFetch(`/parceiros/detail.php?id=${encodeURIComponent(parceiro.id)}`, { method: 'PUT', body });
+        toast('Parceiro atualizado.');
+      } else {
+        await apiFetch('/parceiros/index.php', { method: 'POST', body });
+        toast('Parceiro cadastrado.');
+      }
+      onSaved?.();
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    } finally {
+      setSalvando(false);
+    }
   };
 
   return (
     <Modal
-      title={editing ? `Editar ${base?.nomeFantasia}` : 'Novo parceiro'}
+      title={editing ? `Editar ${parceiro?.nomeFantasia}` : 'Novo parceiro'}
       onClose={onClose}
       wide
       footer={(
         <>
           <Button variant="secondary" type="button" onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" type="submit" form="parceiro-form">
+          <Button variant="primary" type="submit" form="parceiro-form" loading={salvando}>
             {editing ? 'Salvar alterações' : 'Cadastrar parceiro'}
           </Button>
         </>

@@ -5,9 +5,8 @@ import {
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useRole } from '../../context/RoleContext.jsx';
-import { parceiroById } from '../../mock/parceiros.js';
+import { useClientesCache, useParceirosCache } from '../../lib/api.js';
 import { baixasDoParceiro, extratoParceiro } from '../../mock/portal.js';
-import { clientes } from '../../mock/clientes.js';
 import { contratosDoCliente } from '../../mock/contratos.js';
 import { planoById } from '../../mock/planos.js';
 import { money, dateTime, cpf } from '../../lib/format.js';
@@ -29,8 +28,11 @@ export default function PortalParceiro() {
   const [tab, setTab] = useState('consulta');
   const [busca, setBusca] = useState('');
   const [resultado, setResultado] = useState(null);
+  const clientes = useClientesCache();
+  const parceiros = useParceirosCache();
 
-  const parceiro = parceiroById(PARCEIRO_DEMO);
+  const parceiro = parceiros.find((p) => p.id === PARCEIRO_DEMO);
+  if (!parceiro) return null;
   const baixas = baixasDoParceiro(parceiro.id);
   const extrato = extratoParceiro(parceiro.id);
 

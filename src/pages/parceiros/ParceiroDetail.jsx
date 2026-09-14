@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
 import {
   Card, Badge, Button, Tabs, DefList, DataTable, EmptyState, Icon,
 } from '../../components/index.js';
-import { parceiroById } from '../../mock/parceiros.js';
+import { apiFetch } from '../../lib/api.js';
 import { guiasDoParceiro } from '../../mock/guias.js';
 import { baixasDoParceiro, extratoParceiro } from '../../mock/portal.js';
 import { cnpj, dateTime, money, date, percent } from '../../lib/format.js';
@@ -23,9 +23,22 @@ export default function ParceiroDetail() {
   const navigate = useNavigate();
   const [tab, setTab] = useState('dados');
   const [editing, setEditing] = useState(false);
+  const [p, setP] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState(null);
 
-  const p = parceiroById(id);
-  if (!p) return <EmptyState icon="briefcase" title="Parceiro não encontrado" action={<Button to="/parceiros">Voltar</Button>} />;
+  const carregar = useCallback(() => {
+    setLoading(true);
+    apiFetch(`/parceiros/detail.php?id=${encodeURIComponent(id)}`)
+      .then((row) => { setP(row); setErro(null); })
+      .catch((e) => setErro(e.message))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  useEffect(() => { carregar(); }, [carregar]);
+
+  if (loading) return null;
+  if (erro || !p) return <EmptyState icon="briefcase" title="Parceiro não encontrado" action={<Button to="/parceiros">Voltar</Button>} />;
 
   const guias = guiasDoParceiro(p.id);
   const baixas = baixasDoParceiro(p.id);
@@ -52,20 +65,22 @@ export default function ParceiroDetail() {
         <>
           <Card title="Acordo comercial">
             <DefList items={[
-              { label: 'Tipo de remuneração', value: p.acordo.tipo },
-              { label: 'Valor / percentual', value: remun },
-              { label: 'Vigência', value: p.acordo.vigencia },
-              { label: 'Dados bancários', value: p.dadosBancarios },
+              { label: 'Tipo de remuneração', value: p.acordo.tipo || '—' },
+              { label: 'Valor / percentual', value: p.acordo.tipo ? remun : '—' },
+              { label: 'Vigência', value: p.acordo.vigencia || '—' },
+              { label: 'Dados bancários', value: p.dadosBancarios || '—' },
             ]} />
-            <div className="row" style={{ gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
-              {p.acordo.servicosCobertos.map((s) => <span key={s} className="tag-chip">{s}</span>)}
-            </div>
+            {p.acordo.servicosCobertos?.length > 0 && (
+              <div className="row" style={{ gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
+                {p.acordo.servicosCobertos.map((s) => <span key={s} className="tag-chip">{s}</span>)}
+              </div>
+            )}
           </Card>
           <Card title="Acesso ao portal">
             <DefList items={[
-              { label: 'Login', value: p.usuarioPortal.login },
+              { label: 'Login', value: p.usuarioPortal.login || '—' },
               { label: 'Situação', value: <Badge variant={p.usuarioPortal.ativo ? 'success' : 'neutral'}>{p.usuarioPortal.ativo ? 'Ativo' : 'Inativo'}</Badge> },
-              { label: 'Último acesso', value: dateTime(p.usuarioPortal.ultimoAcesso) },
+              { label: 'Último acesso', value: p.usuarioPortal.ultimoAcesso ? dateTime(p.usuarioPortal.ultimoAcesso) : '—' },
             ]} />
           </Card>
           <Card title="Contrato de parceria">
@@ -133,7 +148,13 @@ export default function ParceiroDetail() {
         </>
       )}
 
-      {editing && <ParceiroFormModal parceiroId={p.id} onClose={() => setEditing(false)} />}
+      {editing && (
+        <ParceiroFormModal
+          parceiro={p}
+          onClose={() => setEditing(false)}
+          onSaved={() => { setEditing(false); carregar(); }}
+        />
+      )}
     </>
   );
 }

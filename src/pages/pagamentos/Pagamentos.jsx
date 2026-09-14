@@ -6,7 +6,7 @@ import {
 import { useToast } from '../../context/ToastContext.jsx';
 import useRowStatus from '../../hooks/useRowStatus.js';
 import { pagamentos, filaExcecoes, logApiBancaria } from '../../mock/pagamentos.js';
-import { clientes } from '../../mock/clientes.js';
+import { useClientesCache } from '../../lib/api.js';
 import { contratosDoCliente, parcelasDoContrato } from '../../mock/contratos.js';
 import { money, dateTime, date, number } from '../../lib/format.js';
 import { maskMoney, moneyToNumber, numberToMoneyInput } from '../../lib/masks.js';
@@ -21,6 +21,7 @@ const TABS = [
 export default function Pagamentos() {
   const { toast } = useToast();
   const [tab, setTab] = useState('conciliacao');
+  const clientes = useClientesCache();
   const [pagamentosRows, setPagamentoStatus] = useRowStatus(pagamentos);
   const [excecao, setExcecao] = useState(null);
   const [pagamentoDetalhe, setPagamentoDetalhe] = useState(null);

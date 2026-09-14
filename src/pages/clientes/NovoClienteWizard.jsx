@@ -3,7 +3,7 @@ import {
   Modal, Button, Input, Select, FieldRow, Alert, Icon, Card, EmptyState, EnderecoFields,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { clientes } from '../../mock/index.js';
+import { apiFetch } from '../../lib/api.js';
 import { planosProduto } from '../../mock/planos.js';
 import { money } from '../../lib/format.js';
 import { maskCPF, maskRG, maskPhone, isValidEmail } from '../../lib/masks.js';
@@ -14,9 +14,10 @@ const STEPS = ['Dados do titular', 'Dependentes', 'Contrato'];
 const dependenteVazio = () => ({ nome: '', cpf: '', rg: '', telefone: '', parentesco: PARENTESCOS[0] });
 
 // Pop-up de cadastro de novo cliente em 3 etapas: titular, dependentes e contrato.
-export default function NovoClienteWizard({ onClose }) {
+export default function NovoClienteWizard({ existentes = [], onClose, onCreated }) {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
+  const [salvando, setSalvando] = useState(false);
 
   const [form, setForm] = useState({
     nome: '', cpf: '', rg: '', nascimento: '', telefone: '', email: '',
@@ -29,7 +30,7 @@ export default function NovoClienteWizard({ onClose }) {
   const setMasked = (k, maskFn) => (e) => setForm((f) => ({ ...f, [k]: maskFn(e.target.value) }));
 
   const cpfDigits = form.cpf.replace(/\D/g, '');
-  const duplicado = cpfDigits.length === 11 && clientes.find((c) => c.cpf === cpfDigits);
+  const duplicado = cpfDigits.length === 11 && existentes.find((c) => c.cpf === cpfDigits);
   const emailValido = !form.email || isValidEmail(form.email);
   const planoEscolhido = planosProduto.find((p) => p.id === form.planoId);
 
@@ -42,12 +43,25 @@ export default function NovoClienteWizard({ onClose }) {
   const removeDependente = (i) => setDependentes((l) => l.filter((_, idx) => idx !== i));
   const setDependente = (i, k, v) => setDependentes((l) => l.map((d, idx) => (idx === i ? { ...d, [k]: v } : d)));
 
-  const finalizar = () => {
-    const msg = planoEscolhido
-      ? `Cliente cadastrado e ${planoEscolhido.nome} contratado (simulação — sem persistência).`
-      : 'Cliente cadastrado (simulação — sem persistência).';
-    toast(msg);
-    onClose();
+  const finalizar = async () => {
+    if (salvando) return;
+    setSalvando(true);
+    try {
+      await apiFetch('/clientes/index.php', {
+        method: 'POST',
+        body: { ...form, cpf: cpfDigits, endereco, dependentes },
+      });
+      // Contratação de plano ainda não está ligada ao backend nesta fase.
+      const msg = planoEscolhido
+        ? `Cliente cadastrado. Contratação de ${planoEscolhido.nome} ainda não é persistida (fase futura).`
+        : 'Cliente cadastrado com sucesso.';
+      toast(msg);
+      onCreated?.();
+    } catch (e) {
+      toast(e.message, { kind: 'danger' });
+    } finally {
+      setSalvando(false);
+    }
   };
 
   const passo = <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--color-accent-strong)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)', margin: '0 0 var(--space-4)' }}>
@@ -182,7 +196,7 @@ export default function NovoClienteWizard({ onClose }) {
         <>
           {cancelarBtn}
           <Button variant="secondary" type="button" onClick={() => setStep(2)}>Voltar</Button>
-          <Button variant="primary" type="button" onClick={finalizar}>Concluir cadastro</Button>
+          <Button variant="primary" type="button" onClick={finalizar} loading={salvando}>Concluir cadastro</Button>
         </>
       )}
     >

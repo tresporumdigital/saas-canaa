@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
 import { Card, Button, Input, Select, FieldRow, Alert, Tag } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { clientes } from '../../mock/clientes.js';
+import { useClientesCache } from '../../lib/api.js';
 import { planosProduto, planoById } from '../../mock/planos.js';
 import { money } from '../../lib/format.js';
 
 export default function ContratarForm() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const clientes = useClientesCache();
   const [form, setForm] = useState({
     clienteId: '', planoId: 'PL-FAM', inicio: '2026-09-01', diaVencimento: '10',
     formaPagamento: 'Boleto', vendedor: 'Sandra Duarte',

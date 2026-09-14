@@ -6,7 +6,7 @@ import {
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { contratoById, parcelasDoContrato, contratoValor } from '../../mock/contratos.js';
-import { clienteById } from '../../mock/clientes.js';
+import { useClientesCache } from '../../lib/api.js';
 import { planoById } from '../../mock/planos.js';
 import { carnesDoContrato } from '../../mock/carnes.js';
 import { money, date } from '../../lib/format.js';
@@ -16,11 +16,12 @@ export default function ContratoDetail() {
   const { id } = useParams();
   const { toast } = useToast();
   const [showAcordo, setShowAcordo] = useState(false);
+  const clientes = useClientesCache();
 
   const ct = contratoById(id);
   if (!ct) return <EmptyState icon="shield" title="Contrato não encontrado" action={<Button to="/planos">Voltar</Button>} />;
 
-  const cliente = clienteById(ct.clienteId);
+  const cliente = clientes.find((c) => c.id === ct.clienteId);
   const plano = planoById(ct.planoId);
   const parcelas = parcelasDoContrato(ct);
   const carnes = carnesDoContrato(ct.id);

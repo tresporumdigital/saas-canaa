@@ -6,7 +6,7 @@ import {
 import { useToast } from '../../context/ToastContext.jsx';
 import { carnes } from '../../mock/carnes.js';
 import { contratos } from '../../mock/contratos.js';
-import { clienteById } from '../../mock/clientes.js';
+import { useClientesCache } from '../../lib/api.js';
 import { money, dateTime, number } from '../../lib/format.js';
 
 const TABS = [
@@ -19,6 +19,8 @@ export default function CarnesHome() {
   const [tab, setTab] = useState('gerar');
   const [preview, setPreview] = useState(null);
   const [lote, setLote] = useState(false);
+  const clientes = useClientesCache();
+  const clienteById = (id) => clientes.find((c) => c.id === id);
 
   const enviados = carnes.filter((c) => c.enviadoEm).length;
 

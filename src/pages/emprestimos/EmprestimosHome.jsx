@@ -9,7 +9,7 @@ import useRowStatus from '../../hooks/useRowStatus.js';
 import {
   emprestimos, unidadesEquipamento, emprestimosAtrasados, equipamentoProdutoById, unidadeByPatrimonio,
 } from '../../mock/equipamentos.js';
-import { clientes } from '../../mock/clientes.js';
+import { useClientesCache } from '../../lib/api.js';
 import { date, money, dateTime } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
 
@@ -26,6 +26,7 @@ export default function EmprestimosHome() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [tab, setTab] = useState('emprestimos');
+  const clientes = useClientesCache();
   const [emprestimosRows, setEmprestimoStatus] = useRowStatus(emprestimos);
   const [unidadesRows, setUnidadeStatus] = useRowStatus(unidadesEquipamento, { getId: (r) => r.patrimonio });
 

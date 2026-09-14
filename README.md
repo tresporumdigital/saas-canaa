@@ -1,22 +1,38 @@
-# Sistema de Gestão Funerária Canaã — Frontend
+# Sistema de Gestão Funerária Canaã — Frontend + Backend
 
-Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md), construído para **validação visual do produto e das jornadas**.
-Sem backend e sem banco de dados: **todos os dados são mockados** em `src/mock/` (referências cruzadas consistentes entre clientes, contratos, óbitos, guias, parceiros etc.).
+Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Desde a Fase 1 do backend, os
+módulos **Clientes, Parceiros, Unidades e Usuários** (+ login) são reais, com API própria em
+PHP/PDO (`server/`, publicada em `/api/`) e banco MySQL/MariaDB na Hostinger — sem dado de
+exemplo pré-carregado, é um banco de produção mesmo. Os demais módulos (Planos/Contratos,
+Financeiro, Óbitos, Guias, Equipamentos, Notas Fiscais, Leads, Portal do Parceiro etc.) ainda
+são **mockados** em `src/mock/` (referências cruzadas consistentes entre si) até serem migrados
+em fases seguintes.
 
 **Online:** https://backoffice.funerariacanaa.com/
 
-## Acesso (mock)
+## Acesso (login real)
 
 O sistema abre na **tela de login** (`#/login`). Sem sessão, qualquer rota interna
 redireciona para lá.
 
-- **Entrar** apenas com e-mail e senha — qualquer valor é aceito (não há validação real).
-- **Sem cadastro e sem login social** nesta tela: as contas são criadas por um
-  administrador. O backend cuidará disso futuramente.
-- A sessão fica em `localStorage` (`canaa.auth`) só para sobreviver a um reload; "Sair"
-  fica no menu do usuário (topo) e no drawer mobile.
+- **Entrar** com e-mail e senha reais — autenticados contra a tabela `usuarios` no banco
+  (`server/auth/login.php`, senha com hash bcrypt). Contas são criadas por um administrador em
+  Configurações → Usuários (ou pelo seeder `server/scripts/create_admin.php` para o primeiro
+  acesso).
+- **Sem cadastro e sem login social** nesta tela.
+- A sessão usa um token Bearer (`localStorage.canaa.token`) validado a cada carregamento via
+  `/api/auth/me.php`; "Sair" (menu do usuário e drawer mobile) revoga o token no servidor.
 
-Quando o backend existir, basta trocar `login` em `src/context/AuthContext.jsx`.
+## Backend (`server/`)
+
+- PHP 7.4 + PDO/MySQL, um arquivo por endpoint (sem framework/roteador — ver
+  `server/_bootstrap.php` para conexão, CORS e helpers de auth/JSON).
+  `server/schema.sql` tem o DDL das tabelas da Fase 1.
+- Credenciais do banco ficam em `server/_config.php`, criado só no servidor (nunca commitado —
+  copie `server/_config.example.php`).
+- `src/lib/api.js` concentra o cliente HTTP do frontend (`apiFetch`) e os hooks/caches
+  reativos (`useClientesCache`, `useParceirosCache` etc.) usados tanto pelas páginas desses 4
+  módulos quanto por telas ainda mockadas que só precisam ler cliente/parceiro por id.
 
 ## Design
 
@@ -40,8 +56,9 @@ barril único em `src/components/index.js`. Mapa completo em
 
 - React 18 + Vite 5 + React Router 6 (`HashRouter`).
 - JavaScript/JSX, sem dependências além de React e do roteador.
-- Deploy: build estático (`npm run build`) publicado na Hostinger em
-  `backoffice.funerariacanaa.com` (`base` relativo `./` no `vite.config.js`).
+- Deploy do frontend: build estático (`npm run build`) publicado na Hostinger em
+  `backoffice.funerariacanaa.com` (`base` relativo `./` no `vite.config.js`). Deploy do backend:
+  arquivos de `server/` sobem por SSH para `.../backoffice/api/` (sem build — PHP puro).
 
 ## Rodando localmente
 
@@ -52,7 +69,7 @@ npm run build    # gera dist/
 npm run preview  # serve o build
 ```
 
-## Módulos (todos com dados mockados)
+## Módulos
 
 | Grupo | Módulos |
 |---|---|
@@ -70,9 +87,12 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
 
 ## Observações
 
-- Ações de criar/editar/emitir **não persistem** — disparam um _toast_ de confirmação.
-- Nas listagens, o badge de status é clicável: abre os status pré-definidos daquela
-  tela e troca o status da linha (só em memória, sem persistência).
+- Em **Clientes, Parceiros, Unidades e Usuários**, criar/editar/mudar status já persiste de
+  verdade no banco (API própria) — os demais módulos continuam em simulação: ações disparam um
+  _toast_ de confirmação, sem gravar nada.
+- Nas listagens ainda mockadas, o badge de status é clicável: abre os status pré-definidos da
+  tela e troca o status da linha (só em memória, sem persistência). Nas 4 listagens já
+  migradas, a troca de status é uma chamada real à API (com rollback visual se falhar).
 - Cadastro/edição de clientes, parceiros e registros de óbito abrem em pop-up sobre a
   página atual (lista ou ficha), sem navegar para uma rota separada.
 - Os campos de seleção são pop-overs próprios do sistema (sem `<select>` nativo).
@@ -80,7 +100,8 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
   O CEP busca o endereço via ViaCEP: rua/bairro/cidade/UF ficam bloqueados enquanto a busca
   é bem-sucedida e destravam para preenchimento manual só se o CEP não for encontrado.
 - Cadastro de cliente é um assistente de 3 pop-ups (titular → dependentes → contrato); o
-  contrato ainda não tem modelo definido, então essa etapa mostra um aviso no lugar do PDF.
+  titular e os dependentes são gravados no banco ao concluir; a etapa de contrato ainda é só
+  visual (Planos/Contratos segue mockado) e mostra um aviso no lugar do PDF.
 - Registrar óbito é um assistente de 4 pop-ups (tipo/falecido → serviços → nota de
   falecimento → nota fiscal). Para atendimento "Plano", busca o contrato pelo titular e
   deixa escolher o titular ou um dependente como a pessoa falecida, puxando os dados.
@@ -90,9 +111,9 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
   beneficiário (titular ou dependente) e o parceiro, cria a guia na lista (só em memória)
   e mostra o PDF da guia para imprimir ou baixar.
 - "Configurações" agora tem seu próprio ícone no trilho de navegação, na ordem normal
-  logo abaixo de "Expansão" (antes ficava isolado no rodapé). Reúne Unidades (sem bloco
-  de empresa principal — só a lista, com foto por unidade), Planos (cadastro dos planos
-  oferecidos), Backup e Usuários (com pop-up de novo usuário).
+  logo abaixo de "Expansão" (antes ficava isolado no rodapé). Reúne Unidades (lista real, com
+  foto por unidade — sem bloco de empresa principal), Planos (ainda mockado), Backup (mockado)
+  e Usuários (lista real; criar/editar já define/atualiza a senha de acesso).
 - Em Pagamentos, "Baixa manual" busca o contrato pelo titular e, ao escolher a parcela,
   preenche o valor e sugere a data; a lista de Conciliação também abre um pop-up com os
   dados do pagamento ao clicar na linha.
@@ -108,6 +129,7 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
   agora ou depois — quando emitida, o toast indica que foi enviada para o Financeiro.
 - Cadastro de Equipamentos tem abas separadas para Venda (produto com preço/estoque) e
   Locação (produto + todos os números de inventário registrados de uma vez); ambos com foto.
-- Autenticação é **mock** (sem backend); a sessão vive só no navegador.
-- Data de referência do protótipo: **27/08/2026**.
+- Autenticação é **real** (token validado no servidor a cada carregamento); os módulos ainda
+  não migrados continuam com dados de exemplo fixos em `src/mock/`.
+- Data de referência do protótipo (para os módulos ainda mockados): **27/08/2026**.
 - `design-system/`, `PRD.md` e `visual/` não são alterados por este frontend.

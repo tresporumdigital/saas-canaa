@@ -7,7 +7,7 @@ import {
 import { useToast } from '../../context/ToastContext.jsx';
 import { guiaById, CICLO_GUIA } from '../../mock/guias.js';
 import { obitoById } from '../../mock/obitos.js';
-import { parceiroById } from '../../mock/parceiros.js';
+import { useParceirosCache } from '../../lib/api.js';
 import { dateTime, money, date } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
 
@@ -17,6 +17,8 @@ export default function GuiaDetail() {
   const [showPrint, setShowPrint] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
   const [justificativa, setJustificativa] = useState('');
+  const parceiros = useParceirosCache();
+  const parceiroById = (pid) => parceiros.find((p) => p.id === pid);
 
   const g = guiaById(id);
   if (!g) return <EmptyState icon="send" title="Guia não encontrada" action={<Button to="/guias">Voltar</Button>} />;

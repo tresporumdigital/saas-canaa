@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Modal, Button, Input, Select, Checkbox, FieldRow, EnderecoFields, Avatar } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
+import { apiFetch } from '../../lib/api.js';
 import { maskCNPJ, maskPhone, isValidEmail } from '../../lib/masks.js';
 
 const TIPOS = ['Matriz', 'Filial', 'Escritório'];
@@ -12,9 +13,10 @@ const vazia = {
 const enderecoVazio = { cep: '', logradouro: '', numero: '', bairro: '', cidade: '', uf: '' };
 
 // Pop-up de cadastro/edição de uma unidade da empresa.
-export default function UnidadeFormModal({ unidade, onClose, onCreate }) {
+export default function UnidadeFormModal({ unidade, onClose, onSaved }) {
   const { toast } = useToast();
   const editando = Boolean(unidade);
+  const [salvando, setSalvando] = useState(false);
   const [form, setForm] = useState(() => (
     editando ? {
       nome: unidade.nome,
@@ -44,33 +46,25 @@ export default function UnidadeFormModal({ unidade, onClose, onCreate }) {
   const setMasked = (k, maskFn) => (e) => setForm((f) => ({ ...f, [k]: maskFn(e.target.value) }));
   const emailValido = !form.email || isValidEmail(form.email);
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    if (!emailValido) return;
-    if (editando) {
-      toast(`Unidade ${form.nome} atualizada (simulação — sem persistência).`);
-    } else {
-      onCreate?.({
-        id: `UNI-9${String(Date.now()).slice(-3)}`,
-        nome: form.nome.trim(),
-        tipo: form.tipo,
-        cnpj: form.cnpj,
-        status: form.status,
-        responsavel: form.responsavel || 'A definir',
-        telefone: form.telefone,
-        email: form.email,
-        cidade: endereco.cidade,
-        uf: endereco.uf,
-        horario: form.horario,
-        alvara: form.alvara || '—',
-        salasVelorio: Number(form.salasVelorio) || 0,
-        capela: form.capela,
-        foto,
-        endereco: { ...endereco },
-      });
-      toast(`Unidade ${form.nome} cadastrada (simulação — sem persistência).`);
+    if (!emailValido || salvando) return;
+    setSalvando(true);
+    try {
+      const body = { ...form, nome: form.nome.trim(), endereco, foto };
+      if (editando) {
+        await apiFetch(`/unidades/detail.php?id=${encodeURIComponent(unidade.id)}`, { method: 'PUT', body });
+        toast(`Unidade ${form.nome} atualizada.`);
+      } else {
+        await apiFetch('/unidades/index.php', { method: 'POST', body });
+        toast(`Unidade ${form.nome} cadastrada.`);
+      }
+      onSaved?.();
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    } finally {
+      setSalvando(false);
     }
-    onClose();
   };
 
   return (
@@ -81,7 +75,7 @@ export default function UnidadeFormModal({ unidade, onClose, onCreate }) {
       footer={(
         <>
           <Button variant="secondary" type="button" onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" type="submit" form="unidade-form">
+          <Button variant="primary" type="submit" form="unidade-form" loading={salvando}>
             {editando ? 'Salvar alterações' : 'Cadastrar unidade'}
           </Button>
         </>

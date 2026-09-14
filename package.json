@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Sistema de Gestão Funerária Canaã — frontend (dados mockados, sem backend).",
+  "description": "Sistema de Gestão Funerária Canaã — frontend (backend PHP/MySQL próprio; alguns módulos ainda mockados).",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

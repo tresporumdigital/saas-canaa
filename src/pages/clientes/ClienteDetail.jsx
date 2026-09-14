@@ -1,16 +1,16 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { PageHeader } from '../../components/index.js';
 import {
-  Card, Badge, Button, Tabs, DefList, DataTable, Avatar, Alert, EmptyState, Icon, ConfirmDialog,
+  Card, Badge, Button, Tabs, DefList, DataTable, Avatar, EmptyState, Icon, ConfirmDialog,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
+import { apiFetch } from '../../lib/api.js';
 import {
-  clienteById, contratosDoCliente, obitosDoCliente, emprestimosDoCliente,
+  contratosDoCliente, obitosDoCliente, emprestimosDoCliente,
 } from '../../mock/index.js';
 import { planoById } from '../../mock/planos.js';
 import { parcelasDoContrato, contratoValor } from '../../mock/contratos.js';
-import { carnesDoContrato } from '../../mock/carnes.js';
 import { notasFiscais } from '../../mock/notasFiscais.js';
 import { cpf, phone, date, dateTime, money } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
@@ -32,9 +32,22 @@ export default function ClienteDetail() {
   const [tab, setTab] = useState('geral');
   const [confirmInativar, setConfirmInativar] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [cliente, setCliente] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState(null);
 
-  const cliente = clienteById(id);
-  if (!cliente) {
+  const carregar = useCallback(() => {
+    setLoading(true);
+    apiFetch(`/clientes/detail.php?id=${encodeURIComponent(id)}`)
+      .then((c) => { setCliente(c); setErro(null); })
+      .catch((e) => setErro(e.message))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  useEffect(() => { carregar(); }, [carregar]);
+
+  if (loading) return null;
+  if (erro || !cliente) {
     return <EmptyState icon="users" title="Cliente não encontrado" action={<Button to="/clientes">Voltar à lista</Button>} />;
   }
 
@@ -42,6 +55,18 @@ export default function ClienteDetail() {
   const atendimentos = obitosDoCliente(cliente.id);
   const emprestimos = emprestimosDoCliente(cliente.id);
   const notas = notasFiscais.filter((n) => n.clienteNome === cliente.nome);
+
+  const inativar = async () => {
+    try {
+      await apiFetch(`/clientes/status.php?id=${encodeURIComponent(cliente.id)}`, { method: 'PATCH', body: { status: 'Inativo' } });
+      toast('Cadastro inativado.', { kind: 'warning' });
+      carregar();
+    } catch (e) {
+      toast(e.message, { kind: 'danger' });
+    } finally {
+      setConfirmInativar(false);
+    }
+  };
 
   return (
     <>
@@ -220,10 +245,12 @@ export default function ClienteDetail() {
       {tab === 'historico' && (
         <Card title="Histórico de alterações">
           <div className="stack gap-sm">
-            {cliente.historico.map((h, i) => (
+            {cliente.historico.length === 0 ? (
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>Nenhum registro ainda.</p>
+            ) : cliente.historico.map((h, i) => (
               <div key={i} className="row" style={{ gap: 'var(--space-3)', alignItems: 'baseline', borderBottom: '1px solid var(--color-border)', paddingBottom: 'var(--space-3)' }}>
                 <span className="num" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', minWidth: 130 }}>{dateTime(h.quando)}</span>
-                <span style={{ fontSize: 'var(--text-sm)' }}>{h.oque} <span style={{ color: 'var(--color-text-secondary)' }}>— {h.quem}</span></span>
+                <span style={{ fontSize: 'var(--text-sm)' }}>{h.oque} <span style={{ color: 'var(--color-text-secondary)' }}>— {h.quem || 'sistema'}</span></span>
               </div>
             ))}
           </div>
@@ -235,12 +262,18 @@ export default function ClienteDetail() {
           title="Inativar cadastro?"
           message="O cadastro deixa de aparecer nas listas operacionais, mas os dados e o histórico são preservados (sem exclusão física)."
           confirmLabel="Inativar"
-          onConfirm={() => toast('Cadastro inativado (simulação — sem persistência).', { kind: 'warning' })}
+          onConfirm={inativar}
           onClose={() => setConfirmInativar(false)}
         />
       )}
 
-      {editing && <ClienteFormModal clienteId={cliente.id} onClose={() => setEditing(false)} />}
+      {editing && (
+        <ClienteFormModal
+          cliente={cliente}
+          onClose={() => setEditing(false)}
+          onSaved={() => { setEditing(false); carregar(); }}
+        />
+      )}
     </>
   );
 }

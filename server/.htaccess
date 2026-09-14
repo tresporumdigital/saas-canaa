@@ -1,0 +1,11 @@
+# Bloqueia acesso via navegador a arquivos que não são endpoints da API:
+# schema.sql, e qualquer arquivo começando com "_" (_config.php, _bootstrap.php, _config.example.php).
+<FilesMatch "(^_.*|\.sql)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>

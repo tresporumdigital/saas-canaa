@@ -5,7 +5,7 @@ import { Card, DataTable, StatusMenu, Select, StatCard, Button } from '../../com
 import { useToast } from '../../context/ToastContext.jsx';
 import useRowStatus from '../../hooks/useRowStatus.js';
 import { guias } from '../../mock/guias.js';
-import { parceiros, parceiroById } from '../../mock/parceiros.js';
+import { useParceirosCache } from '../../lib/api.js';
 import { CICLO_GUIA } from '../../mock/guias.js';
 import { date, money } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
@@ -14,6 +14,8 @@ import GerarGuiaModal from './GerarGuiaModal.jsx';
 export default function GuiasList() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const parceiros = useParceirosCache();
+  const parceiroById = (id) => parceiros.find((p) => p.id === id);
   const [parceiro, setParceiro] = useState('');
   const [status, setStatus] = useState('');
   const [gerando, setGerando] = useState(false);

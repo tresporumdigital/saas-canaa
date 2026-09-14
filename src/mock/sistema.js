@@ -1,15 +1,5 @@
-// Usuários, perfis, backups e auditoria (transversal).
-
-export const usuarios = [
-  { id: 'USR-01', nome: 'Ana Paula Ferraz', email: 'ana.ferraz@funerariacanaa.com', perfil: 'Administrador', status: 'Ativo', ultimoAcesso: '2026-08-27T08:40:00', doisFatores: true },
-  { id: 'USR-02', nome: 'Sandra Regina Duarte', email: 'sandra.duarte@funerariacanaa.com', perfil: 'Atendente', status: 'Ativo', ultimoAcesso: '2026-08-27T09:02:00', doisFatores: false },
-  { id: 'USR-03', nome: 'Renato Aguiar', email: 'renato.aguiar@funerariacanaa.com', perfil: 'Atendente', status: 'Ativo', ultimoAcesso: '2026-08-26T18:20:00', doisFatores: false },
-  { id: 'USR-04', nome: 'Marcelo Tostes', email: 'marcelo.tostes@funerariacanaa.com', perfil: 'Financeiro', status: 'Ativo', ultimoAcesso: '2026-08-27T07:15:00', doisFatores: true },
-  { id: 'USR-05', nome: 'Bianca Correia', email: 'bianca.correia@funerariacanaa.com', perfil: 'Financeiro', status: 'Ativo', ultimoAcesso: '2026-08-25T16:50:00', doisFatores: true },
-  { id: 'USR-06', nome: 'Jorge Peçanha', email: 'jorge.pecanha@funerariacanaa.com', perfil: 'Operacional', status: 'Ativo', ultimoAcesso: '2026-08-27T06:30:00', doisFatores: false },
-  { id: 'USR-07', nome: 'Lílian Baptista', email: 'lilian.baptista@funerariacanaa.com', perfil: 'Operacional', status: 'Inativo', ultimoAcesso: '2026-05-11T10:00:00', doisFatores: false },
-  { id: 'USR-08', nome: 'Diretoria Canaã', email: 'diretoria@funerariacanaa.com', perfil: 'Administrador', status: 'Ativo', ultimoAcesso: '2026-08-20T21:10:00', doisFatores: true },
-];
+// Perfis/permissões, parâmetros, backups e auditoria (transversal).
+// Usuários e Unidades agora vêm do banco real — ver src/lib/api.js (useUsuariosList/useUnidadesList).
 
 // ---- Dados cadastrais da empresa (matriz) ----
 export const empresa = {
@@ -27,46 +17,6 @@ export const empresa = {
   responsavelLegal: 'Ana Paula Ferraz',
   contador: 'Contabilidade Nova Era — CRC-SP 1SP-045123',
 };
-
-export const unidades = [
-  {
-    id: 'UNI-01', nome: 'Matriz — Centro', tipo: 'Matriz', cnpj: '12.345.678/0001-90',
-    responsavel: 'Ana Paula Ferraz', telefone: '(11) 3000-1000', email: 'centro@funerariacanaa.com',
-    cidade: 'São Paulo', uf: 'SP', status: 'Ativa',
-    endereco: { logradouro: 'Avenida das Nações', numero: '1200', bairro: 'Centro', cidade: 'São Paulo', uf: 'SP', cep: '01010-000' },
-    horario: '24 horas', alvara: 'ALV-2024-000145', salasVelorio: 3, capela: true,
-  },
-  {
-    id: 'UNI-02', nome: 'Filial Zona Sul', tipo: 'Filial', cnpj: '12.345.678/0002-70',
-    responsavel: 'Sandra Regina Duarte', telefone: '(11) 3555-2020', email: 'zonasul@funerariacanaa.com',
-    cidade: 'São Paulo', uf: 'SP', status: 'Ativa',
-    endereco: { logradouro: 'Rua Vergueiro', numero: '4500', bairro: 'Saúde', cidade: 'São Paulo', uf: 'SP', cep: '04101-300' },
-    horario: '24 horas', alvara: 'ALV-2024-000212', salasVelorio: 2, capela: true,
-  },
-  {
-    id: 'UNI-03', nome: 'Filial Guarulhos', tipo: 'Filial', cnpj: '12.345.678/0003-50',
-    responsavel: 'Renato Aguiar', telefone: '(11) 2400-3030', email: 'guarulhos@funerariacanaa.com',
-    cidade: 'Guarulhos', uf: 'SP', status: 'Ativa',
-    endereco: { logradouro: 'Av. Tiradentes', numero: '820', bairro: 'Vila Augusta', cidade: 'Guarulhos', uf: 'SP', cep: '07023-000' },
-    horario: '07:00 às 22:00', alvara: 'ALV-2023-000988', salasVelorio: 2, capela: false,
-  },
-  {
-    id: 'UNI-04', nome: 'Unidade Administrativa', tipo: 'Escritório', cnpj: '12.345.678/0004-31',
-    responsavel: 'Marcelo Tostes', telefone: '(11) 3000-1044', email: 'adm@funerariacanaa.com',
-    cidade: 'São Paulo', uf: 'SP', status: 'Ativa',
-    endereco: { logradouro: 'Avenida das Nações', numero: '1200', bairro: 'Centro', cidade: 'São Paulo', uf: 'SP', cep: '01010-000' },
-    horario: '08:00 às 18:00', alvara: '—', salasVelorio: 0, capela: false,
-  },
-  {
-    id: 'UNI-05', nome: 'Filial ABC (em implantação)', tipo: 'Filial', cnpj: '12.345.678/0005-12',
-    responsavel: 'A definir', telefone: '(11) 4000-5050', email: 'abc@funerariacanaa.com',
-    cidade: 'Santo André', uf: 'SP', status: 'Inativa',
-    endereco: { logradouro: 'Av. Industrial', numero: '2100', bairro: 'Jardim', cidade: 'Santo André', uf: 'SP', cep: '09080-500' },
-    horario: '—', alvara: 'Em análise', salasVelorio: 2, capela: true,
-  },
-];
-
-export const unidadeById = (id) => unidades.find((u) => u.id === id);
 
 export const perfisPermissoes = [
   { modulo: 'Dashboard', admin: 'Total', atendente: 'Sem financeiro global', financeiro: 'Total', operacional: 'Equipamentos e atendimentos', parceiro: '—' },

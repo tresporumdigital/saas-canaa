@@ -1,20 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
-  Card, DataTable, Badge, Button, DefList, Modal, Icon, Avatar,
+  Card, DataTable, Badge, Button, DefList, Modal, Icon, Avatar, EmptyState,
 } from '../../components/index.js';
-import { unidades } from '../../mock/sistema.js';
+import { useUnidadesList } from '../../lib/api.js';
 import UnidadeFormModal from './UnidadeFormModal.jsx';
 
 const enderecoLinha = (e) =>
   `${e.logradouro}, ${e.numero}${e.complemento ? ` — ${e.complemento}` : ''} · ${e.bairro} · ${e.cidade}/${e.uf} · CEP ${e.cep}`;
 
 export default function EmpresaConfig() {
+  const { rows, loading, error, reload } = useUnidadesList();
   const [unidade, setUnidade] = useState(null);
   const [editUnidade, setEditUnidade] = useState(null);
   const [novaUnidade, setNovaUnidade] = useState(false);
-  const [novasUnidades, setNovasUnidades] = useState([]);
-  const rows = useMemo(() => [...novasUnidades, ...unidades], [novasUnidades]);
 
   return (
     <>
@@ -25,37 +24,42 @@ export default function EmpresaConfig() {
       />
 
       <Card title={`Unidades (${rows.length})`}>
-        <DataTable
-          rows={rows}
-          searchKeys={['nome', 'tipo', 'cidade', 'responsavel', 'cnpj']}
-          searchPlaceholder="Buscar por unidade, tipo, cidade ou responsável…"
-          onRowClick={(r) => setUnidade(r)}
-          pageSize={10}
-          toolbarExtra={<Button variant="primary" icon="plus" onClick={() => setNovaUnidade(true)}>Nova unidade</Button>}
-          columns={[
-            { key: 'foto', header: '', render: (r) => <Avatar name={r.nome} src={r.foto} size="sm" /> },
-            { key: 'nome', header: 'Unidade', sortable: true },
-            { key: 'tipo', header: 'Tipo', sortable: true, render: (r) => <Badge variant={r.tipo === 'Matriz' ? 'info' : 'neutral'}>{r.tipo}</Badge> },
-            { key: 'cnpj', header: 'CNPJ' },
-            { key: 'cidade', header: 'Cidade/UF', render: (r) => `${r.cidade}/${r.uf}` },
-            { key: 'responsavel', header: 'Responsável', sortable: true },
-            { key: 'telefone', header: 'Telefone' },
-            { key: 'status', header: 'Status', render: (r) => (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                <Badge variant={r.status === 'Ativa' ? 'success' : 'neutral'}>{r.status}</Badge>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  style={{ padding: 'var(--space-1)' }}
-                  aria-label={`Editar ${r.nome}`}
-                  onClick={(e) => { e.stopPropagation(); setEditUnidade(r); }}
-                >
-                  <Icon name="pencil" size={14} />
-                </button>
-              </span>
-            ) },
-          ]}
-        />
+        {error ? (
+          <EmptyState icon="alert" title="Não foi possível carregar as unidades">{error}</EmptyState>
+        ) : (
+          <DataTable
+            rows={rows}
+            emptyLabel={loading ? 'Carregando…' : undefined}
+            searchKeys={['nome', 'tipo', 'cidade', 'responsavel', 'cnpj']}
+            searchPlaceholder="Buscar por unidade, tipo, cidade ou responsável…"
+            onRowClick={(r) => setUnidade(r)}
+            pageSize={10}
+            toolbarExtra={<Button variant="primary" icon="plus" onClick={() => setNovaUnidade(true)}>Nova unidade</Button>}
+            columns={[
+              { key: 'foto', header: '', render: (r) => <Avatar name={r.nome} src={r.foto} size="sm" /> },
+              { key: 'nome', header: 'Unidade', sortable: true },
+              { key: 'tipo', header: 'Tipo', sortable: true, render: (r) => <Badge variant={r.tipo === 'Matriz' ? 'info' : 'neutral'}>{r.tipo}</Badge> },
+              { key: 'cnpj', header: 'CNPJ' },
+              { key: 'cidade', header: 'Cidade/UF', render: (r) => `${r.cidade}/${r.uf}` },
+              { key: 'responsavel', header: 'Responsável', sortable: true },
+              { key: 'telefone', header: 'Telefone' },
+              { key: 'status', header: 'Status', render: (r) => (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <Badge variant={r.status === 'Ativa' ? 'success' : 'neutral'}>{r.status}</Badge>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    style={{ padding: 'var(--space-1)' }}
+                    aria-label={`Editar ${r.nome}`}
+                    onClick={(e) => { e.stopPropagation(); setEditUnidade(r); }}
+                  >
+                    <Icon name="pencil" size={14} />
+                  </button>
+                </span>
+              ) },
+            ]}
+          />
+        )}
       </Card>
 
       {unidade && (
@@ -89,11 +93,17 @@ export default function EmpresaConfig() {
         </Modal>
       )}
 
-      {editUnidade && <UnidadeFormModal unidade={editUnidade} onClose={() => setEditUnidade(null)} />}
+      {editUnidade && (
+        <UnidadeFormModal
+          unidade={editUnidade}
+          onClose={() => setEditUnidade(null)}
+          onSaved={() => { setEditUnidade(null); reload(); }}
+        />
+      )}
       {novaUnidade && (
         <UnidadeFormModal
           onClose={() => setNovaUnidade(false)}
-          onCreate={(u) => setNovasUnidades((l) => [u, ...l])}
+          onSaved={() => { setNovaUnidade(false); reload(); }}
         />
       )}
     </>

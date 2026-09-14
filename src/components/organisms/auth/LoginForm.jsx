@@ -6,7 +6,7 @@ import { useAuth } from '../../../context/AuthContext.jsx';
 import { useToast } from '../../../context/ToastContext.jsx';
 
 // Organismo: formulário de acesso — só e-mail + senha. Contas são criadas por um
-// administrador; não há cadastro nem login social nesta tela. Mock: qualquer dado entra.
+// administrador; não há cadastro nem login social nesta tela.
 export default function LoginForm() {
   const { login } = useAuth();
   const { toast } = useToast();
@@ -18,16 +18,19 @@ export default function LoginForm() {
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const entrar = (e) => {
+  const entrar = async (e) => {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
-    // Simula a latência do backend que ainda será construído.
-    setTimeout(() => {
-      const u = login({ email: email || 'atendente@funerariacanaa.com', password: senha });
+    try {
+      const u = await login({ email, senha });
       toast(`Bem-vindo(a), ${u.name.split(' ')[0]}.`);
       navigate(dest, { replace: true });
-    }, 420);
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

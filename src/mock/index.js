@@ -1,8 +1,6 @@
 import { TODAY } from '../lib/format.js';
 import { planosProduto, planoById } from './planos.js';
-import { clientes, clienteById } from './clientes.js';
 import { contratos, contratoById, contratosDoCliente, contratoValor, parcelasDoContrato } from './contratos.js';
-import { parceiros, parceiroById } from './parceiros.js';
 import { obitos, obitoById, obitosDoCliente } from './obitos.js';
 import { guias, guiaById, guiasDoParceiro, guiasDoObito, CICLO_GUIA } from './guias.js';
 import {
@@ -21,14 +19,12 @@ import {
   fechamentoCaixa, dreMes, dreResultado,
 } from './financeiro.js';
 import {
-  usuarios, perfisPermissoes, parametros, backupConfig,
+  perfisPermissoes, parametros, backupConfig,
   backupExecucoes, ultimoBackup, auditoria,
 } from './sistema.js';
 
 export * from './planos.js';
-export * from './clientes.js';
 export * from './contratos.js';
-export * from './parceiros.js';
 export * from './obitos.js';
 export * from './guias.js';
 export * from './equipamentos.js';
@@ -80,7 +76,10 @@ export function guiasPorParceiro() {
 }
 
 // ---------- Dados do dashboard ----------
-export function dashboardData(periodo = 'mes') {
+// `parceiros` vem do cache reativo da API (useParceirosCache) — clientes/parceiros não são
+// mais mockados, então o chamador (Dashboard.jsx) precisa repassar a lista.
+export function dashboardData(periodo = 'mes', parceiros = []) {
+  const parceiroById = (id) => parceiros.find((p) => p.id === id);
   const ativos = contratosAtivos().length;
   const avgMensalidade = contratosAtivos().reduce((s, c) => s + contratoValor(c), 0) / Math.max(1, ativos);
   const receitaRecebida = pagamentos.filter((p) => inPeriodo(p.recebidoEm, periodo) && p.status !== 'Exceção').reduce((s, p) => s + p.valor, 0);
