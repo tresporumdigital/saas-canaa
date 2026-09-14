@@ -68,7 +68,7 @@ if ($method === 'POST') {
 
     $pdo->beginTransaction();
     try {
-        $codigo = gerar_codigo($pdo, 'parceiros', 'PAR', 3);
+        $codigo = gerar_codigo($pdo, 'parceiros', 'PAR', 3, 101);
         $pdo->prepare(
             'INSERT INTO parceiros (codigo, razao_social, nome_fantasia, cnpj, tipo_parceria, responsavel,
                 cidade, uf, status, acordo_tipo, acordo_valor)

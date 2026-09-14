@@ -83,14 +83,17 @@ function require_auth(PDO $pdo): array {
 }
 
 // Gera o próximo código exibido (CLI-0001, PAR-001, UNI-01, USR-01...) olhando o maior já usado.
-function gerar_codigo(PDO $pdo, string $tabela, string $prefixo, int $largura): string {
+// $inicio evita colisão com os códigos que os módulos ainda mockados (contratos, óbitos,
+// guias, equipamentos...) usam para clientes/parceiros fictícios (CLI-0001..0020, PAR-001..008)
+// — sem isso, o primeiro cliente/parceiro real herdaria o histórico fictício de um desses ids.
+function gerar_codigo(PDO $pdo, string $tabela, string $prefixo, int $largura, int $inicio = 1): string {
     $stmt = $pdo->prepare("SELECT codigo FROM `$tabela` WHERE codigo LIKE ? ORDER BY id DESC LIMIT 1");
     $stmt->execute(["$prefixo-%"]);
     $ultimo = $stmt->fetchColumn();
-    $numero = 1;
+    $numero = $inicio;
     if ($ultimo) {
         $partes = explode('-', $ultimo);
-        $numero = ((int) end($partes)) + 1;
+        $numero = max($inicio, ((int) end($partes)) + 1);
     }
     return $prefixo . '-' . str_pad((string) $numero, $largura, '0', STR_PAD_LEFT);
 }

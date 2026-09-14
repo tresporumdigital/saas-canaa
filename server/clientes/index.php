@@ -62,7 +62,7 @@ if ($method === 'POST') {
 
     $pdo->beginTransaction();
     try {
-        $codigo = gerar_codigo($pdo, 'clientes', 'CLI', 4);
+        $codigo = gerar_codigo($pdo, 'clientes', 'CLI', 4, 1001);
         $pdo->prepare(
             'INSERT INTO clientes (codigo, nome, cpf, rg, nascimento, telefone, email, status,
                 logradouro, numero, bairro, cidade, uf, cep, cadastrado_em)
