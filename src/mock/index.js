@@ -73,16 +73,18 @@ export function guiasPorParceiro() {
 }
 
 // ---------- Dados do dashboard ----------
-// `parceiros`/`contratos`/`planos` vêm dos caches reativos da API — não são mais mockados,
-// então o chamador (Dashboard.jsx) precisa repassar as listas.
-export function dashboardData(periodo = 'mes', parceiros = [], contratos = [], planos = []) {
+// `parceiros`/`contratos`/`planos`/`pagamentosReais` vêm dos caches/listas reativos da API —
+// não são mais mockados, então o chamador (Dashboard.jsx) precisa repassar as listas.
+export function dashboardData(periodo = 'mes', parceiros = [], contratos = [], planos = [], pagamentosReais = []) {
   const parceiroById = (id) => parceiros.find((p) => p.id === id);
   const planoById = (id) => planos.find((p) => p.id === id);
   const contratoValor = (c) => planoById(c.planoId)?.valorMensal || 0;
 
   const ativos = contratosAtivos(contratos).length;
   const avgMensalidade = contratosAtivos(contratos).reduce((s, c) => s + contratoValor(c), 0) / Math.max(1, ativos);
-  const receitaRecebida = pagamentos.filter((p) => inPeriodo(p.recebidoEm, periodo) && p.status !== 'Exceção').reduce((s, p) => s + p.valor, 0);
+  const receitaRecebida = [...pagamentosReais, ...pagamentos]
+    .filter((p) => inPeriodo(p.recebidoEm, periodo) && p.status !== 'Exceção')
+    .reduce((s, p) => s + p.valor, 0);
   const receitaPrevista = ativos * avgMensalidade;
   const inad = inadimplenciaTotal();
   const inadPct = inad / (receitaPrevista + inad);

@@ -4,7 +4,7 @@ import { PageHeader } from '../../components/index.js';
 import { Card, Badge, Icon, StatCard, Spark, Alert } from '../../components/index.js';
 import { useRole } from '../../context/RoleContext.jsx';
 import { dashboardData } from '../../mock/index.js';
-import { useContratosCache, useParceirosCache, usePlanosCache } from '../../lib/api.js';
+import { useContratosCache, usePagamentosList, useParceirosCache, usePlanosCache } from '../../lib/api.js';
 import { money, number, percent } from '../../lib/format.js';
 
 const PERIODOS = [
@@ -20,7 +20,11 @@ export default function Dashboard() {
   const parceiros = useParceirosCache();
   const contratos = useContratosCache();
   const planos = usePlanosCache();
-  const d = useMemo(() => dashboardData(periodo, parceiros, contratos, planos), [periodo, parceiros, contratos, planos]);
+  const { rows: pagamentosReais } = usePagamentosList();
+  const d = useMemo(
+    () => dashboardData(periodo, parceiros, contratos, planos, pagamentosReais),
+    [periodo, parceiros, contratos, planos, pagamentosReais],
+  );
 
   if (role.id === 'parceiro') {
     return (

@@ -6,7 +6,7 @@ import {
 import { useToast } from '../../context/ToastContext.jsx';
 import useRowStatus from '../../hooks/useRowStatus.js';
 import { pagamentos, filaExcecoes, logApiBancaria } from '../../mock/pagamentos.js';
-import { apiFetch, useClientesCache, useContratosCache } from '../../lib/api.js';
+import { apiFetch, useClientesCache, useContratosCache, usePagamentosList } from '../../lib/api.js';
 import { money, dateTime, date, number } from '../../lib/format.js';
 import { maskMoney, moneyToNumber, numberToMoneyInput } from '../../lib/masks.js';
 import { STATUS_SETS } from '../../lib/status.js';
@@ -17,12 +17,15 @@ const TABS = [
   { id: 'log', label: 'Log da API bancária' },
 ];
 
+const MEIOS = ['Boleto', 'Pix', 'Dinheiro', 'Transferência', 'Cartão recorrente'];
+
 export default function Pagamentos() {
   const { toast } = useToast();
   const [tab, setTab] = useState('conciliacao');
   const clientes = useClientesCache();
   const contratos = useContratosCache();
-  const [pagamentosRows, setPagamentoStatus] = useRowStatus(pagamentos);
+  const { rows: pagamentosReais, reload: reloadPagamentos } = usePagamentosList();
+  const [pagamentosRows, setPagamentoStatus] = useRowStatus([...pagamentosReais, ...pagamentos]);
   const [excecao, setExcecao] = useState(null);
   const [pagamentoDetalhe, setPagamentoDetalhe] = useState(null);
 
@@ -33,11 +36,13 @@ export default function Pagamentos() {
   const [parcelas, setParcelas] = useState([]);
   const [parcelaId, setParcelaId] = useState('');
   const [valorBaixa, setValorBaixa] = useState('');
+  const [meioBaixa, setMeioBaixa] = useState('Boleto');
   const [dataBaixa, setDataBaixa] = useState('2026-08-27');
   const [justificativaBaixa, setJustificativaBaixa] = useState('');
+  const [salvandoBaixa, setSalvandoBaixa] = useState(false);
 
   const excecoes = filaExcecoes();
-  const conciliados = pagamentos.filter((p) => p.status === 'Conciliado');
+  const conciliados = pagamentosRows.filter((p) => p.status === 'Conciliado');
   const totalConciliado = conciliados.reduce((s, p) => s + p.valor, 0);
 
   const clienteBaixa = clientes.find((c) => c.id === clienteBaixaId);
@@ -46,7 +51,8 @@ export default function Pagamentos() {
   const fecharBaixa = () => {
     setBaixa(false);
     setClienteBaixaId(''); setContratoBaixa(null); setBuscouBaixa(false);
-    setParcelas([]); setParcelaId(''); setValorBaixa(''); setDataBaixa('2026-08-27'); setJustificativaBaixa('');
+    setParcelas([]); setParcelaId(''); setValorBaixa(''); setMeioBaixa('Boleto');
+    setDataBaixa('2026-08-27'); setJustificativaBaixa('');
   };
 
   const buscarContratoBaixa = async () => {
@@ -67,15 +73,33 @@ export default function Pagamentos() {
   const selecionarParcela = (id) => {
     setParcelaId(id);
     const p = parcelas.find((x) => x.id === id);
-    if (p) setValorBaixa(numberToMoneyInput(p.valor));
+    if (p) {
+      setValorBaixa(numberToMoneyInput(p.valor));
+      if (p.forma) setMeioBaixa(p.forma);
+    }
   };
 
   const baixaValida = Boolean(parcelaSelecionada) && moneyToNumber(valorBaixa) > 0 && dataBaixa && justificativaBaixa.trim().length >= 10;
 
-  const confirmarBaixa = () => {
-    if (!baixaValida) return;
-    toast(`Baixa manual da parcela ${parcelaSelecionada.competencia} registrada com usuário responsável e data/hora (RN-04).`);
-    fecharBaixa();
+  const confirmarBaixa = async () => {
+    if (!baixaValida || salvandoBaixa) return;
+    setSalvandoBaixa(true);
+    try {
+      await apiFetch('/pagamentos/index.php', {
+        method: 'POST',
+        body: {
+          parcelaId: parcelaSelecionada.id, valor: moneyToNumber(valorBaixa),
+          meio: meioBaixa, data: dataBaixa, justificativa: justificativaBaixa,
+        },
+      });
+      toast(`Baixa manual da parcela ${parcelaSelecionada.competencia} registrada com usuário responsável e data/hora (RN-04).`);
+      reloadPagamentos();
+      fecharBaixa();
+    } catch (e) {
+      toast(e.message, { kind: 'danger' });
+    } finally {
+      setSalvandoBaixa(false);
+    }
   };
 
   return (
@@ -198,7 +222,7 @@ export default function Pagamentos() {
           footer={(
             <>
               <Button size="sm" variant="secondary" onClick={fecharBaixa}>Cancelar</Button>
-              <Button size="sm" variant="primary" disabled={!baixaValida} onClick={confirmarBaixa}>Confirmar baixa</Button>
+              <Button size="sm" variant="primary" disabled={!baixaValida} loading={salvandoBaixa} onClick={confirmarBaixa}>Confirmar baixa</Button>
             </>
           )}
         >
@@ -227,7 +251,7 @@ export default function Pagamentos() {
             {contratoBaixa && (
               <Select label="Parcela" value={parcelaId} onChange={(e) => selecionarParcela(e.target.value)}>
                 <option value="">Selecione a parcela…</option>
-                {parcelas.map((p) => (
+                {parcelas.filter((p) => p.status !== 'Pago').map((p) => (
                   <option key={p.id} value={p.id}>{p.competencia} — vence {date(p.vencimento)} — {p.status}</option>
                 ))}
               </Select>
@@ -237,6 +261,7 @@ export default function Pagamentos() {
               <>
                 <div className="field-grid">
                   <Input label="Valor recebido" value={valorBaixa} onChange={(e) => setValorBaixa(maskMoney(e.target.value))} placeholder="R$ 0,00" />
+                  <Select label="Meio de pagamento" value={meioBaixa} onChange={(e) => setMeioBaixa(e.target.value)} options={MEIOS} />
                   <Input label="Data do recebimento" type="date" value={dataBaixa} onChange={(e) => setDataBaixa(e.target.value)} />
                 </div>
                 <Textarea

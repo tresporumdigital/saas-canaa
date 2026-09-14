@@ -1,12 +1,13 @@
 # Sistema de Gestão Funerária Canaã — Frontend + Backend
 
-Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1 e 2 do backend, os
-módulos **Clientes, Parceiros, Unidades, Usuários** (+ login) e **Planos (catálogo), Contratos
-e Parcelas** são reais, com API própria em PHP/PDO (`server/`, publicada em `/api/`) e banco
-MySQL/MariaDB na Hostinger — sem dado de exemplo pré-carregado, é um banco de produção mesmo.
-Os demais módulos (Carnês, Pagamentos, Financeiro, Óbitos, Guias, Equipamentos, Notas Fiscais,
-Leads, Portal do Parceiro etc.) ainda são **mockados** em `src/mock/` (referências cruzadas
-consistentes entre si) até serem migrados em fases seguintes.
+Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-3 do backend, os
+módulos **Clientes, Parceiros, Unidades, Usuários** (+ login), **Planos (catálogo), Contratos,
+Parcelas** e a **baixa manual de Pagamentos** são reais, com API própria em PHP/PDO (`server/`,
+publicada em `/api/`) e banco MySQL/MariaDB na Hostinger — sem dado de exemplo pré-carregado, é
+um banco de produção mesmo. Os demais módulos (Carnês, Conciliação bancária automática,
+Financeiro, Óbitos, Guias, Equipamentos, Notas Fiscais, Leads, Portal do Parceiro etc.) ainda
+são **mockados** em `src/mock/` (referências cruzadas consistentes entre si) até serem migrados
+em fases seguintes.
 
 **Online:** https://backoffice.funerariacanaa.com/
 
@@ -36,6 +37,12 @@ redireciona para lá.
   precisam ler cliente/parceiro/plano/contrato por id.
 - Contratos geram 12 parcelas reais na criação (não são mais calculadas na hora como no mock);
   o status "Vencido" é calculado na leitura a partir do vencimento, não gravado no banco.
+- Baixa manual (`server/pagamentos/index.php`) marca a parcela como `Pago` e grava um registro
+  de pagamento real, numa transação; uma parcela já paga não pode receber baixa de novo (erro
+  409). A aba Conciliação de Pagamentos mistura essas baixas reais com a lista mockada de
+  pagamentos "batidos automaticamente com o banco" — só a baixa manual é uma ação real do
+  usuário, a conciliação bancária automática continua sendo uma simulação (não há gateway de
+  pagamento configurado).
 - Códigos gerados (`CLI-`, `PAR-`, `CTR-2026-`...) para entidades cujo id ainda é referenciado
   por módulos mockados começam num número alto (ex.: contratos reais começam em `CTR-2026-1001`)
   para nunca colidir com os ids fictícios `0001..0020` usados nos mocks ainda não migrados.
@@ -93,9 +100,10 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
 
 ## Observações
 
-- Em **Clientes, Parceiros, Unidades, Usuários, Planos e Contratos**, criar/editar/mudar status
-  já persiste de verdade no banco (API própria) — os demais módulos continuam em simulação:
-  ações disparam um _toast_ de confirmação, sem gravar nada.
+- Em **Clientes, Parceiros, Unidades, Usuários, Planos, Contratos e na baixa manual de
+  Pagamentos**, criar/editar/mudar status já persiste de verdade no banco (API própria) — os
+  demais módulos continuam em simulação: ações disparam um _toast_ de confirmação, sem gravar
+  nada.
 - Nas listagens ainda mockadas, o badge de status é clicável: abre os status pré-definidos da
   tela e troca o status da linha (só em memória, sem persistência). Nas listagens já migradas,
   a troca de status é uma chamada real à API (com rollback visual se falhar).
@@ -122,10 +130,12 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
   foto por unidade — sem bloco de empresa principal), Planos (catálogo real — cadastrar um
   plano aqui é pré-requisito para conseguir contratar um em Clientes ou em Planos → Contratar),
   Backup (mockado) e Usuários (lista real; criar/editar já define/atualiza a senha de acesso).
-- Em Pagamentos, "Baixa manual" busca o contrato real pelo titular e lista as parcelas reais
-  do contrato; ao escolher uma, preenche o valor e sugere a data — confirmar a baixa ainda é só
-  um toast (marcar a parcela como paga de verdade fica para uma fase futura). A lista de
-  Conciliação também abre um pop-up com os dados do pagamento ao clicar na linha.
+- Em Pagamentos, "Baixa manual" busca o contrato real pelo titular, lista as parcelas reais em
+  aberto do contrato (as já pagas somem da lista) e, ao confirmar, marca a parcela como paga de
+  verdade e registra o pagamento — aparece na aba Conciliação com o badge "Baixa manual". A
+  conciliação bancária automática (as demais linhas, "Fila de exceções" e "Log da API bancária")
+  continua simulada. A lista de Conciliação também abre um pop-up com os dados do pagamento ao
+  clicar na linha.
 - Em Controle Financeiro, "Nova conta a pagar" tem a opção de marcar como recorrente
   (gera N lançamentos mensais); categoria e centro de custo são pop-overs de seleção.
 - Em Empréstimo de Equipamentos, "Registrar saída" abre um catálogo com foto dos

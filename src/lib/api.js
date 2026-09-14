@@ -83,6 +83,10 @@ export function useUsuariosList() {
   return useApiList('/usuarios/index.php');
 }
 
+export function usePagamentosList() {
+  return useApiList('/pagamentos/index.php');
+}
+
 // Cache reativo compartilhado (useSyncExternalStore) para módulos que só precisam ler uma
 // lista (seletor de cliente, junções por id etc.) sem cada lugar refazer o fetch — e a página
 // "dona" de cada entidade usa o mesmo cache (via useXCacheState) para já nascer sincronizada

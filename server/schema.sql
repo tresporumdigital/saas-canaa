@@ -134,3 +134,22 @@ CREATE TABLE IF NOT EXISTS contrato_parcelas (
   forma VARCHAR(40) NULL,
   FOREIGN KEY (contrato_id) REFERENCES contratos(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Fase 3: Pagamentos (baixa manual)
+
+CREATE TABLE IF NOT EXISTS pagamentos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NOT NULL UNIQUE,
+  parcela_id INT UNSIGNED NULL,
+  cliente_nome VARCHAR(160),
+  valor DECIMAL(10,2) NOT NULL,
+  meio ENUM('Boleto','Pix','Dinheiro','Transferência','Cartão recorrente') NOT NULL,
+  recebido_em DATE NOT NULL,
+  status ENUM('Conciliado','Exceção','Baixa manual') NOT NULL DEFAULT 'Baixa manual',
+  identificador VARCHAR(255) NULL,
+  observacao TEXT NULL,
+  usuario_id INT UNSIGNED NULL,
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (parcela_id) REFERENCES contrato_parcelas(id) ON DELETE SET NULL,
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

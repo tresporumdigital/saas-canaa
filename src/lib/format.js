@@ -13,22 +13,27 @@ export const money = (v) => brl.format(Number(v || 0));
 export const number = (v) => int.format(Number(v || 0));
 export const percent = (v) => pct.format(Number(v || 0));
 
-export function date(iso) {
-  if (!iso) return '—';
-  // Uma data "pura" (YYYY-MM-DD, sem hora) é interpretada pelo construtor Date como UTC — em
-  // fusos atrás de UTC (todo o Brasil) isso derruba o dia exibido em 1 (ex.: início de contrato
-  // "2026-09-01" virava "31/08/2026"). Construindo com ano/mês/dia soltos, fica sempre local.
+// Uma data "pura" (YYYY-MM-DD, sem hora) é interpretada pelo construtor Date como UTC — em
+// fusos atrás de UTC (todo o Brasil) isso derruba o dia exibido em 1 (ex.: início de contrato
+// "2026-09-01" virava "31/08/2026", ou uma baixa de pagamento datada "2026-09-12" virava
+// "11/09/2026, 21:00" ao passar por dateTime()). Construindo com ano/mês/dia soltos, fica local.
+function parseLocalDate(iso) {
   const soloDate = /^\d{4}-\d{2}-\d{2}$/.test(iso);
-  const d = soloDate
+  return soloDate
     ? new Date(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)))
     : new Date(iso);
+}
+
+export function date(iso) {
+  if (!iso) return '—';
+  const d = parseLocalDate(iso);
   if (Number.isNaN(d.getTime())) return String(iso);
   return d.toLocaleDateString('pt-BR');
 }
 
 export function dateTime(iso) {
   if (!iso) return '—';
-  const d = new Date(iso);
+  const d = parseLocalDate(iso);
   if (Number.isNaN(d.getTime())) return String(iso);
   return d.toLocaleString('pt-BR', {
     day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
