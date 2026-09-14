@@ -1,10 +1,4 @@
 import { TODAY } from '../lib/format.js';
-import {
-  equipamentosProduto, equipamentoProdutoById, equipamentosAbaixoDoMinimo,
-  unidadesEquipamento, unidadeByPatrimonio, emprestimos, emprestimoById,
-  emprestimosDoCliente, emprestimosDaUnidade, emprestimosAtrasados,
-  vendasEquipamento, vendaTotais, vendaEquipamentoById,
-} from './equipamentos.js';
 import { carnes, carneById, carnesDoContrato } from './carnes.js';
 import { notasFiscais, notaFiscalById } from './notasFiscais.js';
 import { pagamentos, pagamentoById, filaExcecoes, logApiBancaria } from './pagamentos.js';
@@ -19,7 +13,6 @@ import {
   backupExecucoes, ultimoBackup, auditoria,
 } from './sistema.js';
 
-export * from './equipamentos.js';
 export * from './carnes.js';
 export * from './notasFiscais.js';
 export * from './pagamentos.js';
@@ -69,10 +62,13 @@ export function guiasPorParceiro(guias) {
 }
 
 // ---------- Dados do dashboard ----------
-// `parceiros`/`contratos`/`planos`/`pagamentosReais`/`obitosReais`/`guiasReais` vêm dos
-// caches/listas reativos da API — não são mais mockados, então o chamador (Dashboard.jsx)
-// precisa repassar as listas.
-export function dashboardData(periodo = 'mes', parceiros = [], contratos = [], planos = [], pagamentosReais = [], obitosReais = [], guiasReais = []) {
+// `parceiros`/`contratos`/`planos`/`pagamentosReais`/`obitosReais`/`guiasReais`/`unidadesReais`/
+// `emprestimosReais`/`vendasEquipamentoReais` vêm dos caches/listas reativos da API — não são
+// mais mockados, então o chamador (Dashboard.jsx) precisa repassar as listas.
+export function dashboardData(
+  periodo = 'mes', parceiros = [], contratos = [], planos = [], pagamentosReais = [], obitosReais = [], guiasReais = [],
+  unidadesReais = [], emprestimosReais = [], vendasEquipamentoReais = [],
+) {
   const parceiroById = (id) => parceiros.find((p) => p.id === id);
   const planoById = (id) => planos.find((p) => p.id === id);
   const contratoValor = (c) => planoById(c.planoId)?.valorMensal || 0;
@@ -89,9 +85,9 @@ export function dashboardData(periodo = 'mes', parceiros = [], contratos = [], p
   const novos = contratos.filter((c) => inPeriodo(c.criadoEm, periodo)).length;
   const cancelamentos = contratos.filter((c) => c.situacao === 'Cancelado' && inPeriodo(c.canceladoEm, periodo)).length;
 
-  const emprestadas = unidadesEquipamento.filter((u) => u.status === 'Emprestado').length;
-  const atrasadasDevolucao = emprestimosAtrasados().length;
-  const vendidosNoMes = vendasEquipamento.filter((v) => inPeriodo(v.data, periodo)).length;
+  const emprestadas = unidadesReais.filter((u) => u.status === 'Emprestado').length;
+  const atrasadasDevolucao = emprestimosReais.filter((e) => e.status === 'Atrasado').length;
+  const vendidosNoMes = vendasEquipamentoReais.filter((v) => inPeriodo(v.data, periodo)).length;
 
   const obitosPeriodo = obitosReais.filter((o) => inPeriodo(o.abertoEm, periodo));
 
@@ -105,7 +101,7 @@ export function dashboardData(periodo = 'mes', parceiros = [], contratos = [], p
       inadimplenciaValor: inad, inadimplenciaPct: inadPct,
     },
     equipamentos: {
-      emEstoque: unidadesEquipamento.filter((u) => u.status === 'Disponível').length,
+      emEstoque: unidadesReais.filter((u) => u.status === 'Disponível').length,
       emprestados: emprestadas,
       atrasados: atrasadasDevolucao,
       vendidos: vendidosNoMes,

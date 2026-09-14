@@ -3,16 +3,18 @@ import { PageHeader } from '../../components/index.js';
 import {
   Card, Badge, Button, DefList, Timeline, EmptyState,
 } from '../../components/index.js';
-import { unidadeByPatrimonio, emprestimosDaUnidade } from '../../mock/equipamentos.js';
+import { useEmprestimosCache, useUnidadesCache } from '../../lib/api.js';
 import { date, money, dateTime } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
 
 export default function UnidadeHistorico() {
   const { patrimonio } = useParams();
-  const u = unidadeByPatrimonio(patrimonio);
+  const unidades = useUnidadesCache();
+  const emprestimosTodos = useEmprestimosCache();
+  const u = unidades.find((x) => x.patrimonio === patrimonio);
   if (!u) return <EmptyState icon="box" title="Unidade não encontrada" action={<Button to="/emprestimos">Voltar</Button>} />;
 
-  const historico = emprestimosDaUnidade(patrimonio);
+  const historico = emprestimosTodos.filter((e) => e.unidadePatrimonio === patrimonio);
   const atual = historico.find((e) => e.status !== 'Devolvido');
 
   const steps = [

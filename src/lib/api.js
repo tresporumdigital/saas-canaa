@@ -140,6 +140,10 @@ const planosCache = createListCache('/planos/index.php');
 const contratosCache = createListCache('/contratos/index.php');
 const obitosCache = createListCache('/obitos/index.php');
 const guiasCache = createListCache('/guias/index.php');
+const equipamentosCache = createListCache('/equipamentos/produtos.php');
+const unidadesCache = createListCache('/equipamentos/unidades.php');
+const emprestimosCache = createListCache('/emprestimos/index.php');
+const vendasEquipamentoCache = createListCache('/equipamentos/vendas.php');
 
 export function useClientesCache() {
   return useCacheRows(clientesCache);
@@ -191,4 +195,44 @@ export function reloadContratosCache() {
 
 export function reloadGuiasCache() {
   return guiasCache.reload();
+}
+
+export function useEquipamentosCache() {
+  return useCacheRows(equipamentosCache);
+}
+
+export function useUnidadesCache() {
+  return useCacheRows(unidadesCache);
+}
+
+export function useEmprestimosCache() {
+  return useCacheRows(emprestimosCache);
+}
+
+export function useVendasEquipamentoCache() {
+  return useCacheRows(vendasEquipamentoCache);
+}
+
+export function useEquipamentosCacheState() {
+  return useCacheState(equipamentosCache);
+}
+
+export function useUnidadesCacheState() {
+  return useCacheState(unidadesCache);
+}
+
+export function useEmprestimosCacheState() {
+  return useCacheState(emprestimosCache);
+}
+
+export function useVendasEquipamentoCacheState() {
+  return useCacheState(vendasEquipamentoCache);
+}
+
+export function reloadUnidadesCache() {
+  return unidadesCache.reload();
+}
+
+export function reloadEmprestimosCache() {
+  return emprestimosCache.reload();
 }

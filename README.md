@@ -1,13 +1,14 @@
 # Sistema de Gestão Funerária Canaã — Frontend + Backend
 
-Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-4 do backend, os
+Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-5 do backend, os
 módulos **Clientes, Parceiros, Unidades, Usuários** (+ login), **Planos (catálogo), Contratos,
-Parcelas**, a **baixa manual de Pagamentos** e **Registro de Óbito + Guias de Atendimento** são
-reais, com API própria em PHP/PDO (`server/`, publicada em `/api/`) e banco MySQL/MariaDB na
-Hostinger — sem dado de exemplo pré-carregado, é um banco de produção mesmo. Os demais módulos
-(Carnês, Conciliação bancária automática, Financeiro, Equipamentos, Notas Fiscais, Leads, Portal
-do Parceiro etc.) ainda são **mockados** em `src/mock/` (referências cruzadas consistentes entre
-si) até serem migrados em fases seguintes.
+Parcelas**, a **baixa manual de Pagamentos**, **Registro de Óbito + Guias de Atendimento** e
+**Equipamentos (catálogo, inventário, Empréstimo e Venda)** são reais, com API própria em
+PHP/PDO (`server/`, publicada em `/api/`) e banco MySQL/MariaDB na Hostinger — sem dado de
+exemplo pré-carregado, é um banco de produção mesmo. Os demais módulos (Carnês, Conciliação
+bancária automática, Financeiro, Notas Fiscais, Leads, Portal do Parceiro etc.) ainda são
+**mockados** em `src/mock/` (referências cruzadas consistentes entre si) até serem migrados em
+fases seguintes.
 
 **Online:** https://backoffice.funerariacanaa.com/
 
@@ -43,10 +44,13 @@ redireciona para lá.
   pagamentos "batidos automaticamente com o banco" — só a baixa manual é uma ação real do
   usuário, a conciliação bancária automática continua sendo uma simulação (não há gateway de
   pagamento configurado).
-- Códigos gerados (`CLI-`, `PAR-`, `CTR-2026-`, `DEP-`, `OB-2026-`, `GA-2026-`...) para entidades
-  cujo id ainda é referenciado por módulos mockados começam num número alto (ex.: contratos
-  reais começam em `CTR-2026-1001`, óbitos em `OB-2026-1001`, guias em `GA-2026-01000`) para
-  nunca colidir com os ids fictícios usados nos mocks ainda não migrados.
+- Códigos gerados (`CLI-`, `PAR-`, `CTR-2026-`, `DEP-`, `OB-2026-`, `GA-2026-`, `EQP-`,
+  `EMP-2026-`, `VEQ-2026-`...) para entidades cujo id ainda é referenciado por módulos mockados
+  começam num número alto (ex.: contratos reais começam em `CTR-2026-1001`, óbitos em
+  `OB-2026-1001`, guias em `GA-2026-01000`, empréstimos em `EMP-2026-1001`) para nunca colidir
+  com os ids fictícios usados nos mocks ainda não migrados. O catálogo de equipamentos usa um
+  prefixo novo (`EQP-`) em vez de tentar reproduzir a sigla do mock (`EQ-CDR`, `EQ-CMH`...), mais
+  simples e sem risco de colisão.
 - Óbito calcula a "cobertura" (plano ativo, carência cumprida, beneficiário incluído,
   adimplência) no servidor, a partir dos dados reais de contrato/parcelas no momento do
   registro (`server/obitos/index.php`) — não é mais um cálculo simulado no frontend.
@@ -105,9 +109,10 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
 ## Observações
 
 - Em **Clientes, Parceiros, Unidades, Usuários, Planos, Contratos, na baixa manual de
-  Pagamentos e em Registro de Óbito + Guias de Atendimento**, criar/editar/mudar status já
-  persiste de verdade no banco (API própria) — os demais módulos continuam em simulação: ações
-  disparam um _toast_ de confirmação, sem gravar nada.
+  Pagamentos, em Registro de Óbito + Guias de Atendimento e em Equipamentos (Cadastro,
+  Empréstimo e Vendas)**, criar/editar/mudar status já persiste de verdade no banco (API
+  própria) — os demais módulos continuam em simulação: ações disparam um _toast_ de
+  confirmação, sem gravar nada.
 - Nas listagens ainda mockadas, o badge de status é clicável: abre os status pré-definidos da
   tela e troca o status da linha (só em memória, sem persistência). Nas listagens já migradas,
   a troca de status é uma chamada real à API (com rollback visual se falhar).
@@ -149,15 +154,22 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
 - Em Controle Financeiro, "Nova conta a pagar" tem a opção de marcar como recorrente
   (gera N lançamentos mensais); categoria e centro de custo são pop-overs de seleção.
 - Em Empréstimo de Equipamentos, "Registrar saída" abre um catálogo com foto dos
-  equipamentos disponíveis; escolher um leva ao formulário de dados do empréstimo. As
-  listas de empréstimos e do inventário mostram a foto do produto e o nº de inventário,
-  e a lista de empréstimos abre um pop-up com os dados ao clicar na linha.
-- Em Vendas de Equipamentos, "Nova venda" segue o mesmo catálogo com foto do empréstimo;
-  ao escolher o equipamento, informa se é cliente cadastrado (puxa nome/CPF/telefone/
-  endereço) ou não (preenche à mão), e ao confirmar pergunta se quer emitir a nota fiscal
-  agora ou depois — quando emitida, o toast indica que foi enviada para o Financeiro.
-- Cadastro de Equipamentos tem abas separadas para Venda (produto com preço/estoque) e
-  Locação (produto + todos os números de inventário registrados de uma vez); ambos com foto.
+  equipamentos disponíveis; escolher um leva ao formulário de dados do empréstimo, que grava a
+  saída no banco e marca a unidade como "Emprestado" numa transação. "Devolver" marca a unidade
+  de volta como "Disponível" e grava data/estado de devolução. As listas de empréstimos e do
+  inventário mostram a foto do produto e o nº de inventário reais, e a lista de empréstimos abre
+  um pop-up com os dados ao clicar na linha; a troca de status (inclusive "Atrasado", que fica
+  manual, não calculado) é uma chamada real à API.
+- Em Vendas de Equipamentos, "Nova venda" segue o mesmo catálogo com foto do equipamento; ao
+  escolher o equipamento, informa se é cliente cadastrado (puxa nome/CPF/telefone/endereço) ou
+  não (preenche à mão), grava a venda no banco e decrementa o estoque real do produto. A etapa
+  "emitir nota fiscal agora ou depois" continua um _toast_ — Notas Fiscais ainda não foi
+  migrado, mesmo espírito do step 4 de Registrar óbito.
+- Cadastro de Equipamentos tem abas separadas para Venda (produto com preço/estoque) e Locação
+  (produto + todos os números de inventário registrados de uma vez, numa única transação); ambos
+  gravam no banco de verdade. Foto de produto continua `URL.createObjectURL` (blob local, não
+  persiste entre recarregamentos) — gap conhecido desde a Fase 1, real upload de arquivo fica
+  fora de escopo.
 - Autenticação é **real** (token validado no servidor a cada carregamento); os módulos ainda
   não migrados continuam com dados de exemplo fixos em `src/mock/`.
 - Data de referência do protótipo (para os módulos ainda mockados): **27/08/2026**.

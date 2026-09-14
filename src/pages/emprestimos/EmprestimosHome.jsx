@@ -5,11 +5,9 @@ import {
   Card, Tabs, DataTable, StatusMenu, Button, StatCard, Alert, Modal, Select, Input, Textarea, DefList, Avatar, Icon,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import useRowStatus from '../../hooks/useRowStatus.js';
 import {
-  emprestimos, unidadesEquipamento, emprestimosAtrasados, equipamentoProdutoById, unidadeByPatrimonio,
-} from '../../mock/equipamentos.js';
-import { useClientesCache } from '../../lib/api.js';
+  apiFetch, useClientesCache, useEmprestimosCacheState, useUnidadesCacheState,
+} from '../../lib/api.js';
 import { date, money, dateTime } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
 
@@ -27,15 +25,16 @@ export default function EmprestimosHome() {
   const { toast } = useToast();
   const [tab, setTab] = useState('emprestimos');
   const clientes = useClientesCache();
-  const [emprestimosRows, setEmprestimoStatus] = useRowStatus(emprestimos);
-  const [unidadesRows, setUnidadeStatus] = useRowStatus(unidadesEquipamento, { getId: (r) => r.patrimonio });
+  const { rows: emprestimosRows, reload: reloadEmprestimos } = useEmprestimosCacheState();
+  const { rows: unidadesRows, reload: reloadUnidades } = useUnidadesCacheState();
 
   const [passoSaida, setPassoSaida] = useState(0); // 0 fechado · 1 catálogo · 2 dados
   const [unidadeSel, setUnidadeSel] = useState(null);
   const [formSaida, setFormSaida] = useState(formaVazia);
   const [emprestimoDetalhe, setEmprestimoDetalhe] = useState(null);
+  const [salvando, setSalvando] = useState(false);
 
-  const atrasados = emprestimosAtrasados();
+  const atrasados = emprestimosRows.filter((e) => e.status === 'Atrasado');
   const emprestadas = unidadesRows.filter((u) => u.status === 'Emprestado').length;
   const disponiveis = unidadesRows.filter((u) => u.status === 'Disponível').length;
   const disponiveisCatalogo = unidadesRows.filter((u) => u.status === 'Disponível');
@@ -54,11 +53,63 @@ export default function EmprestimosHome() {
   const clienteSaida = clientes.find((c) => c.id === formSaida.clienteId);
   const saidaValida = Boolean(clienteSaida && formSaida.responsavel.trim() && formSaida.previsao);
 
-  const confirmarSaida = (e) => {
+  const confirmarSaida = async (e) => {
     e.preventDefault();
-    if (!saidaValida) return;
-    toast(`Saída de ${unidadeSel.descricao} (${unidadeSel.patrimonio}) registrada para ${clienteSaida.nome} — termo de responsabilidade gerado em PDF (simulação).`);
-    fecharSaida();
+    if (!saidaValida || salvando) return;
+    setSalvando(true);
+    try {
+      await apiFetch('/emprestimos/index.php', {
+        method: 'POST',
+        body: {
+          unidadePatrimonio: unidadeSel.patrimonio,
+          clienteId: formSaida.clienteId,
+          responsavel: formSaida.responsavel.trim(),
+          previsaoDevolucao: formSaida.previsao,
+          vinculo: formSaida.vinculo,
+          estadoSaida: formSaida.estado,
+          observacoes: formSaida.observacoes,
+        },
+      });
+      toast(`Saída de ${unidadeSel.descricao} (${unidadeSel.patrimonio}) registrada para ${clienteSaida.nome} — termo de responsabilidade gerado em PDF (simulação).`);
+      reloadEmprestimos();
+      reloadUnidades();
+      fecharSaida();
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const devolver = async (r) => {
+    try {
+      await apiFetch(`/emprestimos/devolver.php?id=${encodeURIComponent(r.id)}`, { method: 'PATCH', body: {} });
+      toast(`Devolução da unidade ${r.unidadePatrimonio} registrada. Unidade retorna a "Disponível".`);
+      reloadEmprestimos();
+      reloadUnidades();
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    }
+  };
+
+  const alterarStatusEmprestimo = async (r, next) => {
+    try {
+      await apiFetch(`/emprestimos/status.php?id=${encodeURIComponent(r.id)}`, { method: 'PATCH', body: { status: next } });
+      toast(`Empréstimo ${r.id} definido como "${next}".`);
+      reloadEmprestimos();
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    }
+  };
+
+  const alterarStatusUnidade = async (r, next) => {
+    try {
+      await apiFetch(`/equipamentos/unidade_status.php?patrimonio=${encodeURIComponent(r.patrimonio)}`, { method: 'PATCH', body: { status: next } });
+      toast(`Unidade ${r.patrimonio} definida como "${next}".`);
+      reloadUnidades();
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    }
   };
 
   return (
@@ -94,7 +145,7 @@ export default function EmprestimosHome() {
             onRowClick={(r) => setEmprestimoDetalhe(r)}
             columns={[
               { key: 'foto', header: '', render: (r) => (
-                <Avatar name={r.produtoDescricao} src={equipamentoProdutoById(unidadeByPatrimonio(r.unidadePatrimonio)?.produtoId)?.foto} size="sm" />
+                <Avatar name={r.produtoDescricao} src={r.produtoFoto} size="sm" />
               ) },
               { key: 'id', header: 'Empréstimo', sortable: true },
               { key: 'produtoDescricao', header: 'Equipamento' },
@@ -109,11 +160,11 @@ export default function EmprestimosHome() {
                 <StatusMenu
                   value={r.status}
                   options={STATUS_SETS.emprestimo}
-                  onChange={(next) => { setEmprestimoStatus(r.id, next); toast(`Empréstimo ${r.id} definido como "${next}".`); }}
+                  onChange={(next) => alterarStatusEmprestimo(r, next)}
                 />
               ) },
               { key: 'acao', header: '', render: (r) => r.status !== 'Devolvido' ? (
-                <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); toast(`Devolução da unidade ${r.unidadePatrimonio} registrada. Unidade retorna a "Disponível" (simulação).`); }}>Devolver</Button>
+                <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); devolver(r); }}>Devolver</Button>
               ) : null },
             ]}
           />
@@ -130,7 +181,7 @@ export default function EmprestimosHome() {
             getKey={(r) => r.patrimonio}
             onRowClick={(r) => navigate(`/emprestimos/unidade/${r.patrimonio}`)}
             columns={[
-              { key: 'foto', header: '', render: (r) => <Avatar name={r.descricao} src={equipamentoProdutoById(r.produtoId)?.foto} size="sm" /> },
+              { key: 'foto', header: '', render: (r) => <Avatar name={r.descricao} src={r.foto} size="sm" /> },
               { key: 'patrimonio', header: 'Nº de inventário', sortable: true },
               { key: 'descricao', header: 'Equipamento', sortable: true },
               { key: 'estadoConservacao', header: 'Conservação' },
@@ -139,7 +190,7 @@ export default function EmprestimosHome() {
                 <StatusMenu
                   value={r.status}
                   options={STATUS_SETS.unidadeEquipamento}
-                  onChange={(next) => { setUnidadeStatus(r.patrimonio, next); toast(`Unidade ${r.patrimonio} definida como "${next}".`); }}
+                  onChange={(next) => alterarStatusUnidade(r, next)}
                 />
               ) },
             ]}
@@ -157,7 +208,7 @@ export default function EmprestimosHome() {
           <div className="row" style={{ gap: 'var(--space-3)', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
             <Avatar
               name={emprestimoDetalhe.produtoDescricao}
-              src={equipamentoProdutoById(unidadeByPatrimonio(emprestimoDetalhe.unidadePatrimonio)?.produtoId)?.foto}
+              src={emprestimoDetalhe.produtoFoto}
               size="lg"
             />
             <div>
@@ -192,7 +243,7 @@ export default function EmprestimosHome() {
             <div className="grid cols-3">
               {disponiveisCatalogo.map((u) => (
                 <button key={u.patrimonio} type="button" className="equip-card" onClick={() => escolherUnidade(u)}>
-                  <Avatar name={u.descricao} src={equipamentoProdutoById(u.produtoId)?.foto} size="lg" />
+                  <Avatar name={u.descricao} src={u.foto} size="lg" />
                   <span className="equip-card-nome">{u.descricao}</span>
                   <span className="equip-card-patrimonio">Nº {u.patrimonio} · {u.estadoConservacao}</span>
                 </button>
@@ -213,13 +264,13 @@ export default function EmprestimosHome() {
                 <Icon name="chevron-left" size={14} /> Trocar equipamento
               </Button>
               <Button variant="secondary" type="button" onClick={fecharSaida}>Cancelar</Button>
-              <Button variant="primary" type="submit" form="saida-form" disabled={!saidaValida}>Registrar e gerar termo</Button>
+              <Button variant="primary" type="submit" form="saida-form" disabled={!saidaValida} loading={salvando}>Registrar e gerar termo</Button>
             </>
           )}
         >
           <form id="saida-form" onSubmit={confirmarSaida} className="stack" style={{ gap: 'var(--space-4)' }}>
             <div className="row" style={{ gap: 'var(--space-3)', alignItems: 'center' }}>
-              <Avatar name={unidadeSel.descricao} src={equipamentoProdutoById(unidadeSel.produtoId)?.foto} size="md" />
+              <Avatar name={unidadeSel.descricao} src={unidadeSel.foto} size="md" />
               <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>Nº de inventário {unidadeSel.patrimonio} · {unidadeSel.estadoConservacao}</div>
             </div>
             <div className="field-grid">

@@ -221,3 +221,84 @@ CREATE TABLE IF NOT EXISTS guia_historico (
   status VARCHAR(40) NOT NULL, quando DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, quem VARCHAR(160) NULL,
   FOREIGN KEY (guia_id) REFERENCES guias(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Fase 5: Equipamentos (catálogo, inventário unitário, empréstimos, vendas)
+
+CREATE TABLE IF NOT EXISTS equipamentos_produto (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NOT NULL UNIQUE,
+  descricao VARCHAR(160) NOT NULL,
+  categoria VARCHAR(60) NOT NULL,
+  preco_custo DECIMAL(10,2) NOT NULL DEFAULT 0,
+  preco_venda DECIMAL(10,2) NOT NULL DEFAULT 0,
+  estoque INT NOT NULL DEFAULT 0,
+  estoque_minimo INT NOT NULL DEFAULT 0,
+  locavel TINYINT(1) NOT NULL DEFAULT 0,
+  foto VARCHAR(255) NULL,
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS equipamentos_unidade (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  patrimonio VARCHAR(30) NOT NULL UNIQUE,
+  produto_id INT UNSIGNED NOT NULL,
+  status ENUM('Disponível','Emprestado','Em manutenção','Baixado') NOT NULL DEFAULT 'Disponível',
+  estado_conservacao ENUM('Ótimo','Bom','Regular') NOT NULL DEFAULT 'Ótimo',
+  aquisicao DATE NOT NULL,
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (produto_id) REFERENCES equipamentos_produto(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS emprestimos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NOT NULL UNIQUE,
+  unidade_id INT UNSIGNED NOT NULL,
+  cliente_id INT UNSIGNED NOT NULL,
+  responsavel_retirada VARCHAR(160) NOT NULL,
+  saida_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  previsao_devolucao DATE NOT NULL,
+  devolucao_em DATETIME NULL,
+  estado_saida ENUM('Ótimo','Bom','Regular') NOT NULL,
+  estado_devolucao ENUM('Ótimo','Bom','Regular') NULL,
+  vinculo_tipo ENUM('Cobertura de plano','Locação') NOT NULL,
+  contrato_id INT UNSIGNED NULL,
+  valor_locacao DECIMAL(10,2) NOT NULL DEFAULT 0,
+  observacoes TEXT NULL,
+  status ENUM('Em vigência','Devolvido','Atrasado') NOT NULL DEFAULT 'Em vigência',
+  criado_por_usuario_id INT UNSIGNED NULL,
+  FOREIGN KEY (unidade_id) REFERENCES equipamentos_unidade(id),
+  FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+  FOREIGN KEY (contrato_id) REFERENCES contratos(id),
+  FOREIGN KEY (criado_por_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS vendas_equipamento (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NOT NULL UNIQUE,
+  data DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  cliente_id INT UNSIGNED NULL,
+  comprador_nome VARCHAR(160) NOT NULL,
+  comprador_cpf CHAR(11) NOT NULL,
+  comprador_telefone VARCHAR(20) NOT NULL,
+  endereco_cep VARCHAR(9) NULL, endereco_logradouro VARCHAR(160) NULL, endereco_numero VARCHAR(20) NULL,
+  endereco_bairro VARCHAR(120) NULL, endereco_cidade VARCHAR(120) NULL, endereco_uf CHAR(2) NULL,
+  vendedor_usuario_id INT UNSIGNED NULL,
+  forma_pagamento VARCHAR(40) NOT NULL,
+  desconto DECIMAL(10,2) NOT NULL DEFAULT 0,
+  custo DECIMAL(10,2) NOT NULL DEFAULT 0,
+  parcelas INT NULL,
+  nota_fiscal_id VARCHAR(20) NULL,
+  FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+  FOREIGN KEY (vendedor_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS venda_itens (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  venda_id INT UNSIGNED NOT NULL,
+  produto_id INT UNSIGNED NULL,
+  descricao VARCHAR(160) NOT NULL,
+  qtd INT NOT NULL DEFAULT 1,
+  valor_unit DECIMAL(10,2) NOT NULL,
+  FOREIGN KEY (venda_id) REFERENCES vendas_equipamento(id) ON DELETE CASCADE,
+  FOREIGN KEY (produto_id) REFERENCES equipamentos_produto(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

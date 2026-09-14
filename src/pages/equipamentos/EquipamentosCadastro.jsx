@@ -1,10 +1,10 @@
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
   Card, Tabs, DataTable, Badge, Button, Modal, Input, Select, FieldRow, Avatar,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { equipamentosProduto, unidadesEquipamento, equipamentoProdutoById } from '../../mock/equipamentos.js';
+import { apiFetch, useEquipamentosCacheState, useUnidadesCache, reloadUnidadesCache } from '../../lib/api.js';
 import { money, date } from '../../lib/format.js';
 import { maskMoney, moneyToNumber } from '../../lib/masks.js';
 import LocacaoFormModal from './LocacaoFormModal.jsx';
@@ -21,14 +21,14 @@ export default function EquipamentosCadastro() {
 
   // ---- Venda ----
   const [novo, setNovo] = useState(false);
-  const [novos, setNovos] = useState([]);
-  const rowsVenda = useMemo(() => [...novos, ...equipamentosProduto], [novos]);
+  const { rows: rowsVenda, reload: reloadProdutos } = useEquipamentosCacheState();
 
   const [form, setForm] = useState({
     descricao: '', categoria: 'Mobilidade', precoCusto: '', precoVenda: '',
     estoque: '', estoqueMinimo: '',
   });
   const [foto, setFoto] = useState(null);
+  const [salvando, setSalvando] = useState(false);
   const fileInputRef = useRef(null);
   const onFotoChange = (e) => {
     const file = e.target.files?.[0];
@@ -38,39 +38,58 @@ export default function EquipamentosCadastro() {
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const pronto = form.descricao.trim() && moneyToNumber(form.precoVenda) > 0;
 
-  const criar = (e) => {
+  const criar = async (e) => {
     e.preventDefault();
-    if (!pronto) return;
-    const sigla = form.descricao.trim().slice(0, 3).toUpperCase();
-    const equip = {
-      id: `EQ-${sigla}${String(Date.now()).slice(-3)}`,
-      descricao: form.descricao.trim(),
-      categoria: form.categoria,
-      precoCusto: moneyToNumber(form.precoCusto),
-      precoVenda: moneyToNumber(form.precoVenda),
-      estoque: Number(form.estoque) || 0,
-      estoqueMinimo: Number(form.estoqueMinimo) || 0,
-      locavel: false,
-      foto,
-    };
-    setNovos((l) => [equip, ...l]);
-    toast(`Equipamento ${equip.descricao} cadastrado para venda (simulação — sem persistência).`);
-    setForm({ descricao: '', categoria: 'Mobilidade', precoCusto: '', precoVenda: '', estoque: '', estoqueMinimo: '' });
-    setFoto(null);
-    setNovo(false);
+    if (!pronto || salvando) return;
+    setSalvando(true);
+    try {
+      await apiFetch('/equipamentos/produtos.php', {
+        method: 'POST',
+        body: {
+          descricao: form.descricao.trim(),
+          categoria: form.categoria,
+          precoCusto: moneyToNumber(form.precoCusto),
+          precoVenda: moneyToNumber(form.precoVenda),
+          estoque: Number(form.estoque) || 0,
+          estoqueMinimo: Number(form.estoqueMinimo) || 0,
+        },
+      });
+      toast(`Equipamento ${form.descricao.trim()} cadastrado para venda.`);
+      reloadProdutos();
+      setForm({ descricao: '', categoria: 'Mobilidade', precoCusto: '', precoVenda: '', estoque: '', estoqueMinimo: '' });
+      setFoto(null);
+      setNovo(false);
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    } finally {
+      setSalvando(false);
+    }
   };
 
   // ---- Locação ----
   const [novaLocacao, setNovaLocacao] = useState(false);
-  const [produtosLocacao, setProdutosLocacao] = useState([]);
-  const [unidadesLocacao, setUnidadesLocacao] = useState([]);
-  const rowsLocacao = useMemo(() => [...unidadesLocacao, ...unidadesEquipamento], [unidadesLocacao]);
-  const produtoPorId = (id) => produtosLocacao.find((p) => p.id === id) || equipamentoProdutoById(id);
+  const rowsLocacao = useUnidadesCache();
+  const produtoPorId = (id) => rowsVenda.find((p) => p.id === id);
 
-  const criarLocacao = ({ produto, unidades }) => {
-    setProdutosLocacao((l) => [produto, ...l]);
-    setUnidadesLocacao((l) => [...unidades, ...l]);
-    toast(`Equipamento ${produto.descricao} cadastrado para locação com ${unidades.length} nº(s) de inventário (simulação — sem persistência).`);
+  const criarLocacao = async ({ produto, unidades }) => {
+    try {
+      await apiFetch('/equipamentos/produtos.php', {
+        method: 'POST',
+        body: {
+          descricao: produto.descricao,
+          categoria: produto.categoria,
+          precoCusto: produto.precoCusto,
+          unidades: unidades.map((u) => ({
+            patrimonio: u.patrimonio, estadoConservacao: u.estadoConservacao, aquisicao: u.aquisicao,
+          })),
+        },
+      });
+      toast(`Equipamento ${produto.descricao} cadastrado para locação com ${unidades.length} nº(s) de inventário.`);
+      reloadProdutos();
+      reloadUnidadesCache();
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    }
   };
 
   return (
@@ -119,7 +138,7 @@ export default function EquipamentosCadastro() {
             pageSize={14}
             getKey={(r) => r.patrimonio}
             columns={[
-              { key: 'foto', header: '', render: (r) => <Avatar name={r.descricao} src={produtoPorId(r.produtoId)?.foto} size="sm" /> },
+              { key: 'foto', header: '', render: (r) => <Avatar name={r.descricao} src={r.foto} size="sm" /> },
               { key: 'patrimonio', header: 'Nº de inventário', sortable: true },
               { key: 'descricao', header: 'Equipamento', sortable: true },
               { key: 'categoria', header: 'Categoria', render: (r) => produtoPorId(r.produtoId)?.categoria || '—' },
@@ -139,7 +158,7 @@ export default function EquipamentosCadastro() {
           footer={(
             <>
               <Button variant="secondary" type="button" onClick={() => setNovo(false)}>Cancelar</Button>
-              <Button variant="primary" type="submit" form="equip-form" disabled={!pronto}>Cadastrar equipamento</Button>
+              <Button variant="primary" type="submit" form="equip-form" disabled={!pronto} loading={salvando}>Cadastrar equipamento</Button>
             </>
           )}
         >

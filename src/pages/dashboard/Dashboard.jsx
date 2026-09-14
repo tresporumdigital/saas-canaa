@@ -5,7 +5,8 @@ import { Card, Badge, Icon, StatCard, Spark, Alert } from '../../components/inde
 import { useRole } from '../../context/RoleContext.jsx';
 import { dashboardData } from '../../mock/index.js';
 import {
-  useContratosCache, useGuiasCache, useObitosCache, usePagamentosList, useParceirosCache, usePlanosCache,
+  useContratosCache, useEmprestimosCache, useGuiasCache, useObitosCache, usePagamentosList,
+  useParceirosCache, usePlanosCache, useUnidadesCache, useVendasEquipamentoCache,
 } from '../../lib/api.js';
 import { money, number, percent } from '../../lib/format.js';
 
@@ -25,9 +26,16 @@ export default function Dashboard() {
   const { rows: pagamentosReais } = usePagamentosList();
   const obitosReais = useObitosCache();
   const guiasReais = useGuiasCache();
+  const unidadesReais = useUnidadesCache();
+  const emprestimosReais = useEmprestimosCache();
+  const vendasEquipamentoReais = useVendasEquipamentoCache();
   const d = useMemo(
-    () => dashboardData(periodo, parceiros, contratos, planos, pagamentosReais, obitosReais, guiasReais),
-    [periodo, parceiros, contratos, planos, pagamentosReais, obitosReais, guiasReais],
+    () => dashboardData(
+      periodo, parceiros, contratos, planos, pagamentosReais, obitosReais, guiasReais,
+      unidadesReais, emprestimosReais, vendasEquipamentoReais,
+    ),
+    [periodo, parceiros, contratos, planos, pagamentosReais, obitosReais, guiasReais,
+      unidadesReais, emprestimosReais, vendasEquipamentoReais],
   );
 
   if (role.id === 'parceiro') {

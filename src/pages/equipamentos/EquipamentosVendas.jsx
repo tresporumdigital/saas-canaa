@@ -1,14 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
   Card, Tabs, DataTable, Badge, Button, StatCard, Alert, Modal, Drawer, DefList,
   Input, Select, FieldRow, EnderecoFields, Avatar,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import {
-  equipamentosProduto, equipamentosAbaixoDoMinimo, vendasEquipamento, vendaTotais,
-} from '../../mock/equipamentos.js';
-import { useClientesCache } from '../../lib/api.js';
+import { apiFetch, useClientesCache, useEquipamentosCache, useVendasEquipamentoCacheState } from '../../lib/api.js';
 import { money, date, number } from '../../lib/format.js';
 import { maskMoney, moneyToNumber, numberToMoneyInput, maskCPF, maskPhone } from '../../lib/masks.js';
 
@@ -22,12 +19,19 @@ const FORMAS_PAGAMENTO = ['Pix', 'Dinheiro', 'Boleto', 'Cartão 2x', 'Cartão 3x
 const enderecoVazio = { cep: '', logradouro: '', numero: '', bairro: '', cidade: '', uf: '' };
 const compradorVazio = { nome: '', cpf: '', telefone: '' };
 
+function vendaTotais(v) {
+  const bruto = v.itens.reduce((s, it) => s + it.qtd * it.valorUnit, 0);
+  const total = bruto - (v.desconto || 0);
+  return { bruto, total, margem: total - v.custo };
+}
+
 export default function EquipamentosVendas() {
   const { toast } = useToast();
   const [tab, setTab] = useState('vendas');
   const clientes = useClientesCache();
+  const produtos = useEquipamentosCache();
+  const { rows: rowsVendas, reload: reloadVendas } = useVendasEquipamentoCacheState();
   const [venda, setVenda] = useState(null);
-  const [novasVendas, setNovasVendas] = useState([]);
 
   // Fluxo de "Nova venda": 0 fechado · 1 catálogo · 2 dados · 3 nota fiscal
   const [passo, setPasso] = useState(0);
@@ -39,9 +43,9 @@ export default function EquipamentosVendas() {
   const [formaPagamento, setFormaPagamento] = useState('Pix');
   const [valor, setValor] = useState('');
   const [ultimaVenda, setUltimaVenda] = useState(null);
+  const [salvando, setSalvando] = useState(false);
 
-  const rowsVendas = useMemo(() => [...novasVendas, ...vendasEquipamento], [novasVendas]);
-  const abaixoMin = equipamentosAbaixoDoMinimo();
+  const abaixoMin = produtos.filter((p) => p.estoque <= p.estoqueMinimo);
   const totalMes = rowsVendas.reduce((s, v) => s + vendaTotais(v).total, 0);
   const margemMes = rowsVendas.reduce((s, v) => s + vendaTotais(v).margem, 0);
 
@@ -84,25 +88,32 @@ export default function EquipamentosVendas() {
     && (ehCliente !== 'Sim' || clienteId),
   );
 
-  const registrarVenda = (e) => {
+  const registrarVenda = async (e) => {
     e.preventDefault();
-    if (!vendaPronta) return;
-    const nv = {
-      id: `VEQ-2026-9${String(Date.now()).slice(-3)}`,
-      data: '2026-09-01',
-      clienteId: ehCliente === 'Sim' ? clienteId : null,
-      clienteNome: comprador.nome.trim(),
-      vendedor: 'Balcão',
-      formaPagamento,
-      itens: [{ descricao: equipSel.descricao, qtd: 1, valorUnit: moneyToNumber(valor) }],
-      desconto: 0,
-      custo: equipSel.precoCusto,
-      notaFiscalId: null,
-    };
-    setNovasVendas((l) => [nv, ...l]);
-    toast(`Venda ${nv.id} registrada para ${nv.clienteNome} (simulação — sem persistência).`);
-    setUltimaVenda(nv);
-    setPasso(3);
+    if (!vendaPronta || salvando) return;
+    setSalvando(true);
+    try {
+      const { id } = await apiFetch('/equipamentos/vendas.php', {
+        method: 'POST',
+        body: {
+          produtoId: equipSel.id,
+          clienteId: ehCliente === 'Sim' ? clienteId : null,
+          comprador,
+          endereco: enderecoVenda,
+          formaPagamento,
+          valor: moneyToNumber(valor),
+          qtd: 1,
+        },
+      });
+      toast(`Venda ${id} registrada para ${comprador.nome.trim()}.`);
+      setUltimaVenda({ id, clienteNome: comprador.nome.trim() });
+      reloadVendas();
+      setPasso(3);
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    } finally {
+      setSalvando(false);
+    }
   };
 
   const finalizarComNota = (emitir) => {
@@ -160,7 +171,7 @@ export default function EquipamentosVendas() {
         <Card>
           <DataTable
             searchable
-            rows={equipamentosProduto}
+            rows={produtos}
             searchKeys={['descricao', 'categoria']}
             pageSize={12}
             columns={[
@@ -233,7 +244,7 @@ export default function EquipamentosVendas() {
       {passo === 1 && (
         <Modal title="Selecione o equipamento" onClose={fecharVenda} wide footer={<Button variant="secondary" onClick={fecharVenda}>Cancelar</Button>}>
           <div className="grid cols-3">
-            {equipamentosProduto.map((p) => (
+            {produtos.map((p) => (
               <button key={p.id} type="button" className="equip-card" onClick={() => escolherEquip(p)}>
                 <Avatar name={p.descricao} src={p.foto} size="lg" />
                 <span className="equip-card-nome">{p.descricao}</span>
@@ -253,7 +264,7 @@ export default function EquipamentosVendas() {
             <>
               <Button variant="secondary" type="button" onClick={() => setPasso(1)}>Trocar equipamento</Button>
               <Button variant="secondary" type="button" onClick={fecharVenda}>Cancelar</Button>
-              <Button variant="primary" type="submit" form="venda-form" disabled={!vendaPronta}>Confirmar venda</Button>
+              <Button variant="primary" type="submit" form="venda-form" disabled={!vendaPronta} loading={salvando}>Confirmar venda</Button>
             </>
           )}
         >
