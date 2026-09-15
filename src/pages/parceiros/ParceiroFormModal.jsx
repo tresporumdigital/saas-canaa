@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Button, Input, Select, FieldRow } from '../../components/index.js';
+import { Modal, Button, Input, Select, FieldRow, Checkbox } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { apiFetch } from '../../lib/api.js';
 import { UF_LIST } from '../../lib/format.js';
@@ -31,14 +31,23 @@ export default function ParceiroFormModal({ parceiro, onClose, onSaved }) {
     categoria: parceiro?.tipoParceria || CATEGORIAS[0],
     cidade: parceiro?.cidade || 'São Paulo',
     uf: parceiro?.uf || 'SP',
-    tipoDesconto: parceiro ? (basePercentual ? 'Porcentagem (%)' : 'Valor fixo') : '',
-    valorDesconto: parceiro ? (basePercentual ? numberToPercentInput(parceiro.acordo.valor * 100) : numberToMoneyInput(parceiro.acordo.valor)) : '',
+    tipoDesconto: parceiro?.acordo.tipo ? (basePercentual ? 'Porcentagem (%)' : 'Valor fixo') : '',
+    valorDesconto: parceiro?.acordo.tipo ? (basePercentual ? numberToPercentInput(parceiro.acordo.valor * 100) : numberToMoneyInput(parceiro.acordo.valor)) : '',
     contatoNome: contato?.nome || '',
     contatoTelefone: contato ? maskPhone(contato.telefone) : '',
     contatoEmail: contato?.email || '',
+    dadosBancarios: parceiro?.dadosBancarios || '',
+    vigencia: parceiro?.acordo.vigencia || '',
+    servicosCobertos: parceiro?.acordo.servicosCobertos || [],
   }));
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const setMasked = (k, maskFn) => (e) => setForm((f) => ({ ...f, [k]: maskFn(e.target.value) }));
+  const toggleServico = (servico) => setForm((f) => ({
+    ...f,
+    servicosCobertos: f.servicosCobertos.includes(servico)
+      ? f.servicosCobertos.filter((s) => s !== servico)
+      : [...f.servicosCobertos, servico],
+  }));
   const emailValido = !form.contatoEmail || isValidEmail(form.contatoEmail);
   const percentual = form.tipoDesconto === 'Porcentagem (%)';
 
@@ -111,6 +120,22 @@ export default function ParceiroFormModal({ parceiro, onClose, onSaved }) {
             <Input label="E-mail" type="email" value={form.contatoEmail} onChange={set('contatoEmail')}
               error={!emailValido ? 'E-mail em formato inválido.' : undefined} />
           </FieldRow>
+        </div>
+
+        <div>
+          <div className="card-title">Acordo comercial</div>
+          <FieldRow>
+            <Input label="Vigência" value={form.vigencia} onChange={set('vigencia')} placeholder="Ex.: 12 meses, renovação automática" />
+            <Input label="Dados bancários" value={form.dadosBancarios} onChange={set('dadosBancarios')} placeholder="Banco, agência, conta ou chave Pix" />
+          </FieldRow>
+          <div style={{ marginTop: 'var(--space-3)' }}>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-2)' }}>Serviços cobertos pelo acordo</p>
+            <div className="row" style={{ flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+              {CATEGORIAS.map((c) => (
+                <Checkbox key={c} label={c} checked={form.servicosCobertos.includes(c)} onChange={() => toggleServico(c)} />
+              ))}
+            </div>
+          </div>
         </div>
       </form>
     </Modal>

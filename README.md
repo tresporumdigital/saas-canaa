@@ -1,6 +1,6 @@
 # Sistema de Gestão Funerária Canaã — Frontend + Backend
 
-Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-11 do backend, os
+Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-12 do backend, os
 módulos **Clientes, Parceiros, Unidades, Usuários** (+ login), **Planos (catálogo), Contratos,
 Parcelas**, a **baixa manual de Pagamentos**, **Registro de Óbito + Guias de Atendimento**,
 **Equipamentos (catálogo, inventário, Empréstimo e Venda)**, **Notas Fiscais**, **Portal do
@@ -9,8 +9,9 @@ Inadimplência, Fechamento de Caixa, DRE gerencial)**, **Perfis/Permissões e Ba
 configuração)**, **Leads do Site** e **Parâmetros + Auditoria** são reais, com API própria em
 PHP/PDO (`server/`, publicada em `/api/`) e banco MySQL/MariaDB na Hostinger — sem dado de
 exemplo pré-carregado, é um banco de produção mesmo. Só a **Conciliação bancária automática**
-(`src/mock/pagamentos.js`) ainda é mockada — mock permanente por design, já que não há gateway
-bancário real para integrar.
+(`src/mock/pagamentos.js`) ainda é mockada — sem gateway bancário real para integrar; o usuário
+decidiu deixá-la assim por enquanto (não é uma exclusão permanente, é uma decisão em aberto) e
+trará um pedido específico se um dia quiser retomar.
 
 **Online:** https://backoffice.funerariacanaa.com/
 
@@ -130,6 +131,14 @@ redireciona para lá.
   fiscal, aprovar/estornar baixa de parceiro — um `registrar_auditoria()` novo em
   `_bootstrap.php`, chamado nesses 4 pontos já existentes. É um log imutável: nada nesta tela
   edita ou apaga uma linha.
+- Fase 12 (final desta migração): dados bancários e acordo comercial do Parceiro (`dadosBancarios`,
+  `acordo.vigencia`, `acordo.servicosCobertos`) ganharam formulário real em
+  `ParceiroFormModal.jsx` — as colunas já existiam no banco desde a Fase 1, só faltava como
+  preenchê-las. A Conciliação bancária automática segue mockada por decisão do usuário (fica
+  como débito técnico em aberto, não permanente — o PRD já prevê uma via sem integração de banco
+  real, por arquivo de retorno CNAB/CSV, RF-66, se um dia quiser retomar); o login real de
+  parceiro no Portal (RF-104) e o upload persistente de fotos também continuam como débitos
+  técnicos documentados, não pedidos nesta fase.
 
 ## Design
 

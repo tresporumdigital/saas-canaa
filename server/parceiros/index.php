@@ -65,19 +65,22 @@ if ($method === 'POST') {
     $tipoDesconto = $body['tipoDesconto'] ?? '';
     $acordoTipo = $tipoDesconto === 'Porcentagem (%)' ? 'Percentual' : ($tipoDesconto ? 'Fixo por atendimento' : null);
     $acordoValor = isset($body['valorDesconto']) && $body['valorDesconto'] !== '' ? (float) $body['valorDesconto'] : null;
+    $dadosBancarios = trim($body['dadosBancarios'] ?? '') ?: null;
+    $acordoVigencia = trim($body['vigencia'] ?? '') ?: null;
+    $servicosCobertos = is_array($body['servicosCobertos'] ?? null) ? json_encode(array_values($body['servicosCobertos']), JSON_UNESCAPED_UNICODE) : null;
 
     $pdo->beginTransaction();
     try {
         $codigo = gerar_codigo($pdo, 'parceiros', 'PAR', 3, 101);
         $pdo->prepare(
             'INSERT INTO parceiros (codigo, razao_social, nome_fantasia, cnpj, tipo_parceria, responsavel,
-                cidade, uf, status, acordo_tipo, acordo_valor)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, \'Ativo\', ?, ?)'
+                cidade, uf, status, acordo_tipo, acordo_valor, dados_bancarios, acordo_vigencia, acordo_servicos)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, \'Ativo\', ?, ?, ?, ?, ?)'
         )->execute([
             $codigo, $razaoSocial, $nomeFantasia, $cnpj,
             $body['categoria'] ?? null, $body['responsavel'] ?? null,
             $body['cidade'] ?? null, $body['uf'] ?? null,
-            $acordoTipo, $acordoValor,
+            $acordoTipo, $acordoValor, $dadosBancarios, $acordoVigencia, $servicosCobertos,
         ]);
         $parceiroId = (int) $pdo->lastInsertId();
 

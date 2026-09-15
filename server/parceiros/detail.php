@@ -53,9 +53,15 @@ if ($method === 'PUT') {
         $acordoValor = isset($body['valorDesconto']) && $body['valorDesconto'] !== '' ? (float) $body['valorDesconto'] : $acordoValor;
     }
 
+    $dadosBancarios = array_key_exists('dadosBancarios', $body) ? (trim($body['dadosBancarios']) ?: null) : $parceiro['dados_bancarios'];
+    $acordoVigencia = array_key_exists('vigencia', $body) ? (trim($body['vigencia']) ?: null) : $parceiro['acordo_vigencia'];
+    $acordoServicos = is_array($body['servicosCobertos'] ?? null)
+        ? json_encode(array_values($body['servicosCobertos']), JSON_UNESCAPED_UNICODE)
+        : $parceiro['acordo_servicos'];
+
     $pdo->prepare(
         'UPDATE parceiros SET razao_social=?, nome_fantasia=?, cnpj=?, tipo_parceria=?, responsavel=?,
-            cidade=?, uf=?, acordo_tipo=?, acordo_valor=? WHERE id=?'
+            cidade=?, uf=?, acordo_tipo=?, acordo_valor=?, dados_bancarios=?, acordo_vigencia=?, acordo_servicos=? WHERE id=?'
     )->execute([
         trim($body['razaoSocial'] ?? $parceiro['razao_social']),
         trim($body['nomeFantasia'] ?? $parceiro['nome_fantasia']),
@@ -64,7 +70,7 @@ if ($method === 'PUT') {
         $body['responsavel'] ?? $parceiro['responsavel'],
         $body['cidade'] ?? $parceiro['cidade'],
         $body['uf'] ?? $parceiro['uf'],
-        $acordoTipo, $acordoValor,
+        $acordoTipo, $acordoValor, $dadosBancarios, $acordoVigencia, $acordoServicos,
         $parceiro['id'],
     ]);
 
