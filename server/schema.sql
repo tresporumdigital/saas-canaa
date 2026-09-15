@@ -401,26 +401,9 @@ CREATE TABLE IF NOT EXISTS contas_pagar (
   FOREIGN KEY (criado_por_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Fase 9: Empresa, Perfis/Permissões e Backups (registro/config)
-
-CREATE TABLE IF NOT EXISTS empresa (
-  id TINYINT UNSIGNED PRIMARY KEY DEFAULT 1,
-  razao_social VARCHAR(160) NOT NULL,
-  nome_fantasia VARCHAR(160) NOT NULL,
-  cnpj CHAR(14) NOT NULL,
-  inscricao_estadual VARCHAR(40) NULL,
-  inscricao_municipal VARCHAR(40) NULL,
-  regime_tributario VARCHAR(60) NULL,
-  cnae VARCHAR(120) NULL,
-  logradouro VARCHAR(160) NULL, numero VARCHAR(20) NULL, complemento VARCHAR(80) NULL,
-  bairro VARCHAR(120) NULL, cidade VARCHAR(120) NULL, uf CHAR(2) NULL, cep VARCHAR(9) NULL,
-  telefone VARCHAR(20) NULL,
-  email VARCHAR(160) NULL,
-  site VARCHAR(160) NULL,
-  responsavel_legal VARCHAR(160) NULL,
-  contador VARCHAR(160) NULL,
-  atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- Fase 9: Perfis/Permissões e Backups (registro/config)
+-- (a tabela `empresa` desta fase foi removida: a empresa só tem Unidades/filiais,
+-- sem um cadastro de "perfil próprio" à parte — ver Configuracoes.jsx > aba Unidades)
 
 CREATE TABLE IF NOT EXISTS perfis_permissoes (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

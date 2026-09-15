@@ -5,8 +5,8 @@ módulos **Clientes, Parceiros, Unidades, Usuários** (+ login), **Planos (catá
 Parcelas**, a **baixa manual de Pagamentos**, **Registro de Óbito + Guias de Atendimento**,
 **Equipamentos (catálogo, inventário, Empréstimo e Venda)**, **Notas Fiscais**, **Portal do
 Parceiro + Carnês**, **Controle Financeiro (Contas a Pagar/Receber, Fluxo de Caixa,
-Inadimplência, Fechamento de Caixa)** e **Empresa, Perfis/Permissões e Backup (registro/
-configuração)** são reais, com API própria em PHP/PDO (`server/`, publicada em `/api/`) e banco
+Inadimplência, Fechamento de Caixa)** e **Perfis/Permissões e Backup (registro/configuração)**
+são reais, com API própria em PHP/PDO (`server/`, publicada em `/api/`) e banco
 MySQL/MariaDB na Hostinger — sem dado de exemplo pré-carregado, é um banco de produção mesmo. Os
 demais módulos (Conciliação bancária automática, DRE gerencial, Leads, Parâmetros, Auditoria)
 ainda são **mockados** em `src/mock/` (referências cruzadas consistentes entre si) até serem
@@ -85,18 +85,19 @@ redireciona para lá.
   mas não inventa um `numero` fiscal real (não há integração com SEFAZ/prefeitura) — "Carta de
   correção", download de XML/DANFE e envio por e-mail continuam toast, mesmo raciocínio da
   Conciliação bancária ficar sempre simulada.
-- Empresa, Perfis/Permissões e Backup (`server/config/`) são reais desde a Fase 9. A aba
-  "Empresa" (dentro de Configurações → Usuários) cadastra os dados da matriz (razão social,
-  CNPJ, endereço via ViaCEP etc.) num singleton que nasce vazio e é preenchido/editado pelo
-  admin — antes desta fase não existia tela nenhuma para isso (o arquivo `EmpresaConfig.jsx`,
-  apesar do nome, é a tela de Unidades). A matriz de Perfis/Permissões passa a ser lida do banco
-  e ganha edição real por módulo (antes era só leitura). A tabela `perfis_permissoes` e a config
+- Perfis/Permissões e Backup (`server/config/`) são reais desde a Fase 9. A matriz de
+  Perfis/Permissões passa a ser lida do banco e ganha edição real por módulo (antes era só
+  leitura). A tabela `perfis_permissoes` e a config
   de Backup (`backup_config`) nasceram com um seed idempotente (`INSERT IGNORE`) reproduzindo os
   mesmos valores que já estavam fixos no mock — é configuração estrutural do sistema, não dado
   de exemplo de negócio. O histórico de execuções (`backup_execucoes`) é uma tabela real, mas
   começa vazia; "Executar agora" e "Solicitar restauração" continuam só um `toast()` — nenhuma
   automação real de backup/restauração do banco de produção foi implementada, mesmo raciocínio
   da Conciliação bancária ficar sempre simulada.
+- A Fase 9 chegou a criar uma tabela/aba "Empresa" (cadastro único da matriz), mas foi removida
+  logo em seguida a pedido: a empresa só tem **Unidades** (filiais), sem um "perfil" próprio
+  separado — `EmpresaConfig.jsx` (apesar do nome) já cobre isso desde a Fase 1. A guia sumiu de
+  Configurações → Usuários e a tabela `empresa` foi apagada do banco de produção.
 
 ## Design
 
@@ -141,7 +142,7 @@ npm run preview  # serve o build
 | **Financeiro** | Planos e contratos, Gerador de Carnês, Pagamento Integrado, Controle Financeiro |
 | **Operação** | Empréstimo de Equipamentos, Vendas de Equipamentos, Cadastro de Equipamentos, Notas Fiscais |
 | **Expansão** | Leads do Site, Portal do Parceiro |
-| **Configurações** | Unidades, Planos, Backup, Usuários (perfis/permissões, parâmetros e Empresa ficam na aba de Usuários) |
+| **Configurações** | Unidades, Planos, Backup, Usuários (perfis/permissões e parâmetros ficam na aba de Usuários) |
 
 Profundidade: **Painel, Clientes, Óbitos, Guias, Planos e Financeiro** têm listagem + detalhe +
 formulários; os demais têm listagem funcional + detalhe/drawer.
@@ -154,7 +155,7 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
 - Em **Clientes, Parceiros, Unidades, Usuários, Planos, Contratos, na baixa manual de
   Pagamentos, em Registro de Óbito + Guias de Atendimento, em Equipamentos (Cadastro,
   Empréstimo e Vendas), em Notas Fiscais, em Portal do Parceiro + Carnês, em Controle
-  Financeiro e em Empresa/Perfis-Permissões/Backup**, criar/editar/mudar status já persiste de
+  Financeiro e em Perfis-Permissões/Backup**, criar/editar/mudar status já persiste de
   verdade no banco (API própria) — os demais módulos (Conciliação bancária, DRE gerencial,
   Leads, Parâmetros, Auditoria, execução/restauração de Backup) continuam em simulação: ações
   disparam um _toast_ de confirmação, sem gravar nada.
@@ -192,7 +193,8 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
   plano aqui é pré-requisito para conseguir contratar um em Clientes ou em Planos → Contratar),
   Backup (config e histórico reais desde a Fase 9; execução/restauração seguem simuladas) e
   Usuários (lista real; criar/editar já define/atualiza a senha de acesso — a aba reúne também
-  Perfis e permissões e Empresa, ambos reais desde a Fase 9, e Parâmetros, que segue mockado).
+  Perfis e permissões, real desde a Fase 9, e Parâmetros, que segue mockado; não há aba de
+  "Empresa" separada — a empresa só tem Unidades/filiais, já cobertas acima).
 - Em Pagamentos, "Baixa manual" busca o contrato real pelo titular, lista as parcelas reais em
   aberto do contrato (as já pagas somem da lista) e, ao confirmar, marca a parcela como paga de
   verdade e registra o pagamento — aparece na aba Conciliação com o badge "Baixa manual". A

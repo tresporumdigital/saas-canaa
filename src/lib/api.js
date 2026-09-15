@@ -119,11 +119,6 @@ export function useFechamentoCaixa(data) {
   return useApiList(`/financeiro/fechamento_caixa.php${data ? `?data=${encodeURIComponent(data)}` : ''}`, [data]);
 }
 
-export function useEmpresa() {
-  const { data, loading, error, reload } = useApiObject('/config/empresa.php');
-  return { empresa: data, loading, error, reload };
-}
-
 export function useBackupConfig() {
   const { data, loading, error, reload } = useApiObject('/config/backup_config.php');
   return { backupConfig: data, loading, error, reload };
