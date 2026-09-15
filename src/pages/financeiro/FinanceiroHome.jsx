@@ -5,7 +5,7 @@ import {
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import {
-  apiFetch, useAging, useContasPagarCacheState, useContasReceberCacheState, useFechamentoCaixa, useFluxoCaixa,
+  apiFetch, useAging, useContasPagarCacheState, useContasReceberCacheState, useDre, useFechamentoCaixa, useFluxoCaixa,
 } from '../../lib/api.js';
 import { money, date } from '../../lib/format.js';
 import NovaContaModal from './NovaContaModal.jsx';
@@ -19,6 +19,7 @@ const TABS = [
   { id: 'fluxo', label: 'Fluxo de caixa' },
   { id: 'inadimplencia', label: 'Inadimplência' },
   { id: 'fechamento', label: 'Fechamento de caixa' },
+  { id: 'dre', label: 'DRE gerencial' },
 ];
 
 export default function FinanceiroHome() {
@@ -30,6 +31,7 @@ export default function FinanceiroHome() {
   const { rows: fluxoCaixa, reload: reloadFluxoCaixa } = useFluxoCaixa();
   const { rows: agingInadimplencia, reload: reloadAging } = useAging();
   const { rows: fechamentoEntradas, reload: reloadFechamento } = useFechamentoCaixa();
+  const { dre, reload: reloadDre } = useDre();
 
   const totalReceber = receberRows.filter((c) => c.status !== 'Pago').reduce((s, c) => s + c.valor, 0);
   const totalPagar = pagarRows.filter((c) => c.status !== 'Pago').reduce((s, c) => s + c.valor, 0);
@@ -44,6 +46,7 @@ export default function FinanceiroHome() {
     reloadFluxoCaixa();
     reloadAging();
     reloadFechamento();
+    reloadDre();
   };
 
   const alterarStatusReceber = async (r, next) => {
@@ -202,6 +205,46 @@ export default function FinanceiroHome() {
             <span>Total de entradas do dia</span>
             <span className="num">{money(fechamentoEntradas.reduce((s, e) => s + e.valor, 0))}</span>
           </div>
+        </Card>
+      )}
+
+      {tab === 'dre' && dre && (
+        <Card title={`DRE gerencial — ${dre.competencia}`}>
+          {dre.receitas.length === 0 && dre.despesas.length === 0 ? (
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
+              Nenhuma conta paga ou parcela recebida neste mês ainda.
+            </p>
+          ) : (
+            <table className="data-table">
+              <thead><tr><th>Grupo</th><th>Categoria</th><th className="num">Valor</th></tr></thead>
+              <tbody>
+                {dre.receitas.map((l) => (
+                  <tr key={`receita-${l.categoria}`}>
+                    <td>Receitas</td><td>{l.categoria}</td>
+                    <td className="num">{money(l.valor)}</td>
+                  </tr>
+                ))}
+                <tr>
+                  <td /><td style={{ fontWeight: 700 }}>Total de receitas</td>
+                  <td className="num" style={{ fontWeight: 700 }}>{money(dre.totalReceitas)}</td>
+                </tr>
+                {dre.despesas.map((l) => (
+                  <tr key={`despesa-${l.categoria}`}>
+                    <td>Despesas</td><td>{l.categoria}</td>
+                    <td className="num">{money(-l.valor)}</td>
+                  </tr>
+                ))}
+                <tr>
+                  <td /><td style={{ fontWeight: 700 }}>Total de despesas</td>
+                  <td className="num" style={{ fontWeight: 700 }}>{money(-dre.totalDespesas)}</td>
+                </tr>
+                <tr>
+                  <td /><td style={{ fontWeight: 800 }}>Resultado do mês</td>
+                  <td className="num" style={{ fontWeight: 800 }}>{money(dre.resultado)}</td>
+                </tr>
+              </tbody>
+            </table>
+          )}
         </Card>
       )}
 

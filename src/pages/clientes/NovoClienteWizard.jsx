@@ -13,7 +13,7 @@ const STEPS = ['Dados do titular', 'Dependentes', 'Contrato'];
 const dependenteVazio = () => ({ nome: '', cpf: '', rg: '', telefone: '', parentesco: PARENTESCOS[0] });
 
 // Pop-up de cadastro de novo cliente em 3 etapas: titular, dependentes e contrato.
-export default function NovoClienteWizard({ existentes = [], onClose, onCreated }) {
+export default function NovoClienteWizard({ existentes = [], initial, onClose, onCreated }) {
   const { toast } = useToast();
   const planosProduto = usePlanosCache();
   const [step, setStep] = useState(1);
@@ -22,6 +22,7 @@ export default function NovoClienteWizard({ existentes = [], onClose, onCreated 
   const [form, setForm] = useState({
     nome: '', cpf: '', rg: '', nascimento: '', telefone: '', email: '',
     planoId: '', planoInicio: '2026-09-01', planoVencimento: '10',
+    ...initial,
   });
   const [endereco, setEndereco] = useState({ cep: '', logradouro: '', numero: '', bairro: '', cidade: '', uf: '' });
   const [dependentes, setDependentes] = useState([]);
@@ -70,7 +71,7 @@ export default function NovoClienteWizard({ existentes = [], onClose, onCreated 
       } else {
         toast('Cliente cadastrado com sucesso.');
       }
-      onCreated?.();
+      onCreated?.(clienteId);
     } catch (e) {
       toast(e.message, { kind: 'danger' });
     } finally {

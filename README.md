@@ -1,16 +1,16 @@
 # Sistema de Gestão Funerária Canaã — Frontend + Backend
 
-Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-9 do backend, os
+Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-10 do backend, os
 módulos **Clientes, Parceiros, Unidades, Usuários** (+ login), **Planos (catálogo), Contratos,
 Parcelas**, a **baixa manual de Pagamentos**, **Registro de Óbito + Guias de Atendimento**,
 **Equipamentos (catálogo, inventário, Empréstimo e Venda)**, **Notas Fiscais**, **Portal do
 Parceiro + Carnês**, **Controle Financeiro (Contas a Pagar/Receber, Fluxo de Caixa,
-Inadimplência, Fechamento de Caixa)** e **Perfis/Permissões e Backup (registro/configuração)**
-são reais, com API própria em PHP/PDO (`server/`, publicada em `/api/`) e banco
-MySQL/MariaDB na Hostinger — sem dado de exemplo pré-carregado, é um banco de produção mesmo. Os
-demais módulos (Conciliação bancária automática, DRE gerencial, Leads, Parâmetros, Auditoria)
-ainda são **mockados** em `src/mock/` (referências cruzadas consistentes entre si) até serem
-migrados em fases seguintes.
+Inadimplência, Fechamento de Caixa, DRE gerencial)**, **Perfis/Permissões e Backup (registro/
+configuração)** e **Leads do Site** são reais, com API própria em PHP/PDO (`server/`, publicada
+em `/api/`) e banco MySQL/MariaDB na Hostinger — sem dado de exemplo pré-carregado, é um banco de
+produção mesmo. Os demais módulos (Conciliação bancária automática, Parâmetros, Auditoria) ainda
+são **mockados** em `src/mock/` (referências cruzadas consistentes entre si) até serem migrados
+em fases seguintes.
 
 **Online:** https://backoffice.funerariacanaa.com/
 
@@ -63,7 +63,8 @@ redireciona para lá.
   lastro real). "Vencido" nunca é gravado — é calculado na leitura com `status_parcela_exibido()`
   (mesma função usada em parcelas de contrato desde a Fase 2), mas continua clicável no
   `StatusMenu` para poder virar "Pago"/"Negociado" de verdade. DRE gerencial fica de fora desta
-  fase — depende de despesas fixas por categoria sem dado real maduro ainda.
+  fase — depende de despesas fixas por categoria sem dado real maduro ainda (entrou na Fase 10,
+  ver abaixo).
 - Portal do Parceiro (`server/portal/`) e Carnês (`server/carnes/`) são reais desde a Fase 7. O
   Portal continua sem login próprio de parceiro (RF-104 fica como débito técnico documentado,
   igual à Conciliação bancária) — a "sessão de parceiro" é só o seletor de perfil de sempre
@@ -98,6 +99,23 @@ redireciona para lá.
   logo em seguida a pedido: a empresa só tem **Unidades** (filiais), sem um "perfil" próprio
   separado — `EmpresaConfig.jsx` (apesar do nome) já cobre isso desde a Fase 1. A guia sumiu de
   Configurações → Usuários e a tabela `empresa` foi apagada do banco de produção.
+- Leads do Site (`server/leads/`) são reais desde a Fase 10. `POST /api/leads/receber.php` é o
+  único endpoint **público** (sem `Authorization`) de todo o backend — implementa o RF-57 do PRD
+  para o site institucional enviar leads via API; como esse site ainda não existe/integra com
+  nada, a fila nasce e permanece vazia até uma integração real passar a alimentá-la, mesmo assim
+  o endpoint já está pronto e com um limite de taxa simples por IP (5 por hora) contra spam.
+  Trocar o status de um lead (`Novo`/`Em contato`/`Perdido`) é uma chamada real; "Convertido" só
+  acontece pelo botão "Converter em cliente", que abre o mesmo assistente de cadastro de cliente
+  já pré-preenchido com nome/telefone/e-mail do lead e, ao concluir, vincula o `cliente_id` real
+  ao lead — sem redigitação dos dados (RF-60). Envio de e-mail a cada novo lead (RF-61) e
+  proteção anti-bot mais sofisticada que o limite de taxa (RF-62) continuam fora, mesmo raciocínio
+  de toda integração externa que este projeto não fabrica.
+- DRE gerencial (`server/financeiro/dre.php`) é real desde a Fase 10 — também um relatório
+  calculado no servidor, sem tabela própria, igual ao Fluxo de Caixa/Aging/Fechamento. Usa as
+  categorias reais de `contas_receber`/`contas_pagar` (Fase 8) mais as mensalidades de contrato
+  vindas de `pagamentos`; não reproduz linhas fictícias do protótipo antigo (impostos, custo de
+  mercadoria vendida) que não têm nenhum dado real por trás. Mostra sempre o mês atual, sem
+  seletor de competência (mesmo padrão do "Fechamento de caixa", que também não tem um).
 
 ## Design
 
@@ -155,10 +173,11 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
 - Em **Clientes, Parceiros, Unidades, Usuários, Planos, Contratos, na baixa manual de
   Pagamentos, em Registro de Óbito + Guias de Atendimento, em Equipamentos (Cadastro,
   Empréstimo e Vendas), em Notas Fiscais, em Portal do Parceiro + Carnês, em Controle
-  Financeiro e em Perfis-Permissões/Backup**, criar/editar/mudar status já persiste de
-  verdade no banco (API própria) — os demais módulos (Conciliação bancária, DRE gerencial,
-  Leads, Parâmetros, Auditoria, execução/restauração de Backup) continuam em simulação: ações
-  disparam um _toast_ de confirmação, sem gravar nada.
+  Financeiro (incluindo DRE gerencial), em Perfis-Permissões/Backup e em Leads do Site**,
+  criar/editar/mudar status já persiste de verdade no banco (API própria) — os demais módulos
+  (Conciliação bancária, Parâmetros, Auditoria, execução/restauração de Backup, envio de e-mail
+  a cada novo lead) continuam em simulação: ações disparam um _toast_ de confirmação, sem gravar
+  nada.
 - Nas listagens ainda mockadas, o badge de status é clicável: abre os status pré-definidos da
   tela e troca o status da linha (só em memória, sem persistência). Nas listagens já migradas,
   a troca de status é uma chamada real à API (com rollback visual se falhar).

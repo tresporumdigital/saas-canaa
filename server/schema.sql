@@ -453,3 +453,24 @@ CREATE TABLE IF NOT EXISTS backup_execucoes (
   duracao VARCHAR(20) NULL,
   mensagem TEXT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Fase 10: Leads (integração com o site institucional) e DRE gerencial (relatório calculado,
+-- sem tabela própria, a partir de contas_receber/contas_pagar/pagamentos já reais)
+
+CREATE TABLE IF NOT EXISTS leads (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NOT NULL UNIQUE,
+  nome VARCHAR(160) NOT NULL,
+  telefone VARCHAR(20) NOT NULL,
+  email VARCHAR(160) NULL,
+  origem ENUM('Formulário de contato','Simulação de plano','Interesse em equipamento') NOT NULL,
+  pagina_origem VARCHAR(160) NULL,
+  mensagem TEXT NULL,
+  consentimento_lgpd TINYINT(1) NOT NULL DEFAULT 0,
+  status ENUM('Novo','Em contato','Convertido','Perdido') NOT NULL DEFAULT 'Novo',
+  motivo_perda VARCHAR(160) NULL,
+  cliente_id INT UNSIGNED NULL,
+  ip VARCHAR(45) NULL,
+  recebido_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

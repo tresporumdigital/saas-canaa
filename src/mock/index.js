@@ -1,9 +1,7 @@
 import { TODAY } from '../lib/format.js';
 import { pagamentos, pagamentoById, filaExcecoes, logApiBancaria } from './pagamentos.js';
-import { leads, leadById } from './leads.js';
 
 export * from './pagamentos.js';
-export * from './leads.js';
 export * from './sistema.js';
 
 // ---------- Helpers de período ----------

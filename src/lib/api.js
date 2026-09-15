@@ -128,6 +128,11 @@ export function useBackupExecucoes() {
   return useApiList('/config/backup_execucoes.php');
 }
 
+export function useDre(mes) {
+  const { data, loading, error, reload } = useApiObject(`/financeiro/dre.php${mes ? `?mes=${encodeURIComponent(mes)}` : ''}`);
+  return { dre: data, loading, error, reload };
+}
+
 // Cache reativo compartilhado (useSyncExternalStore) para módulos que só precisam ler uma
 // lista (seletor de cliente, junções por id etc.) sem cada lugar refazer o fetch — e a página
 // "dona" de cada entidade usa o mesmo cache (via useXCacheState) para já nascer sincronizada
@@ -191,6 +196,7 @@ const carnesCache = createListCache('/carnes/index.php');
 const contasReceberCache = createListCache('/financeiro/contas_receber.php');
 const contasPagarCache = createListCache('/financeiro/contas_pagar.php');
 const perfisPermissoesCache = createListCache('/config/perfis_permissoes.php');
+const leadsCache = createListCache('/leads/index.php');
 
 export function useClientesCache() {
   return useCacheRows(clientesCache);
@@ -338,4 +344,12 @@ export function usePerfisPermissoesCache() {
 
 export function usePerfisPermissoesCacheState() {
   return useCacheState(perfisPermissoesCache);
+}
+
+export function useLeadsCache() {
+  return useCacheRows(leadsCache);
+}
+
+export function useLeadsCacheState() {
+  return useCacheState(leadsCache);
 }
