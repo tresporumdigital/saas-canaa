@@ -322,3 +322,43 @@ CREATE TABLE IF NOT EXISTS notas_fiscais (
   criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (criado_por_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Fase 7: Portal do Parceiro (baixas) e Carnês
+
+CREATE TABLE IF NOT EXISTS baixas_parceiro (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NOT NULL UNIQUE,
+  parceiro_id INT UNSIGNED NOT NULL,
+  cliente_id INT UNSIGNED NOT NULL,
+  cliente_nome VARCHAR(160) NOT NULL,
+  contrato_id INT UNSIGNED NOT NULL,
+  servico_prestado VARCHAR(160) NOT NULL,
+  data_hora DATETIME NOT NULL,
+  valor DECIMAL(10,2) NOT NULL,
+  observacoes TEXT NULL,
+  comprovante TINYINT(1) NOT NULL DEFAULT 0,
+  status ENUM('Aprovado','Aguardando aprovação','Estornado') NOT NULL DEFAULT 'Aprovado',
+  ip VARCHAR(45) NULL,
+  usuario_portal VARCHAR(160) NULL,
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (parceiro_id) REFERENCES parceiros(id),
+  FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+  FOREIGN KEY (contrato_id) REFERENCES contratos(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS carnes (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NOT NULL UNIQUE,
+  contrato_id INT UNSIGNED NOT NULL,
+  cliente_nome VARCHAR(160) NOT NULL,
+  competencia_inicial DATE NOT NULL,
+  parcelas INT NOT NULL,
+  valor_parcela DECIMAL(10,2) NOT NULL,
+  gerado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  enviado_em DATETIME NULL,
+  canal_envio VARCHAR(40) NULL,
+  lote VARCHAR(40) NULL,
+  criado_por_usuario_id INT UNSIGNED NULL,
+  FOREIGN KEY (contrato_id) REFERENCES contratos(id),
+  FOREIGN KEY (criado_por_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

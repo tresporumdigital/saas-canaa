@@ -4,8 +4,7 @@ import { PageHeader } from '../../components/index.js';
 import {
   Card, Badge, Button, Tabs, DefList, DataTable, EmptyState, Icon,
 } from '../../components/index.js';
-import { apiFetch, useGuiasCache } from '../../lib/api.js';
-import { baixasDoParceiro, extratoParceiro } from '../../mock/portal.js';
+import { apiFetch, useBaixasParceiroCache, useGuiasCache } from '../../lib/api.js';
 import { cnpj, dateTime, money, date, percent } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
 import ParceiroFormModal from './ParceiroFormModal.jsx';
@@ -26,6 +25,7 @@ export default function ParceiroDetail() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const guiasTodas = useGuiasCache();
+  const baixasTodas = useBaixasParceiroCache();
 
   const carregar = useCallback(() => {
     setLoading(true);
@@ -41,8 +41,8 @@ export default function ParceiroDetail() {
   if (erro || !p) return <EmptyState icon="briefcase" title="Parceiro não encontrado" action={<Button to="/parceiros">Voltar</Button>} />;
 
   const guias = guiasTodas.filter((g) => g.parceiroId === p.id);
-  const baixas = baixasDoParceiro(p.id);
-  const extrato = extratoParceiro(p.id);
+  const baixas = baixasTodas.filter((b) => b.parceiroId === p.id);
+  const extrato = { total: baixas.filter((b) => b.status === 'Aprovado').reduce((s, b) => s + b.valor, 0) };
   const remun = p.acordo.tipo === 'Fixo por atendimento' ? money(p.acordo.valor) : percent(p.acordo.valor);
 
   return (

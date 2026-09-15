@@ -1,12 +1,12 @@
 # Sistema de Gestão Funerária Canaã — Frontend + Backend
 
-Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-6 do backend, os
+Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-7 do backend, os
 módulos **Clientes, Parceiros, Unidades, Usuários** (+ login), **Planos (catálogo), Contratos,
 Parcelas**, a **baixa manual de Pagamentos**, **Registro de Óbito + Guias de Atendimento**,
-**Equipamentos (catálogo, inventário, Empréstimo e Venda)** e **Notas Fiscais** são reais, com
-API própria em PHP/PDO (`server/`, publicada em `/api/`) e banco MySQL/MariaDB na Hostinger —
-sem dado de exemplo pré-carregado, é um banco de produção mesmo. Os demais módulos (Carnês,
-Conciliação bancária automática, Financeiro, Leads, Portal do Parceiro etc.) ainda são
+**Equipamentos (catálogo, inventário, Empréstimo e Venda)**, **Notas Fiscais** e **Portal do
+Parceiro + Carnês** são reais, com API própria em PHP/PDO (`server/`, publicada em `/api/`) e
+banco MySQL/MariaDB na Hostinger — sem dado de exemplo pré-carregado, é um banco de produção
+mesmo. Os demais módulos (Conciliação bancária automática, Financeiro, Leads etc.) ainda são
 **mockados** em `src/mock/` (referências cruzadas consistentes entre si) até serem migrados em
 fases seguintes.
 
@@ -45,12 +45,24 @@ redireciona para lá.
   usuário, a conciliação bancária automática continua sendo uma simulação (não há gateway de
   pagamento configurado).
 - Códigos gerados (`CLI-`, `PAR-`, `CTR-2026-`, `DEP-`, `OB-2026-`, `GA-2026-`, `EQP-`,
-  `EMP-2026-`, `VEQ-2026-`, `NF-2026-`...) para entidades cujo id ainda é referenciado por
-  módulos mockados começam num número alto (ex.: contratos reais começam em `CTR-2026-1001`,
-  óbitos em `OB-2026-1001`, guias em `GA-2026-01000`, empréstimos em `EMP-2026-1001`, notas
-  fiscais em `NF-2026-1001`) para nunca colidir com os ids fictícios usados nos mocks ainda não
+  `EMP-2026-`, `VEQ-2026-`, `NF-2026-`, `BX-2026-`, `CAR-2026-`...) para entidades cujo id ainda
+  é referenciado por módulos mockados começam num número alto (ex.: contratos reais começam em
+  `CTR-2026-1001`, óbitos em `OB-2026-1001`, guias em `GA-2026-01000`, empréstimos em
+  `EMP-2026-1001`, notas fiscais em `NF-2026-1001`, baixas de parceiro em `BX-2026-1001`, carnês
+  em `CAR-2026-1001`) para nunca colidir com os ids fictícios usados nos mocks ainda não
   migrados. O catálogo de equipamentos usa um prefixo novo (`EQP-`) em vez de tentar reproduzir a
   sigla do mock (`EQ-CDR`, `EQ-CMH`...), mais simples e sem risco de colisão.
+- Portal do Parceiro (`server/portal/`) e Carnês (`server/carnes/`) são reais desde a Fase 7. O
+  Portal continua sem login próprio de parceiro (RF-104 fica como débito técnico documentado,
+  igual à Conciliação bancária) — a "sessão de parceiro" é só o seletor de perfil de sempre
+  mostrando o primeiro parceiro cadastrado. Uma baixa acima de R$1.500 nasce como "Aguardando
+  aprovação" (regra já anunciada na tela antes desta fase, agora aplicada de verdade); aprovar/
+  estornar é uma ação do usuário interno, escondida quando o perfil ativo é "Parceiro comercial".
+  `ip` e `usuarioPortal` de cada baixa são dados reais (IP da requisição, nome do usuário interno
+  autenticado — sem login de parceiro, não há como capturar o usuário do portal de verdade).
+  Carnê individual e em lote gravam de verdade e decrementam nada (não afeta parcelas reais); o
+  envio por e-mail continua sem efeito real (`enviadoEm` sempre nulo), mesmo raciocínio do envio
+  de Nota Fiscal.
 - Óbito calcula a "cobertura" (plano ativo, carência cumprida, beneficiário incluído,
   adimplência) no servidor, a partir dos dados reais de contrato/parcelas no momento do
   registro (`server/obitos/index.php`) — não é mais um cálculo simulado no frontend.
@@ -117,9 +129,9 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
 
 - Em **Clientes, Parceiros, Unidades, Usuários, Planos, Contratos, na baixa manual de
   Pagamentos, em Registro de Óbito + Guias de Atendimento, em Equipamentos (Cadastro,
-  Empréstimo e Vendas) e em Notas Fiscais**, criar/editar/mudar status já persiste de verdade no
-  banco (API própria) — os demais módulos continuam em simulação: ações disparam um _toast_ de
-  confirmação, sem gravar nada.
+  Empréstimo e Vendas), em Notas Fiscais e em Portal do Parceiro + Carnês**, criar/editar/mudar
+  status já persiste de verdade no banco (API própria) — os demais módulos continuam em
+  simulação: ações disparam um _toast_ de confirmação, sem gravar nada.
 - Nas listagens ainda mockadas, o badge de status é clicável: abre os status pré-definidos da
   tela e troca o status da linha (só em memória, sem persistência). Nas listagens já migradas,
   a troca de status é uma chamada real à API (com rollback visual se falhar).

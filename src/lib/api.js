@@ -145,6 +145,8 @@ const unidadesCache = createListCache('/equipamentos/unidades.php');
 const emprestimosCache = createListCache('/emprestimos/index.php');
 const vendasEquipamentoCache = createListCache('/equipamentos/vendas.php');
 const notasFiscaisCache = createListCache('/notas-fiscais/index.php');
+const baixasParceiroCache = createListCache('/portal/baixas.php');
+const carnesCache = createListCache('/carnes/index.php');
 
 export function useClientesCache() {
   return useCacheRows(clientesCache);
@@ -252,4 +254,20 @@ export function useNotasFiscaisCacheState() {
 
 export function reloadNotasFiscaisCache() {
   return notasFiscaisCache.reload();
+}
+
+export function useBaixasParceiroCache() {
+  return useCacheRows(baixasParceiroCache);
+}
+
+export function useBaixasParceiroCacheState() {
+  return useCacheState(baixasParceiroCache);
+}
+
+export function useCarnesCache() {
+  return useCacheRows(carnesCache);
+}
+
+export function useCarnesCacheState() {
+  return useCacheState(carnesCache);
 }

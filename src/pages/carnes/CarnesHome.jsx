@@ -4,13 +4,18 @@ import {
   Card, Tabs, DataTable, Badge, Button, Modal, Select, Input, Checkbox, PrintDocument, StatCard,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { carnes } from '../../mock/carnes.js';
-import { useClientesCache, useContratosCache } from '../../lib/api.js';
+import { apiFetch, useCarnesCacheState, useClientesCache, useContratosCache, usePlanosCache } from '../../lib/api.js';
 import { money, dateTime, number } from '../../lib/format.js';
 
 const TABS = [
   { id: 'gerar', label: 'Gerar carnê' },
   { id: 'historico', label: 'Histórico' },
+];
+
+const PERIODOS = [
+  { label: 'Anual (12 parcelas)', parcelas: 12 },
+  { label: 'Semestral (6 parcelas)', parcelas: 6 },
+  { label: 'Trimestral (3 parcelas)', parcelas: 3 },
 ];
 
 export default function CarnesHome() {
@@ -21,8 +26,59 @@ export default function CarnesHome() {
   const clientes = useClientesCache();
   const clienteById = (id) => clientes.find((c) => c.id === id);
   const contratos = useContratosCache();
+  const planos = usePlanosCache();
+  const { rows: carnes, reload: reloadCarnes } = useCarnesCacheState();
 
+  const contratosAtivos = contratos.filter((c) => c.situacao !== 'Cancelado');
   const enviados = carnes.filter((c) => c.enviadoEm).length;
+
+  const [contratoId, setContratoId] = useState('');
+  const [periodo, setPeriodo] = useState(PERIODOS[0].label);
+  const [competencia, setCompetencia] = useState('2026-09');
+  const [salvando, setSalvando] = useState(false);
+
+  const parcelasSelecionadas = PERIODOS.find((p) => p.label === periodo)?.parcelas || 12;
+  const pronto = Boolean(contratoId && competencia);
+
+  const gerarCarne = async () => {
+    if (!pronto || salvando) return;
+    setSalvando(true);
+    try {
+      const { id } = await apiFetch('/carnes/index.php', {
+        method: 'POST',
+        body: { contratoId, competenciaInicial: competencia, parcelas: parcelasSelecionadas },
+      });
+      toast(`Carnê ${id} gerado. Registro adicionado ao histórico do cliente.`);
+      reloadCarnes();
+      setContratoId('');
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const [planoLote, setPlanoLote] = useState('');
+  const [competenciaLote, setCompetenciaLote] = useState('2026-09');
+  const [gerandoLote, setGerandoLote] = useState(false);
+
+  const gerarLote = async () => {
+    if (gerandoLote) return;
+    setGerandoLote(true);
+    try {
+      const { total } = await apiFetch('/carnes/lote.php', {
+        method: 'POST',
+        body: { competenciaInicial: competenciaLote, parcelas: 12, planoId: planoLote || null },
+      });
+      toast(`${total} carnês gerados em lote e adicionados ao histórico.`);
+      reloadCarnes();
+      setLote(false);
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    } finally {
+      setGerandoLote(false);
+    }
+  };
 
   return (
     <>
@@ -44,14 +100,21 @@ export default function CarnesHome() {
       {tab === 'gerar' && (
         <Card title="Gerar carnê individual">
           <div className="field-grid">
-            <Select label="Contrato" options={contratos.filter((c) => c.situacao !== 'Cancelado').map((c) => `${c.id} — ${clienteById(c.clienteId)?.nome}`)} />
-            <Select label="Período" options={['Anual (12 parcelas)', 'Semestral (6 parcelas)', 'Trimestral (3 parcelas)']} />
-            <Input label="Primeira competência" type="month" defaultValue="2026-09" />
+            <Select label="Contrato" value={contratoId} onChange={(e) => setContratoId(e.target.value)}>
+              <option value="">Selecione um contrato…</option>
+              {contratosAtivos.map((c) => <option key={c.id} value={c.id}>{c.id} — {clienteById(c.clienteId)?.nome}</option>)}
+            </Select>
+            <Select label="Período" value={periodo} onChange={(e) => setPeriodo(e.target.value)} options={PERIODOS.map((p) => p.label)} />
+            <Input label="Primeira competência" type="month" value={competencia} onChange={(e) => setCompetencia(e.target.value)} />
           </div>
           <Checkbox label="Enviar automaticamente por e-mail ao cliente" defaultChecked />
           <div className="row" style={{ gap: 'var(--space-3)', marginTop: 'var(--space-3)' }}>
-            <Button variant="secondary" onClick={() => setPreview(carnes[0])}>Pré-visualizar</Button>
-            <Button variant="primary" icon="receipt" onClick={() => toast('Carnê gerado em PDF e enviado por e-mail. Registro adicionado ao histórico do cliente (simulação).')}>Gerar e enviar</Button>
+            <Button variant="secondary" disabled={!contratoId} onClick={() => setPreview({
+              id: 'Pré-visualização', clienteNome: clienteById(contratos.find((c) => c.id === contratoId)?.clienteId)?.nome,
+              contratoId, parcelas: parcelasSelecionadas, valorParcela: planos.find((p) => p.id === contratos.find((c) => c.id === contratoId)?.planoId)?.valorMensal || 0,
+              competenciaInicial: periodo,
+            })}>Pré-visualizar</Button>
+            <Button variant="primary" icon="receipt" disabled={!pronto} loading={salvando} onClick={gerarCarne}>Gerar e enviar</Button>
           </div>
         </Card>
       )}
@@ -110,11 +173,14 @@ export default function CarnesHome() {
         <Modal title="Gerar carnês em lote" onClose={() => setLote(false)}
           footer={<>
             <Button size="sm" variant="secondary" onClick={() => setLote(false)}>Cancelar</Button>
-            <Button size="sm" variant="primary" onClick={() => { toast(`${contratos.filter((c) => c.situacao !== 'Cancelado').length} carnês gerados em lote e enfileirados para envio (simulação).`); setLote(false); }}>Gerar lote</Button>
+            <Button size="sm" variant="primary" loading={gerandoLote} onClick={gerarLote}>Gerar lote</Button>
           </>}>
           <div className="field-grid">
-            <Select label="Filtro de contratos" options={['Todos os ativos', 'Plano Família', 'Plano Essencial', 'Vencimento dia 10']} />
-            <Input label="Primeira competência" type="month" defaultValue="2026-09" />
+            <Select label="Filtro de contratos" value={planoLote} onChange={(e) => setPlanoLote(e.target.value)}>
+              <option value="">Todos os ativos</option>
+              {planos.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+            </Select>
+            <Input label="Primeira competência" type="month" value={competenciaLote} onChange={(e) => setCompetenciaLote(e.target.value)} />
           </div>
           <Checkbox label="Enviar por e-mail ao concluir a geração" defaultChecked />
         </Modal>

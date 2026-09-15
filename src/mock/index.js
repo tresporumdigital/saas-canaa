@@ -1,8 +1,6 @@
 import { TODAY } from '../lib/format.js';
-import { carnes, carneById, carnesDoContrato } from './carnes.js';
 import { pagamentos, pagamentoById, filaExcecoes, logApiBancaria } from './pagamentos.js';
 import { leads, leadById } from './leads.js';
-import { baixasParceiro, baixasDoParceiro, extratoParceiro } from './portal.js';
 import {
   contasReceber, contasPagar, fluxoCaixa, agingInadimplencia,
   fechamentoCaixa, dreMes, dreResultado,
@@ -12,10 +10,8 @@ import {
   backupExecucoes, ultimoBackup, auditoria,
 } from './sistema.js';
 
-export * from './carnes.js';
 export * from './pagamentos.js';
 export * from './leads.js';
-export * from './portal.js';
 export * from './financeiro.js';
 export * from './sistema.js';
 

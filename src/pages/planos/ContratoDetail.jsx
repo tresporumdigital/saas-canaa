@@ -5,8 +5,7 @@ import {
 } from '../../components/index.js';
 import { PageHeader } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { apiFetch, usePlanosCache } from '../../lib/api.js';
-import { carnesDoContrato } from '../../mock/carnes.js';
+import { apiFetch, useCarnesCache, usePlanosCache } from '../../lib/api.js';
 import { money, date } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
 
@@ -16,6 +15,7 @@ export default function ContratoDetail() {
   const [showAcordo, setShowAcordo] = useState(false);
   const planosProduto = usePlanosCache();
   const planoById = (pid) => planosProduto.find((p) => p.id === pid);
+  const carnesTodos = useCarnesCache();
   const [ct, setCt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -38,7 +38,7 @@ export default function ContratoDetail() {
   const pagas = parcelas.filter((p) => p.status === 'Pago').length;
   const emAberto = parcelas.filter((p) => p.status === 'Vencido' || p.status === 'Em aberto');
   const divida = emAberto.reduce((s, p) => s + p.valor, 0);
-  const carnes = carnesDoContrato(ct.id);
+  const carnes = carnesTodos.filter((c) => c.contratoId === ct.id);
 
   return (
     <>
