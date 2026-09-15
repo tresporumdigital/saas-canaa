@@ -1,36 +1,6 @@
-// Perfis/permissões, parâmetros, backups e auditoria (transversal).
-// Usuários e Unidades agora vêm do banco real — ver src/lib/api.js (useUsuariosList/useUnidadesList).
-
-// ---- Dados cadastrais da empresa (matriz) ----
-export const empresa = {
-  razaoSocial: 'Funerária Canaã Serviços Póstumos Ltda',
-  nomeFantasia: 'Funerária Canaã',
-  cnpj: '12.345.678/0001-90',
-  inscricaoEstadual: '111.222.333.444',
-  inscricaoMunicipal: '9.876.543-2',
-  regimeTributario: 'Lucro Presumido',
-  cnae: '9603-3/01 — Gestão e manutenção de cemitérios',
-  endereco: { logradouro: 'Avenida das Nações', numero: '1200', complemento: 'Bloco A', bairro: 'Centro', cidade: 'São Paulo', uf: 'SP', cep: '01010-000' },
-  telefone: '(11) 3000-1000',
-  email: 'contato@funerariacanaa.com',
-  site: 'www.funerariacanaa.com',
-  responsavelLegal: 'Ana Paula Ferraz',
-  contador: 'Contabilidade Nova Era — CRC-SP 1SP-045123',
-};
-
-export const perfisPermissoes = [
-  { modulo: 'Dashboard', admin: 'Total', atendente: 'Sem financeiro global', financeiro: 'Total', operacional: 'Equipamentos e atendimentos', parceiro: '—' },
-  { modulo: 'Clientes', admin: 'Total', atendente: 'Total', financeiro: 'Leitura + situação financeira', operacional: 'Leitura', parceiro: '—' },
-  { modulo: 'Parceiros', admin: 'Total', atendente: 'Leitura', financeiro: 'Leitura + repasses', operacional: '—', parceiro: '—' },
-  { modulo: 'Registro de óbito', admin: 'Total', atendente: 'Total', financeiro: 'Leitura', operacional: 'Leitura', parceiro: '—' },
-  { modulo: 'Guias', admin: 'Total', atendente: 'Emitir e acompanhar', financeiro: 'Faturar', operacional: '—', parceiro: 'Aceitar e atualizar (portal)' },
-  { modulo: 'Planos e contratos', admin: 'Total', atendente: 'Contratar', financeiro: 'Cobrança e acordos', operacional: '—', parceiro: '—' },
-  { modulo: 'Financeiro', admin: 'Total', atendente: '—', financeiro: 'Total', operacional: '—', parceiro: '—' },
-  { modulo: 'Equipamentos', admin: 'Total', atendente: 'Vender', financeiro: 'Leitura', operacional: 'Empréstimo e devolução', parceiro: '—' },
-  { modulo: 'Notas fiscais', admin: 'Total', atendente: '—', financeiro: 'Emitir e cancelar', operacional: '—', parceiro: '—' },
-  { modulo: 'Portal do parceiro', admin: 'Configurar', atendente: '—', financeiro: 'Conferir extratos', operacional: '—', parceiro: 'Consulta e baixa própria' },
-  { modulo: 'Configurações', admin: 'Total', atendente: '—', financeiro: '—', operacional: '—', parceiro: '—' },
-];
+// Parâmetros e auditoria (transversal).
+// Usuários e Unidades vêm do banco real (src/lib/api.js: useUsuariosList/useUnidadesList).
+// Empresa, Perfis/Permissões e Backups também são reais desde a Fase 9 (server/config/).
 
 export const parametros = [
   { chave: 'Dias de tolerância antes de "Em atraso"', valor: '5 dias' },
@@ -42,38 +12,6 @@ export const parametros = [
   { chave: '2FA obrigatório', valor: 'Perfis Administrador e Financeiro' },
   { chave: 'Retenção de backups', valor: '7 diários · 4 semanais · 12 mensais' },
 ];
-
-// ---- Backups automáticos (RF-89..RF-95) ----
-const pad = (n) => String(n).padStart(2, '0');
-export const backupConfig = {
-  destino: 'Object Storage externo (região secundária) — criptografia AES-256',
-  retencao: { diarios: 7, semanais: 4, mensais: 12 },
-  janela: '03:00 (horário de Brasília)',
-  rpo: '≤ 24h',
-  rto: '≤ 4h',
-  ultimoTesteRestauracao: '2026-08-01',
-};
-
-export const backupExecucoes = (() => {
-  const out = [];
-  for (let i = 0; i < 20; i++) {
-    const dia = 27 - i;
-    const semanal = i % 7 === 0;
-    const falha = i === 3; // 24/08 falhou
-    out.push({
-      id: `BKP-2026-08-${pad(dia)}`,
-      quando: `2026-08-${pad(dia)}T03:0${i % 6}:00`,
-      tipo: semanal ? 'Semanal' : 'Diário',
-      status: falha ? 'Falha' : 'Sucesso',
-      tamanho: falha ? '—' : `${(4.1 + i * 0.03).toFixed(2)} GB`,
-      duracao: falha ? '—' : `${8 + (i % 5)} min`,
-      mensagem: falha ? 'Timeout ao enviar para o storage externo. Alerta enviado ao administrador; reprocessado com sucesso às 03:52.' : null,
-    });
-  }
-  return out;
-})();
-
-export const ultimoBackup = backupExecucoes[0];
 
 // ---- Trilha de auditoria (RNF-06) ----
 export const auditoria = [

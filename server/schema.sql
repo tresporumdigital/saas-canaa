@@ -400,3 +400,73 @@ CREATE TABLE IF NOT EXISTS contas_pagar (
   FOREIGN KEY (parceiro_id) REFERENCES parceiros(id),
   FOREIGN KEY (criado_por_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Fase 9: Empresa, Perfis/Permissões e Backups (registro/config)
+
+CREATE TABLE IF NOT EXISTS empresa (
+  id TINYINT UNSIGNED PRIMARY KEY DEFAULT 1,
+  razao_social VARCHAR(160) NOT NULL,
+  nome_fantasia VARCHAR(160) NOT NULL,
+  cnpj CHAR(14) NOT NULL,
+  inscricao_estadual VARCHAR(40) NULL,
+  inscricao_municipal VARCHAR(40) NULL,
+  regime_tributario VARCHAR(60) NULL,
+  cnae VARCHAR(120) NULL,
+  logradouro VARCHAR(160) NULL, numero VARCHAR(20) NULL, complemento VARCHAR(80) NULL,
+  bairro VARCHAR(120) NULL, cidade VARCHAR(120) NULL, uf CHAR(2) NULL, cep VARCHAR(9) NULL,
+  telefone VARCHAR(20) NULL,
+  email VARCHAR(160) NULL,
+  site VARCHAR(160) NULL,
+  responsavel_legal VARCHAR(160) NULL,
+  contador VARCHAR(160) NULL,
+  atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS perfis_permissoes (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  modulo VARCHAR(80) NOT NULL UNIQUE,
+  admin VARCHAR(120) NULL,
+  atendente VARCHAR(120) NULL,
+  financeiro VARCHAR(120) NULL,
+  operacional VARCHAR(120) NULL,
+  parceiro VARCHAR(120) NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO perfis_permissoes (modulo, admin, atendente, financeiro, operacional, parceiro) VALUES
+('Dashboard', 'Total', 'Sem financeiro global', 'Total', 'Equipamentos e atendimentos', '—'),
+('Clientes', 'Total', 'Total', 'Leitura + situação financeira', 'Leitura', '—'),
+('Parceiros', 'Total', 'Leitura', 'Leitura + repasses', '—', '—'),
+('Registro de óbito', 'Total', 'Total', 'Leitura', 'Leitura', '—'),
+('Guias', 'Total', 'Emitir e acompanhar', 'Faturar', '—', 'Aceitar e atualizar (portal)'),
+('Planos e contratos', 'Total', 'Contratar', 'Cobrança e acordos', '—', '—'),
+('Financeiro', 'Total', '—', 'Total', '—', '—'),
+('Equipamentos', 'Total', 'Vender', 'Leitura', 'Empréstimo e devolução', '—'),
+('Notas fiscais', 'Total', '—', 'Emitir e cancelar', '—', '—'),
+('Portal do parceiro', 'Configurar', '—', 'Conferir extratos', '—', 'Consulta e baixa própria'),
+('Configurações', 'Total', '—', '—', '—', '—');
+
+CREATE TABLE IF NOT EXISTS backup_config (
+  id TINYINT UNSIGNED PRIMARY KEY DEFAULT 1,
+  destino VARCHAR(160) NULL,
+  retencao_diarios SMALLINT UNSIGNED NULL,
+  retencao_semanais SMALLINT UNSIGNED NULL,
+  retencao_mensais SMALLINT UNSIGNED NULL,
+  janela VARCHAR(60) NULL,
+  rpo VARCHAR(20) NULL,
+  rto VARCHAR(20) NULL,
+  ultimo_teste_restauracao DATE NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO backup_config (id, destino, retencao_diarios, retencao_semanais, retencao_mensais, janela, rpo, rto, ultimo_teste_restauracao) VALUES
+(1, 'Object Storage externo (região secundária) — criptografia AES-256', 7, 4, 12, '03:00 (horário de Brasília)', '≤ 24h', '≤ 4h', NULL);
+
+CREATE TABLE IF NOT EXISTS backup_execucoes (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(30) NOT NULL UNIQUE,
+  quando DATETIME NOT NULL,
+  tipo ENUM('Diário','Semanal') NOT NULL,
+  status ENUM('Sucesso','Falha') NOT NULL,
+  tamanho VARCHAR(20) NULL,
+  duracao VARCHAR(20) NULL,
+  mensagem TEXT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -3,13 +3,18 @@ import {
   Card, DataTable, Badge, Button, StatCard, DefList, Alert,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { backupConfig, backupExecucoes, ultimoBackup } from '../../mock/sistema.js';
+import { useBackupConfig, useBackupExecucoes } from '../../lib/api.js';
 import { dateTime, date } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
 
 export default function Backups() {
   const { toast } = useToast();
+  const { backupConfig } = useBackupConfig();
+  const { rows: backupExecucoes } = useBackupExecucoes();
   const falhas = backupExecucoes.filter((e) => e.status === 'Falha');
+  const ultimoBackup = backupExecucoes[0];
+
+  if (!backupConfig) return null;
 
   return (
     <>
@@ -23,10 +28,10 @@ export default function Backups() {
       <div className="grid cols-3">
         <StatCard
           label="Último backup"
-          value={ultimoBackup.status}
-          icon={ultimoBackup.status === 'Sucesso' ? 'check-circle' : 'alert'}
-          tone={ultimoBackup.status === 'Sucesso' ? 'success' : 'danger'}
-          foot={dateTime(ultimoBackup.quando)}
+          value={ultimoBackup ? ultimoBackup.status : 'Sem registro'}
+          icon={ultimoBackup?.status === 'Sucesso' ? 'check-circle' : 'alert'}
+          tone={ultimoBackup?.status === 'Sucesso' ? 'success' : 'warning'}
+          foot={ultimoBackup ? dateTime(ultimoBackup.quando) : 'nenhuma execução registrada ainda'}
         />
         <StatCard label="Falhas (últimos 20)" value={falhas.length} icon="alert" tone={falhas.length ? 'warning' : 'success'} />
         <StatCard label="RPO / RTO" value={`${backupConfig.rpo} / ${backupConfig.rto}`} icon="shield" tone="info" />
@@ -45,7 +50,7 @@ export default function Backups() {
           { label: 'Retenção', value: `${backupConfig.retencao.diarios} diários · ${backupConfig.retencao.semanais} semanais · ${backupConfig.retencao.mensais} mensais` },
           { label: 'RPO', value: backupConfig.rpo },
           { label: 'RTO', value: backupConfig.rto },
-          { label: 'Último teste de restauração', value: date(backupConfig.ultimoTesteRestauracao) },
+          { label: 'Último teste de restauração', value: backupConfig.ultimoTesteRestauracao ? date(backupConfig.ultimoTesteRestauracao) : 'Nunca testado' },
         ]} />
       </Card>
 

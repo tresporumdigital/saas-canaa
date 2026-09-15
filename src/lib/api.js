@@ -67,6 +67,26 @@ function useApiList(path, deps = []) {
   return { ...state, reload: () => setReloadKey((k) => k + 1) };
 }
 
+// Busca um único objeto (não lista) uma vez ao montar; devolve { data, loading, error, reload }.
+// Mesmo padrão de useApiList, mas para endpoints singleton (empresa, backup_config) que
+// respondem com um objeto (ou null) em vez de um array.
+function useApiObject(path) {
+  const [state, setState] = useState({ data: null, loading: true, error: null });
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let cancelado = false;
+    setState((s) => ({ ...s, loading: true, error: null }));
+    apiFetch(path)
+      .then((data) => { if (!cancelado) setState({ data: data ?? null, loading: false, error: null }); })
+      .catch((e) => { if (!cancelado) setState({ data: null, loading: false, error: e.message }); });
+    return () => { cancelado = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reloadKey]);
+
+  return { ...state, reload: () => setReloadKey((k) => k + 1) };
+}
+
 export function useClientesList() {
   return useApiList('/clientes/index.php');
 }
@@ -97,6 +117,20 @@ export function useAging() {
 
 export function useFechamentoCaixa(data) {
   return useApiList(`/financeiro/fechamento_caixa.php${data ? `?data=${encodeURIComponent(data)}` : ''}`, [data]);
+}
+
+export function useEmpresa() {
+  const { data, loading, error, reload } = useApiObject('/config/empresa.php');
+  return { empresa: data, loading, error, reload };
+}
+
+export function useBackupConfig() {
+  const { data, loading, error, reload } = useApiObject('/config/backup_config.php');
+  return { backupConfig: data, loading, error, reload };
+}
+
+export function useBackupExecucoes() {
+  return useApiList('/config/backup_execucoes.php');
 }
 
 // Cache reativo compartilhado (useSyncExternalStore) para módulos que só precisam ler uma
@@ -161,6 +195,7 @@ const baixasParceiroCache = createListCache('/portal/baixas.php');
 const carnesCache = createListCache('/carnes/index.php');
 const contasReceberCache = createListCache('/financeiro/contas_receber.php');
 const contasPagarCache = createListCache('/financeiro/contas_pagar.php');
+const perfisPermissoesCache = createListCache('/config/perfis_permissoes.php');
 
 export function useClientesCache() {
   return useCacheRows(clientesCache);
@@ -300,4 +335,12 @@ export function useContasPagarCache() {
 
 export function useContasPagarCacheState() {
   return useCacheState(contasPagarCache);
+}
+
+export function usePerfisPermissoesCache() {
+  return useCacheRows(perfisPermissoesCache);
+}
+
+export function usePerfisPermissoesCacheState() {
+  return useCacheState(perfisPermissoesCache);
 }
