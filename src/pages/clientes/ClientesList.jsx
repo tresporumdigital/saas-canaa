@@ -4,7 +4,9 @@ import { PageHeader } from '../../components/index.js';
 import { Card, DataTable, StatusMenu, Button, EmptyState } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import useRowStatus from '../../hooks/useRowStatus.js';
-import { apiFetch, useClientesList, useContratosCache, usePlanosCache } from '../../lib/api.js';
+import {
+  apiFetch, reloadContratosCache, useClientesCacheState, useContratosCache, usePlanosCache,
+} from '../../lib/api.js';
 import { cpf, phone, date } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
 import NovoClienteWizard from './NovoClienteWizard.jsx';
@@ -15,7 +17,7 @@ export default function ClientesList() {
   const [params] = useSearchParams();
   const q = params.get('q') || '';
   const [showNew, setShowNew] = useState(false);
-  const { rows: clientes, loading, error, reload } = useClientesList();
+  const { rows: clientes, loading, error, reload } = useClientesCacheState();
   const contratos = useContratosCache();
   const planos = usePlanosCache();
 
@@ -38,6 +40,7 @@ export default function ClientesList() {
     try {
       await apiFetch(`/clientes/status.php?id=${encodeURIComponent(r.id)}`, { method: 'PATCH', body: { status: next } });
       toast(`Cadastro de ${r.nome} definido como "${next}".`);
+      reload();
     } catch (e) {
       setCadastroLocal(r.id, r.status);
       toast(e.message, { kind: 'danger' });
@@ -53,6 +56,7 @@ export default function ClientesList() {
     try {
       await apiFetch(`/contratos/status.php?id=${encodeURIComponent(r.contratoId)}`, { method: 'PATCH', body: { situacao: next } });
       toast(`Situação de plano de ${r.nome} alterada para "${next}".`);
+      reloadContratosCache();
     } catch (e) {
       setSituacaoLocal(r.id, r.situacaoPlano);
       toast(e.message, { kind: 'danger' });

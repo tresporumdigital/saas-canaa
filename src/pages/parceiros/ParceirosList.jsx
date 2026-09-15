@@ -4,7 +4,7 @@ import { PageHeader } from '../../components/index.js';
 import { Card, DataTable, StatusMenu, Button, EmptyState } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import useRowStatus from '../../hooks/useRowStatus.js';
-import { apiFetch, useGuiasCache, useParceirosList } from '../../lib/api.js';
+import { apiFetch, useGuiasCache, useParceirosCacheState } from '../../lib/api.js';
 import { cnpj } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
 import ParceiroFormModal from './ParceiroFormModal.jsx';
@@ -12,7 +12,7 @@ import ParceiroFormModal from './ParceiroFormModal.jsx';
 export default function ParceirosList() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { rows: parceiros, loading, error, reload } = useParceirosList();
+  const { rows: parceiros, loading, error, reload } = useParceirosCacheState();
   const guiasTodas = useGuiasCache();
   const base = useMemo(() => parceiros.map((p) => ({
     ...p, guias: guiasTodas.filter((g) => g.parceiroId === p.id).length,
@@ -25,6 +25,7 @@ export default function ParceirosList() {
     try {
       await apiFetch(`/parceiros/status.php?id=${encodeURIComponent(r.id)}`, { method: 'PATCH', body: { status: next } });
       toast(`Parceiro ${r.nomeFantasia} definido como "${next}".`);
+      reload();
     } catch (e) {
       setStatusLocal(r.id, r.status);
       toast(e.message, { kind: 'danger' });

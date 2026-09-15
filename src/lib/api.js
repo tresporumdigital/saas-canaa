@@ -87,14 +87,6 @@ function useApiObject(path) {
   return { ...state, reload: () => setReloadKey((k) => k + 1) };
 }
 
-export function useClientesList() {
-  return useApiList('/clientes/index.php');
-}
-
-export function useParceirosList() {
-  return useApiList('/parceiros/index.php');
-}
-
 export function useUnidadesList() {
   return useApiList('/unidades/index.php');
 }
@@ -207,8 +199,20 @@ export function useClientesCache() {
   return useCacheRows(clientesCache);
 }
 
+// Página "dona" (ClientesList) usa esta variante para que criar/editar/mudar status já
+// atualize o mesmo cache lido por quem só lista clientes em outro lugar (GerarGuiaModal,
+// ObitoFormModal, NovoClienteWizard etc.) — mesma lição das Fases 4/8, aplicada aqui porque
+// Clientes (Fase 1) nunca tinha ganhado essa invalidação compartilhada.
+export function useClientesCacheState() {
+  return useCacheState(clientesCache);
+}
+
 export function useParceirosCache() {
   return useCacheRows(parceirosCache);
+}
+
+export function useParceirosCacheState() {
+  return useCacheState(parceirosCache);
 }
 
 export function usePlanosCache() {
@@ -247,6 +251,14 @@ export function useGuiasCacheState() {
 
 // Para código fora de componentes/hooks (ex.: depois de um POST em outra tela) que precisa
 // invalidar um cache compartilhado para quem só lê em outro lugar (ClientesList, ClienteDetail...).
+export function reloadClientesCache() {
+  return clientesCache.reload();
+}
+
+export function reloadParceirosCache() {
+  return parceirosCache.reload();
+}
+
 export function reloadContratosCache() {
   return contratosCache.reload();
 }

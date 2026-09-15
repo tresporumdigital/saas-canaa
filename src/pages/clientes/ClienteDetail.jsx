@@ -6,7 +6,7 @@ import {
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import {
-  apiFetch, useContratosCache, useEmprestimosCache, useNotasFiscaisCache, useObitosCache, usePlanosCache,
+  apiFetch, reloadClientesCache, useContratosCache, useEmprestimosCache, useNotasFiscaisCache, useObitosCache, usePlanosCache,
 } from '../../lib/api.js';
 import { cpf, phone, date, dateTime, money } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
@@ -78,6 +78,7 @@ export default function ClienteDetail() {
       await apiFetch(`/clientes/status.php?id=${encodeURIComponent(cliente.id)}`, { method: 'PATCH', body: { status: 'Inativo' } });
       toast('Cadastro inativado.', { kind: 'warning' });
       carregar();
+      reloadClientesCache();
     } catch (e) {
       toast(e.message, { kind: 'danger' });
     } finally {
@@ -288,7 +289,7 @@ export default function ClienteDetail() {
         <ClienteFormModal
           cliente={cliente}
           onClose={() => setEditing(false)}
-          onSaved={() => { setEditing(false); carregar(); }}
+          onSaved={() => { setEditing(false); carregar(); reloadClientesCache(); }}
         />
       )}
     </>

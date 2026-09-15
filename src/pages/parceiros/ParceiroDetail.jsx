@@ -4,7 +4,7 @@ import { PageHeader } from '../../components/index.js';
 import {
   Card, Badge, Button, Tabs, DefList, DataTable, EmptyState, Icon,
 } from '../../components/index.js';
-import { apiFetch, useBaixasParceiroCache, useGuiasCache } from '../../lib/api.js';
+import { apiFetch, reloadParceirosCache, useBaixasParceiroCache, useGuiasCache } from '../../lib/api.js';
 import { cnpj, dateTime, money, date, percent } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
 import ParceiroFormModal from './ParceiroFormModal.jsx';
@@ -152,7 +152,7 @@ export default function ParceiroDetail() {
         <ParceiroFormModal
           parceiro={p}
           onClose={() => setEditing(false)}
-          onSaved={() => { setEditing(false); carregar(); }}
+          onSaved={() => { setEditing(false); carregar(); reloadParceirosCache(); }}
         />
       )}
     </>
