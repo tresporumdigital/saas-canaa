@@ -107,6 +107,15 @@ function formatar_competencia(string $dataYmd): string {
     return $meses[$mes - 1] . '/' . $ano;
 }
 
+// Trilha de auditoria (RNF-06): registra as operações críticas decididas para a Fase 11
+// (login, cancelamento de guia/nota fiscal, aprovar/estornar baixa de parceiro). $usuarioId é
+// nulo quando a ação não tem um usuário autenticado conhecido (ex.: login com e-mail inexistente).
+function registrar_auditoria(PDO $pdo, ?int $usuarioId, string $usuarioNome, string $acao, ?string $entidade = null): void {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+    $pdo->prepare('INSERT INTO auditoria (usuario_id, usuario_nome, acao, entidade, ip) VALUES (?, ?, ?, ?, ?)')
+        ->execute([$usuarioId, $usuarioNome, $acao, $entidade, $ip]);
+}
+
 // Status "Vencido" não é gravado — é calculado na leitura, a partir do status gravado e do
 // vencimento, do mesmo jeito que o mock computava isso em cima de uma janela de datas fixa.
 function status_parcela_exibido(string $statusGravado, string $vencimento): string {

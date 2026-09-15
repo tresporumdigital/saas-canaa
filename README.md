@@ -1,16 +1,16 @@
 # Sistema de Gestão Funerária Canaã — Frontend + Backend
 
-Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-10 do backend, os
+Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-11 do backend, os
 módulos **Clientes, Parceiros, Unidades, Usuários** (+ login), **Planos (catálogo), Contratos,
 Parcelas**, a **baixa manual de Pagamentos**, **Registro de Óbito + Guias de Atendimento**,
 **Equipamentos (catálogo, inventário, Empréstimo e Venda)**, **Notas Fiscais**, **Portal do
 Parceiro + Carnês**, **Controle Financeiro (Contas a Pagar/Receber, Fluxo de Caixa,
 Inadimplência, Fechamento de Caixa, DRE gerencial)**, **Perfis/Permissões e Backup (registro/
-configuração)** e **Leads do Site** são reais, com API própria em PHP/PDO (`server/`, publicada
-em `/api/`) e banco MySQL/MariaDB na Hostinger — sem dado de exemplo pré-carregado, é um banco de
-produção mesmo. Os demais módulos (Conciliação bancária automática, Parâmetros, Auditoria) ainda
-são **mockados** em `src/mock/` (referências cruzadas consistentes entre si) até serem migrados
-em fases seguintes.
+configuração)**, **Leads do Site** e **Parâmetros + Auditoria** são reais, com API própria em
+PHP/PDO (`server/`, publicada em `/api/`) e banco MySQL/MariaDB na Hostinger — sem dado de
+exemplo pré-carregado, é um banco de produção mesmo. Só a **Conciliação bancária automática**
+(`src/mock/pagamentos.js`) ainda é mockada — mock permanente por design, já que não há gateway
+bancário real para integrar.
 
 **Online:** https://backoffice.funerariacanaa.com/
 
@@ -116,6 +116,20 @@ redireciona para lá.
   vindas de `pagamentos`; não reproduz linhas fictícias do protótipo antigo (impostos, custo de
   mercadoria vendida) que não têm nenhum dado real por trás. Mostra sempre o mês atual, sem
   seletor de competência (mesmo padrão do "Fechamento de caixa", que também não tem um).
+- Parâmetros e Auditoria (`server/config/parametros.php`, `server/config/auditoria.php`) são
+  reais desde a Fase 11 — depois dela, `src/mock/` só tem `pagamentos.js` (Conciliação bancária).
+  Parâmetros virou uma tabela real com edição real, mas **nenhum dos 8 valores é lido pelo
+  código** (a tela avisa isso): "Expiração de sessão" declara 30 min, mas o token real dura 7
+  dias fixos; "Valor máx. de baixa sem aprovação" duplica os R$ 1.500 hardcoded em
+  `portal/baixas.php`; "Retenção de backups" duplica `backup_config` (Fase 9); "Reajuste anual
+  padrão" e "2FA obrigatório" duplicam campos reais que já são por plano/por usuário, não um
+  valor global — editar aqui é só documentação da política, não muda o comportamento (decisão
+  explícita, para não inventar uma configuração que pareça fazer algo e não faça). Auditoria
+  (RNF-06) é uma tabela nova, sem UI nenhuma antes desta fase, com o mínimo essencial decidido
+  com o usuário: login (sucesso/falha, com IP), cancelamento de guia, cancelamento de nota
+  fiscal, aprovar/estornar baixa de parceiro — um `registrar_auditoria()` novo em
+  `_bootstrap.php`, chamado nesses 4 pontos já existentes. É um log imutável: nada nesta tela
+  edita ou apaga uma linha.
 
 ## Design
 
@@ -160,7 +174,7 @@ npm run preview  # serve o build
 | **Financeiro** | Planos e contratos, Gerador de Carnês, Pagamento Integrado, Controle Financeiro |
 | **Operação** | Empréstimo de Equipamentos, Vendas de Equipamentos, Cadastro de Equipamentos, Notas Fiscais |
 | **Expansão** | Leads do Site, Portal do Parceiro |
-| **Configurações** | Unidades, Planos, Backup, Usuários (perfis/permissões e parâmetros ficam na aba de Usuários) |
+| **Configurações** | Unidades, Planos, Backup, Usuários (perfis/permissões, parâmetros e auditoria ficam na aba de Usuários) |
 
 Profundidade: **Painel, Clientes, Óbitos, Guias, Planos e Financeiro** têm listagem + detalhe +
 formulários; os demais têm listagem funcional + detalhe/drawer.
@@ -173,11 +187,12 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
 - Em **Clientes, Parceiros, Unidades, Usuários, Planos, Contratos, na baixa manual de
   Pagamentos, em Registro de Óbito + Guias de Atendimento, em Equipamentos (Cadastro,
   Empréstimo e Vendas), em Notas Fiscais, em Portal do Parceiro + Carnês, em Controle
-  Financeiro (incluindo DRE gerencial), em Perfis-Permissões/Backup e em Leads do Site**,
-  criar/editar/mudar status já persiste de verdade no banco (API própria) — os demais módulos
-  (Conciliação bancária, Parâmetros, Auditoria, execução/restauração de Backup, envio de e-mail
-  a cada novo lead) continuam em simulação: ações disparam um _toast_ de confirmação, sem gravar
-  nada.
+  Financeiro (incluindo DRE gerencial), em Perfis-Permissões/Backup, em Leads do Site e em
+  Parâmetros**, criar/editar/mudar status já persiste de verdade no banco (API própria) — a
+  única exceção nessa lista é que editar um Parâmetro não muda nenhum comportamento real, só o
+  valor salvo (ver seção do Backend). Auditoria só lê, nunca edita (log imutável). Os demais
+  módulos (Conciliação bancária, execução/restauração de Backup, envio de e-mail a cada novo
+  lead) continuam em simulação: ações disparam um _toast_ de confirmação, sem gravar nada.
 - Nas listagens ainda mockadas, o badge de status é clicável: abre os status pré-definidos da
   tela e troca o status da linha (só em memória, sem persistência). Nas listagens já migradas,
   a troca de status é uma chamada real à API (com rollback visual se falhar).
@@ -212,8 +227,9 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
   plano aqui é pré-requisito para conseguir contratar um em Clientes ou em Planos → Contratar),
   Backup (config e histórico reais desde a Fase 9; execução/restauração seguem simuladas) e
   Usuários (lista real; criar/editar já define/atualiza a senha de acesso — a aba reúne também
-  Perfis e permissões, real desde a Fase 9, e Parâmetros, que segue mockado; não há aba de
-  "Empresa" separada — a empresa só tem Unidades/filiais, já cobertas acima).
+  Perfis e permissões (Fase 9), Parâmetros (Fase 11, real mas sem efeito no comportamento) e
+  Auditoria (Fase 11, só leitura); não há aba de "Empresa" separada — a empresa só tem
+  Unidades/filiais, já cobertas acima).
 - Em Pagamentos, "Baixa manual" busca o contrato real pelo titular, lista as parcelas reais em
   aberto do contrato (as já pagas somem da lista) e, ao confirmar, marca a parcela como paga de
   verdade e registra o pagamento — aparece na aba Conciliação com o badge "Baixa manual". A

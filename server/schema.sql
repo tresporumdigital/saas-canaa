@@ -474,3 +474,34 @@ CREATE TABLE IF NOT EXISTS leads (
   recebido_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Fase 11: Parâmetros (armazenamento/edição reais, sem religar comportamento existente) e
+-- Auditoria (RNF-06 — mínimo essencial: login, cancelamentos de guia/nota fiscal, aprovar/
+-- estornar baixa de parceiro)
+
+CREATE TABLE IF NOT EXISTS parametros (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  chave VARCHAR(160) NOT NULL UNIQUE,
+  valor VARCHAR(160) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO parametros (chave, valor) VALUES
+('Dias de tolerância antes de "Em atraso"', '5 dias'),
+('Dias de inadimplência para suspensão do plano', '45 dias'),
+('Bloqueio de cobertura por inadimplência', 'Alertar (não bloquear) até 60 dias'),
+('Valor máximo de baixa de parceiro sem aprovação', 'R$ 1.500,00'),
+('Reajuste anual padrão dos planos', 'IPCA acumulado 12 meses'),
+('Expiração de sessão', '30 minutos de inatividade'),
+('2FA obrigatório', 'Perfis Administrador e Financeiro'),
+('Retenção de backups', '7 diários · 4 semanais · 12 mensais');
+
+CREATE TABLE IF NOT EXISTS auditoria (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  quando DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  usuario_id INT UNSIGNED NULL,
+  usuario_nome VARCHAR(160) NOT NULL,
+  acao VARCHAR(160) NOT NULL,
+  entidade VARCHAR(30) NULL,
+  ip VARCHAR(45) NULL,
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/../_bootstrap.php';
 
-require_auth($pdo);
+$usuario = require_auth($pdo);
 if ($_SERVER['REQUEST_METHOD'] !== 'PATCH') json_error('Método não permitido.', 405);
 
 $codigo = $_GET['id'] ?? '';
@@ -25,6 +25,10 @@ if ($status === 'Autorizada') {
         ->execute([$status, $motivo, $codigo]);
 } else {
     $pdo->prepare('UPDATE notas_fiscais SET status = ? WHERE codigo = ?')->execute([$status, $codigo]);
+}
+
+if ($status === 'Cancelada') {
+    registrar_auditoria($pdo, $usuario['id'], $usuario['nome'], 'Cancelou nota fiscal', $codigo);
 }
 
 json_response(['ok' => true, 'status' => $status]);

@@ -133,6 +133,10 @@ export function useDre(mes) {
   return { dre: data, loading, error, reload };
 }
 
+export function useAuditoriaList() {
+  return useApiList('/config/auditoria.php');
+}
+
 // Cache reativo compartilhado (useSyncExternalStore) para módulos que só precisam ler uma
 // lista (seletor de cliente, junções por id etc.) sem cada lugar refazer o fetch — e a página
 // "dona" de cada entidade usa o mesmo cache (via useXCacheState) para já nascer sincronizada
@@ -197,6 +201,7 @@ const contasReceberCache = createListCache('/financeiro/contas_receber.php');
 const contasPagarCache = createListCache('/financeiro/contas_pagar.php');
 const perfisPermissoesCache = createListCache('/config/perfis_permissoes.php');
 const leadsCache = createListCache('/leads/index.php');
+const parametrosCache = createListCache('/config/parametros.php');
 
 export function useClientesCache() {
   return useCacheRows(clientesCache);
@@ -352,4 +357,8 @@ export function useLeadsCache() {
 
 export function useLeadsCacheState() {
   return useCacheState(leadsCache);
+}
+
+export function useParametrosCacheState() {
+  return useCacheState(parametrosCache);
 }

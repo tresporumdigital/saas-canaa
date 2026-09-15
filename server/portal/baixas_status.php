@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/../_bootstrap.php';
 
-require_auth($pdo);
+$usuario = require_auth($pdo);
 if ($_SERVER['REQUEST_METHOD'] !== 'PATCH') json_error('Método não permitido.', 405);
 
 $codigo = $_GET['id'] ?? '';
@@ -17,5 +17,8 @@ $stmt->execute([$codigo]);
 if (!$stmt->fetch()) json_error('Baixa não encontrada.', 404);
 
 $pdo->prepare('UPDATE baixas_parceiro SET status = ? WHERE codigo = ?')->execute([$status, $codigo]);
+
+$acao = $status === 'Aprovado' ? 'Aprovou baixa de parceiro' : 'Estornou baixa de parceiro';
+registrar_auditoria($pdo, $usuario['id'], $usuario['nome'], $acao, $codigo);
 
 json_response(['ok' => true, 'status' => $status]);

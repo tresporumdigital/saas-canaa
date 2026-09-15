@@ -2,7 +2,6 @@ import { TODAY } from '../lib/format.js';
 import { pagamentos, pagamentoById, filaExcecoes, logApiBancaria } from './pagamentos.js';
 
 export * from './pagamentos.js';
-export * from './sistema.js';
 
 // ---------- Helpers de período ----------
 export function inPeriodo(iso, periodo = 'mes') {

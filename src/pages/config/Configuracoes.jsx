@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
-  Card, Tabs, DataTable, Badge, StatusMenu, Button, Icon, EmptyState, Modal, Input,
+  Card, Tabs, DataTable, Badge, StatusMenu, Button, Icon, EmptyState, Modal, Input, Alert,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { apiFetch, usePerfisPermissoesCacheState, useUsuariosList } from '../../lib/api.js';
-import { parametros } from '../../mock/sistema.js';
+import {
+  apiFetch, useAuditoriaList, useParametrosCacheState, usePerfisPermissoesCacheState, useUsuariosList,
+} from '../../lib/api.js';
 import { dateTime } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
 import UsuarioFormModal from './UsuarioFormModal.jsx';
@@ -14,6 +15,7 @@ const TABS = [
   { id: 'usuarios', label: 'Usuários' },
   { id: 'perfis', label: 'Perfis e permissões' },
   { id: 'parametros', label: 'Parâmetros' },
+  { id: 'auditoria', label: 'Auditoria' },
 ];
 
 export default function Configuracoes() {
@@ -24,6 +26,9 @@ export default function Configuracoes() {
   const { rows, loading, error, reload } = useUsuariosList();
   const { rows: perfis, reload: reloadPerfis } = usePerfisPermissoesCacheState();
   const [editPerfil, setEditPerfil] = useState(null);
+  const { rows: parametros, reload: reloadParametros } = useParametrosCacheState();
+  const [editParametro, setEditParametro] = useState(null);
+  const { rows: auditoria, loading: loadingAuditoria } = useAuditoriaList();
 
   const alterarStatus = async (r, next) => {
     try {
@@ -115,17 +120,44 @@ export default function Configuracoes() {
 
       {tab === 'parametros' && (
         <Card title="Parâmetros de negócio">
+          <Alert variant="info" title="Valores informativos">
+            Estes parâmetros ficam salvos de verdade, mas hoje nenhum deles é lido automaticamente
+            pelo sistema — editar um valor aqui não muda o comportamento real (ex.: expiração de
+            sessão, limite de aprovação de baixa). Servem como referência documentada da política
+            atual até que o código passe a consultá-los.
+          </Alert>
           <table className="data-table">
             <tbody>
               {parametros.map((p) => (
                 <tr key={p.chave}>
                   <td style={{ fontWeight: 700, width: '55%' }}>{p.chave}</td>
                   <td>{p.valor}</td>
-                  <td style={{ textAlign: 'right' }}><Button size="sm" variant="ghost" onClick={() => toast('Parâmetro editável (simulação).')}>Editar</Button></td>
+                  <td style={{ textAlign: 'right' }}>
+                    <Button size="sm" variant="ghost" onClick={() => setEditParametro(p)}>Editar</Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </Card>
+      )}
+
+      {tab === 'auditoria' && (
+        <Card title="Trilha de auditoria">
+          <DataTable
+            rows={auditoria}
+            emptyLabel={loadingAuditoria ? 'Carregando…' : 'Nenhum evento registrado ainda.'}
+            searchKeys={['usuario', 'acao', 'entidade']}
+            pageSize={20}
+            getKey={(r) => r.id}
+            columns={[
+              { key: 'quando', header: 'Quando', sortable: true, render: (r) => dateTime(r.quando) },
+              { key: 'usuario', header: 'Usuário' },
+              { key: 'acao', header: 'Ação' },
+              { key: 'entidade', header: 'Entidade', render: (r) => r.entidade || '—' },
+              { key: 'ip', header: 'IP', render: (r) => r.ip || '—' },
+            ]}
+          />
         </Card>
       )}
 
@@ -137,6 +169,9 @@ export default function Configuracoes() {
       )}
       {editPerfil && (
         <EditPerfilModal perfil={editPerfil} onClose={() => setEditPerfil(null)} onSaved={() => { setEditPerfil(null); reloadPerfis(); }} />
+      )}
+      {editParametro && (
+        <EditParametroModal parametro={editParametro} onClose={() => setEditParametro(null)} onSaved={() => { setEditParametro(null); reloadParametros(); }} />
       )}
     </>
   );
@@ -183,6 +218,44 @@ function EditPerfilModal({ perfil, onClose, onSaved }) {
         <Input label="Financeiro" value={form.financeiro} onChange={set('financeiro')} />
         <Input label="Operacional" value={form.operacional} onChange={set('operacional')} />
         <Input label="Parceiro" value={form.parceiro} onChange={set('parceiro')} />
+      </form>
+    </Modal>
+  );
+}
+
+function EditParametroModal({ parametro, onClose, onSaved }) {
+  const { toast } = useToast();
+  const [valor, setValor] = useState(parametro.valor);
+  const [salvando, setSalvando] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (salvando || !valor.trim()) return;
+    setSalvando(true);
+    try {
+      await apiFetch(`/config/parametros.php?chave=${encodeURIComponent(parametro.chave)}`, { method: 'PATCH', body: { valor } });
+      toast(`Parâmetro "${parametro.chave}" atualizado.`);
+      onSaved?.();
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <Modal
+      title={`Editar — ${parametro.chave}`}
+      onClose={onClose}
+      footer={(
+        <>
+          <Button variant="secondary" type="button" onClick={onClose}>Cancelar</Button>
+          <Button variant="primary" type="submit" form="parametro-form" loading={salvando}>Salvar</Button>
+        </>
+      )}
+    >
+      <form id="parametro-form" onSubmit={submit}>
+        <Input label="Valor" value={valor} onChange={(e) => setValor(e.target.value)} required />
       </form>
     </Modal>
   );

@@ -15,11 +15,15 @@ $stmt->execute([$email]);
 $usuario = $stmt->fetch();
 
 if (!$usuario || !password_verify($senha, $usuario['senha_hash'])) {
+    registrar_auditoria($pdo, $usuario['id'] ?? null, $usuario['nome'] ?? $email, 'Falha de login');
     json_error('E-mail ou senha inválidos.', 401);
 }
 if ($usuario['status'] !== 'Ativo') {
+    registrar_auditoria($pdo, $usuario['id'], $usuario['nome'], 'Login bloqueado — usuário inativo');
     json_error('Usuário inativo. Contate um administrador.', 403);
 }
+
+registrar_auditoria($pdo, $usuario['id'], $usuario['nome'], 'Login');
 
 $token = bin2hex(random_bytes(32));
 $expiraEm = (new DateTime('+7 days'))->format('Y-m-d H:i:s');

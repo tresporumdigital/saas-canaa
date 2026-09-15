@@ -30,6 +30,9 @@ try {
     }
     $pdo->prepare('INSERT INTO guia_historico (guia_id, status, quem) VALUES (?, ?, ?)')
         ->execute([$guiaId, $status, $usuario['nome']]);
+    if ($status === 'Cancelada') {
+        registrar_auditoria($pdo, $usuario['id'], $usuario['nome'], 'Cancelou guia', $codigo);
+    }
     $pdo->commit();
 } catch (Throwable $e) {
     $pdo->rollBack();
