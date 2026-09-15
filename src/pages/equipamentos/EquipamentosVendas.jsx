@@ -5,7 +5,9 @@ import {
   Input, Select, FieldRow, EnderecoFields, Avatar,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { apiFetch, useClientesCache, useEquipamentosCache, useVendasEquipamentoCacheState } from '../../lib/api.js';
+import {
+  apiFetch, reloadNotasFiscaisCache, useClientesCache, useEquipamentosCache, useVendasEquipamentoCacheState,
+} from '../../lib/api.js';
 import { money, date, number } from '../../lib/format.js';
 import { maskMoney, moneyToNumber, numberToMoneyInput, maskCPF, maskPhone } from '../../lib/masks.js';
 
@@ -44,6 +46,7 @@ export default function EquipamentosVendas() {
   const [valor, setValor] = useState('');
   const [ultimaVenda, setUltimaVenda] = useState(null);
   const [salvando, setSalvando] = useState(false);
+  const [emitindoNf, setEmitindoNf] = useState(false);
 
   const abaixoMin = produtos.filter((p) => p.estoque <= p.estoqueMinimo);
   const totalMes = rowsVendas.reduce((s, v) => s + vendaTotais(v).total, 0);
@@ -106,7 +109,7 @@ export default function EquipamentosVendas() {
         },
       });
       toast(`Venda ${id} registrada para ${comprador.nome.trim()}.`);
-      setUltimaVenda({ id, clienteNome: comprador.nome.trim() });
+      setUltimaVenda({ id, clienteNome: comprador.nome.trim(), valor: moneyToNumber(valor) });
       reloadVendas();
       setPasso(3);
     } catch (err) {
@@ -116,12 +119,53 @@ export default function EquipamentosVendas() {
     }
   };
 
-  const finalizarComNota = (emitir) => {
-    toast(emitir
-      ? `Nota fiscal da venda ${ultimaVenda.id} gerada e enviada para o Financeiro (fila de Notas Fiscais — simulação).`
-      : `Venda ${ultimaVenda.id} registrada. A nota fiscal poderá ser emitida depois, em Notas Fiscais (simulação).`);
-    setUltimaVenda(null);
-    fecharVenda();
+  const gerarNotaDaVenda = async (venda) => {
+    const { id: notaId } = await apiFetch('/notas-fiscais/index.php', {
+      method: 'POST',
+      body: {
+        tipo: 'NF-e',
+        origemTipo: 'Venda de equipamento',
+        origemRef: venda.id,
+        clienteNome: venda.clienteNome,
+        valor: venda.valor,
+        vendaId: venda.id,
+      },
+    });
+    reloadVendas();
+    reloadNotasFiscaisCache();
+    return notaId;
+  };
+
+  const emitirNfDaVendaSelecionada = async () => {
+    if (emitindoNf || venda.notaFiscalId) return;
+    setEmitindoNf(true);
+    try {
+      const notaId = await gerarNotaDaVenda({ id: venda.id, clienteNome: venda.clienteNome, valor: vendaTotais(venda).total });
+      toast(`Nota fiscal ${notaId} gerada para a venda ${venda.id}.`);
+      setVenda((v) => (v ? { ...v, notaFiscalId: notaId } : v));
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    } finally {
+      setEmitindoNf(false);
+    }
+  };
+
+  const finalizarComNota = async (emitir) => {
+    if (!emitir) {
+      toast(`Venda ${ultimaVenda.id} registrada. A nota fiscal poderá ser emitida depois, em Notas Fiscais.`);
+      setUltimaVenda(null);
+      fecharVenda();
+      return;
+    }
+    try {
+      const notaId = await gerarNotaDaVenda(ultimaVenda);
+      toast(`Nota fiscal ${notaId} gerada para a venda ${ultimaVenda.id}.`);
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    } finally {
+      setUltimaVenda(null);
+      fecharVenda();
+    }
   };
 
   return (
@@ -216,7 +260,11 @@ export default function EquipamentosVendas() {
 
       {venda && (
         <Drawer title={`Venda ${venda.id}`} onClose={() => setVenda(null)}
-          actions={<Button size="sm" variant="secondary" icon="receipt" onClick={() => toast('NF-e acionada a partir da venda (simulação).')}>Emitir NF-e</Button>}>
+          actions={
+            <Button size="sm" variant="secondary" icon="receipt" disabled={Boolean(venda.notaFiscalId)} loading={emitindoNf} onClick={emitirNfDaVendaSelecionada}>
+              {venda.notaFiscalId ? 'Nota já emitida' : 'Emitir NF-e'}
+            </Button>
+          }>
           <DefList items={[
             { label: 'Cliente', value: venda.clienteNome },
             { label: 'Data', value: date(venda.data) },

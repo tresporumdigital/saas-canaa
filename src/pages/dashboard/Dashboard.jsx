@@ -5,8 +5,8 @@ import { Card, Badge, Icon, StatCard, Spark, Alert } from '../../components/inde
 import { useRole } from '../../context/RoleContext.jsx';
 import { dashboardData } from '../../mock/index.js';
 import {
-  useContratosCache, useEmprestimosCache, useGuiasCache, useObitosCache, usePagamentosList,
-  useParceirosCache, usePlanosCache, useUnidadesCache, useVendasEquipamentoCache,
+  useContratosCache, useEmprestimosCache, useGuiasCache, useNotasFiscaisCache, useObitosCache,
+  usePagamentosList, useParceirosCache, usePlanosCache, useUnidadesCache, useVendasEquipamentoCache,
 } from '../../lib/api.js';
 import { money, number, percent } from '../../lib/format.js';
 
@@ -29,13 +29,14 @@ export default function Dashboard() {
   const unidadesReais = useUnidadesCache();
   const emprestimosReais = useEmprestimosCache();
   const vendasEquipamentoReais = useVendasEquipamentoCache();
+  const notasFiscaisReais = useNotasFiscaisCache();
   const d = useMemo(
     () => dashboardData(
       periodo, parceiros, contratos, planos, pagamentosReais, obitosReais, guiasReais,
-      unidadesReais, emprestimosReais, vendasEquipamentoReais,
+      unidadesReais, emprestimosReais, vendasEquipamentoReais, notasFiscaisReais,
     ),
     [periodo, parceiros, contratos, planos, pagamentosReais, obitosReais, guiasReais,
-      unidadesReais, emprestimosReais, vendasEquipamentoReais],
+      unidadesReais, emprestimosReais, vendasEquipamentoReais, notasFiscaisReais],
   );
 
   if (role.id === 'parceiro') {

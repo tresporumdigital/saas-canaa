@@ -1,11 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
   Card, Tabs, DataTable, Badge, StatusMenu, Button, StatCard, Drawer, DefList, Alert, Modal, Textarea,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import useRowStatus from '../../hooks/useRowStatus.js';
-import { notasFiscais } from '../../mock/notasFiscais.js';
+import { apiFetch, useNotasFiscaisCacheState } from '../../lib/api.js';
 import { money, dateTime, number } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
 import GerarNotaModal from './GerarNotaModal.jsx';
@@ -22,14 +21,38 @@ export default function NotasFiscais() {
   const [nota, setNota] = useState(null);
   const [correcao, setCorrecao] = useState(false);
   const [gerando, setGerando] = useState(false);
-  const [novasNotas, setNovasNotas] = useState([]);
-  const fonte = useMemo(() => [...novasNotas, ...notasFiscais], [novasNotas]);
+  const [emitindo, setEmitindo] = useState(false);
+  const { rows: allNotas, reload: reloadNotas } = useNotasFiscaisCacheState();
 
-  const [allNotas, setNotaStatus] = useRowStatus(fonte);
   const pendentes = allNotas.filter((n) => n.status === 'Pendente');
   const rejeitadas = allNotas.filter((n) => n.status === 'Rejeitada');
   const autorizadas = allNotas.filter((n) => n.status === 'Autorizada');
   const rows = tab === 'pendentes' ? pendentes : tab === 'rejeitadas' ? rejeitadas : allNotas;
+
+  const alterarStatus = async (n, next) => {
+    try {
+      await apiFetch(`/notas-fiscais/status.php?id=${encodeURIComponent(n.id)}`, { method: 'PATCH', body: { status: next } });
+      toast(`Nota ${n.id} definida como "${next}".`);
+      reloadNotas();
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    }
+  };
+
+  const emitirAgora = async () => {
+    if (emitindo) return;
+    setEmitindo(true);
+    try {
+      await apiFetch(`/notas-fiscais/status.php?id=${encodeURIComponent(nota.id)}`, { method: 'PATCH', body: { status: 'Autorizada' } });
+      toast('Nota autorizada.');
+      reloadNotas();
+      setNota(null);
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    } finally {
+      setEmitindo(false);
+    }
+  };
 
   return (
     <>
@@ -65,7 +88,7 @@ export default function NotasFiscais() {
               <StatusMenu
                 value={r.status}
                 options={STATUS_SETS.notaFiscal}
-                onChange={(next) => { setNotaStatus(r.id, next); toast(`Nota ${r.id} definida como "${next}".`); }}
+                onChange={(next) => alterarStatus(r, next)}
               />
             ) },
             { key: 'emitidaEm', header: 'Emissão', render: (r) => (r.emitidaEm ? dateTime(r.emitidaEm) : '—') },
@@ -79,7 +102,7 @@ export default function NotasFiscais() {
             nota.status === 'Autorizada' ? (
               <Button size="sm" variant="secondary" onClick={() => setCorrecao(true)}>Carta de correção</Button>
             ) : (
-              <Button size="sm" variant="primary" onClick={() => { toast('Nota reenviada para autorização (simulação).'); setNota(null); }}>
+              <Button size="sm" variant="primary" loading={emitindo} onClick={emitirAgora}>
                 {nota.status === 'Rejeitada' ? 'Corrigir e reenviar' : 'Emitir agora'}
               </Button>
             )
@@ -122,9 +145,9 @@ export default function NotasFiscais() {
       {gerando && (
         <GerarNotaModal
           onClose={() => setGerando(false)}
-          onGenerate={(nf) => {
-            setNovasNotas((list) => [nf, ...list]);
-            toast(`Nota ${nf.id} gerada e adicionada à fila de emissão (simulação).`);
+          onGenerate={(id) => {
+            toast(`Nota ${id} gerada e adicionada à fila de emissão.`);
+            reloadNotas();
           }}
         />
       )}

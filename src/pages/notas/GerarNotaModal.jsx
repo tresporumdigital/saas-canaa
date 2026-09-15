@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, Button, Select, Input, Alert } from '../../components/index.js';
-import { useClientesCache } from '../../lib/api.js';
+import { useToast } from '../../context/ToastContext.jsx';
+import { apiFetch, useClientesCache } from '../../lib/api.js';
 import { money } from '../../lib/format.js';
 import { maskMoney, moneyToNumber } from '../../lib/masks.js';
 
@@ -17,11 +18,13 @@ const SERVICOS = [
 
 // Pop-up: gera uma nota fiscal (NFS-e / NF-e) pré-preenchida para um cliente.
 export default function GerarNotaModal({ onClose, onGenerate }) {
+  const { toast } = useToast();
   const clientes = useClientesCache();
   const [clienteId, setClienteId] = useState('');
   const [tipo, setTipo] = useState('NFS-e');
   const [servico, setServico] = useState(SERVICOS[0]);
   const [valor, setValor] = useState('');
+  const [salvando, setSalvando] = useState(false);
 
   const cliente = clientes.find((c) => c.id === clienteId);
   const valorNum = moneyToNumber(valor);
@@ -29,24 +32,29 @@ export default function GerarNotaModal({ onClose, onGenerate }) {
   const aliquota = tipo === 'NFS-e' ? 0.05 : 0.18;
   const impostos = pronto ? valorNum * aliquota : 0;
 
-  const gerar = (e) => {
+  const gerar = async (e) => {
     e.preventDefault();
-    if (!pronto) return;
-    onGenerate({
-      id: `NF-2026-9${String(Date.now()).slice(-4)}`,
-      tipo,
-      origemTipo: 'Emissão manual',
-      origemRef: servico,
-      clienteNome: cliente.nome,
-      servico,
-      valor: valorNum,
-      impostos: Number(impostos.toFixed(2)),
-      status: 'Pendente',
-      emitidaEm: null,
-      numero: null,
-      motivoRejeicao: null,
-    });
-    onClose();
+    if (!pronto || salvando) return;
+    setSalvando(true);
+    try {
+      const { id } = await apiFetch('/notas-fiscais/index.php', {
+        method: 'POST',
+        body: {
+          tipo,
+          origemTipo: 'Emissão manual',
+          origemRef: servico,
+          clienteNome: cliente.nome,
+          valor: valorNum,
+          impostos: Number(impostos.toFixed(2)),
+        },
+      });
+      onGenerate(id);
+      onClose();
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    } finally {
+      setSalvando(false);
+    }
   };
 
   return (
@@ -57,7 +65,7 @@ export default function GerarNotaModal({ onClose, onGenerate }) {
       footer={(
         <>
           <Button variant="secondary" type="button" onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" type="submit" form="gerar-nota-form" disabled={!pronto}>Gerar</Button>
+          <Button variant="primary" type="submit" form="gerar-nota-form" disabled={!pronto} loading={salvando}>Gerar</Button>
         </>
       )}
     >

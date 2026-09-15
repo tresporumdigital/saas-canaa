@@ -1,12 +1,12 @@
 # Sistema de Gestão Funerária Canaã — Frontend + Backend
 
-Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-5 do backend, os
+Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-6 do backend, os
 módulos **Clientes, Parceiros, Unidades, Usuários** (+ login), **Planos (catálogo), Contratos,
-Parcelas**, a **baixa manual de Pagamentos**, **Registro de Óbito + Guias de Atendimento** e
-**Equipamentos (catálogo, inventário, Empréstimo e Venda)** são reais, com API própria em
-PHP/PDO (`server/`, publicada em `/api/`) e banco MySQL/MariaDB na Hostinger — sem dado de
-exemplo pré-carregado, é um banco de produção mesmo. Os demais módulos (Carnês, Conciliação
-bancária automática, Financeiro, Notas Fiscais, Leads, Portal do Parceiro etc.) ainda são
+Parcelas**, a **baixa manual de Pagamentos**, **Registro de Óbito + Guias de Atendimento**,
+**Equipamentos (catálogo, inventário, Empréstimo e Venda)** e **Notas Fiscais** são reais, com
+API própria em PHP/PDO (`server/`, publicada em `/api/`) e banco MySQL/MariaDB na Hostinger —
+sem dado de exemplo pré-carregado, é um banco de produção mesmo. Os demais módulos (Carnês,
+Conciliação bancária automática, Financeiro, Leads, Portal do Parceiro etc.) ainda são
 **mockados** em `src/mock/` (referências cruzadas consistentes entre si) até serem migrados em
 fases seguintes.
 
@@ -45,15 +45,22 @@ redireciona para lá.
   usuário, a conciliação bancária automática continua sendo uma simulação (não há gateway de
   pagamento configurado).
 - Códigos gerados (`CLI-`, `PAR-`, `CTR-2026-`, `DEP-`, `OB-2026-`, `GA-2026-`, `EQP-`,
-  `EMP-2026-`, `VEQ-2026-`...) para entidades cujo id ainda é referenciado por módulos mockados
-  começam num número alto (ex.: contratos reais começam em `CTR-2026-1001`, óbitos em
-  `OB-2026-1001`, guias em `GA-2026-01000`, empréstimos em `EMP-2026-1001`) para nunca colidir
-  com os ids fictícios usados nos mocks ainda não migrados. O catálogo de equipamentos usa um
-  prefixo novo (`EQP-`) em vez de tentar reproduzir a sigla do mock (`EQ-CDR`, `EQ-CMH`...), mais
-  simples e sem risco de colisão.
+  `EMP-2026-`, `VEQ-2026-`, `NF-2026-`...) para entidades cujo id ainda é referenciado por
+  módulos mockados começam num número alto (ex.: contratos reais começam em `CTR-2026-1001`,
+  óbitos em `OB-2026-1001`, guias em `GA-2026-01000`, empréstimos em `EMP-2026-1001`, notas
+  fiscais em `NF-2026-1001`) para nunca colidir com os ids fictícios usados nos mocks ainda não
+  migrados. O catálogo de equipamentos usa um prefixo novo (`EQP-`) em vez de tentar reproduzir a
+  sigla do mock (`EQ-CDR`, `EQ-CMH`...), mais simples e sem risco de colisão.
 - Óbito calcula a "cobertura" (plano ativo, carência cumprida, beneficiário incluído,
   adimplência) no servidor, a partir dos dados reais de contrato/parcelas no momento do
   registro (`server/obitos/index.php`) — não é mais um cálculo simulado no frontend.
+- Nota fiscal (`server/notas-fiscais/`) é emitida a partir de três fluxos: manualmente (tela
+  Notas Fiscais → "Gerar nota fiscal"), a partir de uma Venda de Equipamento ("Emitir NF-e" no
+  passo 3 ou no drawer da venda — grava `vendas_equipamento.nota_fiscal_id`) ou a partir do
+  passo 4 de Registrar Óbito. "Emitir agora"/"Corrigir e reenviar" grava `emitida_em` de verdade,
+  mas não inventa um `numero` fiscal real (não há integração com SEFAZ/prefeitura) — "Carta de
+  correção", download de XML/DANFE e envio por e-mail continuam toast, mesmo raciocínio da
+  Conciliação bancária ficar sempre simulada.
 
 ## Design
 
@@ -109,9 +116,9 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
 ## Observações
 
 - Em **Clientes, Parceiros, Unidades, Usuários, Planos, Contratos, na baixa manual de
-  Pagamentos, em Registro de Óbito + Guias de Atendimento e em Equipamentos (Cadastro,
-  Empréstimo e Vendas)**, criar/editar/mudar status já persiste de verdade no banco (API
-  própria) — os demais módulos continuam em simulação: ações disparam um _toast_ de
+  Pagamentos, em Registro de Óbito + Guias de Atendimento, em Equipamentos (Cadastro,
+  Empréstimo e Vendas) e em Notas Fiscais**, criar/editar/mudar status já persiste de verdade no
+  banco (API própria) — os demais módulos continuam em simulação: ações disparam um _toast_ de
   confirmação, sem gravar nada.
 - Nas listagens ainda mockadas, o badge de status é clicável: abre os status pré-definidos da
   tela e troca o status da linha (só em memória, sem persistência). Nas listagens já migradas,
@@ -132,7 +139,8 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
   pessoa falecida, puxando os dados. Ao concluir, óbito + serviços são gravados no banco numa
   transação, com a validação de cobertura calculada a partir do contrato/parcelas reais. A nota
   de falecimento é gerada como imagem (canvas, com a foto opcional) e pode ser baixada; a etapa
-  de nota fiscal continua um _toast_ (Notas Fiscais ainda não foi migrado).
+  de nota fiscal, se o valor cobrado for maior que zero, gera uma nota fiscal real vinculada ao
+  óbito — sem cobrança à parte (tudo coberto pelo plano), nenhuma nota é necessária.
 - Em Guias de Atendimento, "Gerar guia" busca o contrato pelo titular, deixa escolher o
   beneficiário (titular ou dependente) e o parceiro, grava a guia no banco (com o primeiro
   registro de histórico "Emitida") e mostra o PDF da guia para imprimir ou baixar. A troca de
@@ -163,8 +171,9 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
 - Em Vendas de Equipamentos, "Nova venda" segue o mesmo catálogo com foto do equipamento; ao
   escolher o equipamento, informa se é cliente cadastrado (puxa nome/CPF/telefone/endereço) ou
   não (preenche à mão), grava a venda no banco e decrementa o estoque real do produto. A etapa
-  "emitir nota fiscal agora ou depois" continua um _toast_ — Notas Fiscais ainda não foi
-  migrado, mesmo espírito do step 4 de Registrar óbito.
+  "emitir nota fiscal agora ou depois" e o botão "Emitir NF-e" do drawer da venda geram uma nota
+  fiscal real (`vendas_equipamento.nota_fiscal_id` passa a apontar para ela) — o botão fica
+  desabilitado quando a venda já tem nota emitida.
 - Cadastro de Equipamentos tem abas separadas para Venda (produto com preço/estoque) e Locação
   (produto + todos os números de inventário registrados de uma vez, numa única transação); ambos
   gravam no banco de verdade. Foto de produto continua `URL.createObjectURL` (blob local, não

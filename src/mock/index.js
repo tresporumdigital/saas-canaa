@@ -1,6 +1,5 @@
 import { TODAY } from '../lib/format.js';
 import { carnes, carneById, carnesDoContrato } from './carnes.js';
-import { notasFiscais, notaFiscalById } from './notasFiscais.js';
 import { pagamentos, pagamentoById, filaExcecoes, logApiBancaria } from './pagamentos.js';
 import { leads, leadById } from './leads.js';
 import { baixasParceiro, baixasDoParceiro, extratoParceiro } from './portal.js';
@@ -14,7 +13,6 @@ import {
 } from './sistema.js';
 
 export * from './carnes.js';
-export * from './notasFiscais.js';
 export * from './pagamentos.js';
 export * from './leads.js';
 export * from './portal.js';
@@ -63,11 +61,12 @@ export function guiasPorParceiro(guias) {
 
 // ---------- Dados do dashboard ----------
 // `parceiros`/`contratos`/`planos`/`pagamentosReais`/`obitosReais`/`guiasReais`/`unidadesReais`/
-// `emprestimosReais`/`vendasEquipamentoReais` vêm dos caches/listas reativos da API — não são
-// mais mockados, então o chamador (Dashboard.jsx) precisa repassar as listas.
+// `emprestimosReais`/`vendasEquipamentoReais`/`notasFiscaisReais` vêm dos caches/listas
+// reativos da API — não são mais mockados, então o chamador (Dashboard.jsx) precisa repassar
+// as listas.
 export function dashboardData(
   periodo = 'mes', parceiros = [], contratos = [], planos = [], pagamentosReais = [], obitosReais = [], guiasReais = [],
-  unidadesReais = [], emprestimosReais = [], vendasEquipamentoReais = [],
+  unidadesReais = [], emprestimosReais = [], vendasEquipamentoReais = [], notasFiscaisReais = [],
 ) {
   const parceiroById = (id) => parceiros.find((p) => p.id === id);
   const planoById = (id) => planos.find((p) => p.id === id);
@@ -91,7 +90,7 @@ export function dashboardData(
 
   const obitosPeriodo = obitosReais.filter((o) => inPeriodo(o.abertoEm, periodo));
 
-  const nfPendentes = notasFiscais.filter((n) => n.status === 'Pendente' || n.status === 'Rejeitada').length;
+  const nfPendentes = notasFiscaisReais.filter((n) => n.status === 'Pendente' || n.status === 'Rejeitada').length;
 
   return {
     periodoLabel: PERIODO_LABEL[periodo] || 'no período',

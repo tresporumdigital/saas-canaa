@@ -5,8 +5,9 @@ import {
   Card, Badge, Button, Tabs, DefList, DataTable, Avatar, EmptyState, Icon, ConfirmDialog,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { apiFetch, useContratosCache, useEmprestimosCache, useObitosCache, usePlanosCache } from '../../lib/api.js';
-import { notasFiscais } from '../../mock/notasFiscais.js';
+import {
+  apiFetch, useContratosCache, useEmprestimosCache, useNotasFiscaisCache, useObitosCache, usePlanosCache,
+} from '../../lib/api.js';
 import { cpf, phone, date, dateTime, money } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
 import ClienteFormModal from './ClienteFormModal.jsx';
@@ -34,6 +35,7 @@ export default function ClienteDetail() {
   const planosProduto = usePlanosCache();
   const obitosGlobal = useObitosCache();
   const emprestimosGlobal = useEmprestimosCache();
+  const notasFiscaisGlobal = useNotasFiscaisCache();
   const [parcelasPorContrato, setParcelasPorContrato] = useState({});
 
   const carregar = useCallback(() => {
@@ -69,7 +71,7 @@ export default function ClienteDetail() {
   const contratos = contratosGlobal.filter((c) => c.clienteId === cliente.id);
   const atendimentos = obitosGlobal.filter((o) => o.vinculo.clienteId === cliente.id);
   const emprestimos = emprestimosGlobal.filter((e) => e.clienteId === cliente.id);
-  const notas = notasFiscais.filter((n) => n.clienteNome === cliente.nome);
+  const notas = notasFiscaisGlobal.filter((n) => n.clienteNome === cliente.nome);
 
   const inativar = async () => {
     try {

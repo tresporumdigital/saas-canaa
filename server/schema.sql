@@ -302,3 +302,23 @@ CREATE TABLE IF NOT EXISTS venda_itens (
   FOREIGN KEY (venda_id) REFERENCES vendas_equipamento(id) ON DELETE CASCADE,
   FOREIGN KEY (produto_id) REFERENCES equipamentos_produto(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Fase 6: Notas Fiscais
+
+CREATE TABLE IF NOT EXISTS notas_fiscais (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NOT NULL UNIQUE,
+  tipo ENUM('NFS-e','NF-e') NOT NULL,
+  origem_tipo ENUM('Atendimento','Contrato','Venda de equipamento','Emissão manual') NOT NULL,
+  origem_ref VARCHAR(80) NOT NULL,
+  cliente_nome VARCHAR(160) NOT NULL,
+  valor DECIMAL(10,2) NOT NULL,
+  impostos DECIMAL(10,2) NOT NULL DEFAULT 0,
+  status ENUM('Pendente','Autorizada','Rejeitada','Cancelada') NOT NULL DEFAULT 'Pendente',
+  emitida_em DATETIME NULL,
+  numero VARCHAR(40) NULL,
+  motivo_rejeicao TEXT NULL,
+  criado_por_usuario_id INT UNSIGNED NULL,
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (criado_por_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -3,7 +3,7 @@ import {
   Modal, Button, Input, Select, FieldRow, Alert, Icon, Card, Checkbox, EmptyState,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { apiFetch, useClientesCache, useContratosCache, usePlanosCache } from '../../lib/api.js';
+import { apiFetch, reloadNotasFiscaisCache, useClientesCache, useContratosCache, usePlanosCache } from '../../lib/api.js';
 import { maskCPF, maskRG, maskMoney, moneyToNumber } from '../../lib/masks.js';
 import { date as fmtDate, dateTime as fmtDateTime, money } from '../../lib/format.js';
 import { gerarNotaFalecimento } from '../../lib/notaFalecimento.js';
@@ -122,7 +122,7 @@ export default function ObitoFormModal({ onClose, onCreated }) {
     if (salvando) return;
     setSalvando(true);
     try {
-      await apiFetch('/obitos/index.php', {
+      const { id: obitoId } = await apiFetch('/obitos/index.php', {
         method: 'POST',
         body: {
           tipoAtendimento,
@@ -136,9 +136,29 @@ export default function ObitoFormModal({ onClose, onCreated }) {
             .map((s) => ({ nome: s.tipo === 'Outro' ? s.outro.trim() : s.tipo, coberto: s.incluido, valor: s.incluido ? 0 : moneyToNumber(s.valor) })),
         },
       });
-      toast(comNotaFiscal
-        ? 'Óbito registrado. A geração de nota fiscal ainda não está disponível (fase futura) — fica pendente em Notas Fiscais.'
-        : 'Óbito registrado. A nota fiscal poderá ser gerada depois, em Notas Fiscais.');
+
+      if (comNotaFiscal && valorTotal > 0) {
+        try {
+          const { id: notaId } = await apiFetch('/notas-fiscais/index.php', {
+            method: 'POST',
+            body: {
+              tipo: 'NFS-e',
+              origemTipo: 'Atendimento',
+              origemRef: obitoId,
+              clienteNome: falecido.nome.trim(),
+              valor: valorTotal,
+            },
+          });
+          reloadNotasFiscaisCache();
+          toast(`Óbito ${obitoId} registrado e nota fiscal ${notaId} gerada.`);
+        } catch (nfErr) {
+          toast(`Óbito ${obitoId} registrado, mas a nota fiscal não pôde ser gerada: ${nfErr.message}`, { kind: 'warning' });
+        }
+      } else {
+        toast(comNotaFiscal
+          ? `Óbito ${obitoId} registrado. Não há valor cobrado à parte, então nenhuma nota é necessária.`
+          : `Óbito ${obitoId} registrado. A nota fiscal poderá ser gerada depois, em Notas Fiscais.`);
+      }
       onCreated?.();
       onClose();
     } catch (e) {
