@@ -5,8 +5,7 @@ import {
   Card, Tabs, DataTable, Badge, StatusMenu, Button, Tag, AgingBars, StatCard, EmptyState,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { apiFetch, useClientesCache, useContratosCacheState, usePlanosCache } from '../../lib/api.js';
-import { agingInadimplencia } from '../../mock/financeiro.js';
+import { apiFetch, useAging, useClientesCache, useContratosCacheState, usePlanosCache } from '../../lib/api.js';
 import { money, date, number } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
 
@@ -26,6 +25,7 @@ export default function PlanosHome() {
   const planoById = (id) => planosProduto.find((p) => p.id === id);
   const contratoValor = (ct) => planoById(ct.planoId)?.valorMensal || 0;
   const { rows: contratosRows, loading, error, reload } = useContratosCacheState();
+  const { rows: agingInadimplencia } = useAging();
 
   const ativos = contratosRows.filter((c) => c.situacao === 'Ativo').length;
   const emAtraso = contratosRows.filter((c) => c.situacao === 'Em atraso' || c.situacao === 'Suspenso').length;

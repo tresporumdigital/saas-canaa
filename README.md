@@ -1,14 +1,15 @@
 # Sistema de Gestão Funerária Canaã — Frontend + Backend
 
-Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-7 do backend, os
+Frontend navegável do ERP descrito em [`PRD.md`](./PRD.md). Com as Fases 1-8 do backend, os
 módulos **Clientes, Parceiros, Unidades, Usuários** (+ login), **Planos (catálogo), Contratos,
 Parcelas**, a **baixa manual de Pagamentos**, **Registro de Óbito + Guias de Atendimento**,
-**Equipamentos (catálogo, inventário, Empréstimo e Venda)**, **Notas Fiscais** e **Portal do
-Parceiro + Carnês** são reais, com API própria em PHP/PDO (`server/`, publicada em `/api/`) e
-banco MySQL/MariaDB na Hostinger — sem dado de exemplo pré-carregado, é um banco de produção
-mesmo. Os demais módulos (Conciliação bancária automática, Financeiro, Leads etc.) ainda são
-**mockados** em `src/mock/` (referências cruzadas consistentes entre si) até serem migrados em
-fases seguintes.
+**Equipamentos (catálogo, inventário, Empréstimo e Venda)**, **Notas Fiscais**, **Portal do
+Parceiro + Carnês** e **Controle Financeiro (Contas a Pagar/Receber, Fluxo de Caixa,
+Inadimplência, Fechamento de Caixa)** são reais, com API própria em PHP/PDO (`server/`,
+publicada em `/api/`) e banco MySQL/MariaDB na Hostinger — sem dado de exemplo pré-carregado, é
+um banco de produção mesmo. Os demais módulos (Conciliação bancária automática, DRE gerencial,
+Leads etc.) ainda são **mockados** em `src/mock/` (referências cruzadas consistentes entre si)
+até serem migrados em fases seguintes.
 
 **Online:** https://backoffice.funerariacanaa.com/
 
@@ -45,13 +46,23 @@ redireciona para lá.
   usuário, a conciliação bancária automática continua sendo uma simulação (não há gateway de
   pagamento configurado).
 - Códigos gerados (`CLI-`, `PAR-`, `CTR-2026-`, `DEP-`, `OB-2026-`, `GA-2026-`, `EQP-`,
-  `EMP-2026-`, `VEQ-2026-`, `NF-2026-`, `BX-2026-`, `CAR-2026-`...) para entidades cujo id ainda
-  é referenciado por módulos mockados começam num número alto (ex.: contratos reais começam em
-  `CTR-2026-1001`, óbitos em `OB-2026-1001`, guias em `GA-2026-01000`, empréstimos em
-  `EMP-2026-1001`, notas fiscais em `NF-2026-1001`, baixas de parceiro em `BX-2026-1001`, carnês
-  em `CAR-2026-1001`) para nunca colidir com os ids fictícios usados nos mocks ainda não
-  migrados. O catálogo de equipamentos usa um prefixo novo (`EQP-`) em vez de tentar reproduzir a
-  sigla do mock (`EQ-CDR`, `EQ-CMH`...), mais simples e sem risco de colisão.
+  `EMP-2026-`, `VEQ-2026-`, `NF-2026-`, `BX-2026-`, `CAR-2026-`, `AR-2026-`, `AP-2026-`...) para
+  entidades cujo id ainda é referenciado por módulos mockados começam num número alto (ex.:
+  contratos reais começam em `CTR-2026-1001`, óbitos em `OB-2026-1001`, guias em
+  `GA-2026-01000`, empréstimos em `EMP-2026-1001`, notas fiscais em `NF-2026-1001`, baixas de
+  parceiro em `BX-2026-1001`, carnês em `CAR-2026-1001`, contas a receber/pagar em
+  `AR-2026-1001`/`AP-2026-1001`) para nunca colidir com os ids fictícios usados nos mocks ainda
+  não migrados. O catálogo de equipamentos usa um prefixo novo (`EQP-`) em vez de tentar
+  reproduzir a sigla do mock (`EQ-CDR`, `EQ-CMH`...), mais simples e sem risco de colisão.
+- Controle Financeiro (`server/financeiro/`) tem duas naturezas: Contas a Pagar/Receber são
+  tabelas reais (CRUD completo, com lançamento recorrente para contas a pagar); Fluxo de Caixa,
+  Inadimplência (aging) e Fechamento de Caixa são **relatórios calculados no servidor** a partir
+  de `pagamentos`/`contas_pagar`/`contas_receber` reais — sem tabela própria, sem inventar dado
+  (o campo "recuperável" do aging e a linha "Projetado" do fluxo de caixa somem por não terem
+  lastro real). "Vencido" nunca é gravado — é calculado na leitura com `status_parcela_exibido()`
+  (mesma função usada em parcelas de contrato desde a Fase 2), mas continua clicável no
+  `StatusMenu` para poder virar "Pago"/"Negociado" de verdade. DRE gerencial fica de fora desta
+  fase — depende de despesas fixas por categoria sem dado real maduro ainda.
 - Portal do Parceiro (`server/portal/`) e Carnês (`server/carnes/`) são reais desde a Fase 7. O
   Portal continua sem login próprio de parceiro (RF-104 fica como débito técnico documentado,
   igual à Conciliação bancária) — a "sessão de parceiro" é só o seletor de perfil de sempre
@@ -129,9 +140,10 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
 
 - Em **Clientes, Parceiros, Unidades, Usuários, Planos, Contratos, na baixa manual de
   Pagamentos, em Registro de Óbito + Guias de Atendimento, em Equipamentos (Cadastro,
-  Empréstimo e Vendas), em Notas Fiscais e em Portal do Parceiro + Carnês**, criar/editar/mudar
-  status já persiste de verdade no banco (API própria) — os demais módulos continuam em
-  simulação: ações disparam um _toast_ de confirmação, sem gravar nada.
+  Empréstimo e Vendas), em Notas Fiscais, em Portal do Parceiro + Carnês e em Controle
+  Financeiro**, criar/editar/mudar status já persiste de verdade no banco (API própria) — os
+  demais módulos continuam em simulação: ações disparam um _toast_ de confirmação, sem gravar
+  nada.
 - Nas listagens ainda mockadas, o badge de status é clicável: abre os status pré-definidos da
   tela e troca o status da linha (só em memória, sem persistência). Nas listagens já migradas,
   a troca de status é uma chamada real à API (com rollback visual se falhar).
@@ -171,8 +183,11 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
   conciliação bancária automática (as demais linhas, "Fila de exceções" e "Log da API bancária")
   continua simulada. A lista de Conciliação também abre um pop-up com os dados do pagamento ao
   clicar na linha.
-- Em Controle Financeiro, "Nova conta a pagar" tem a opção de marcar como recorrente
-  (gera N lançamentos mensais); categoria e centro de custo são pop-overs de seleção.
+- Em Controle Financeiro, "Nova conta a pagar/receber" grava no banco de verdade; a opção
+  "Conta recorrente" gera N lançamentos mensais reais numa transação, todos com o mesmo `lote`;
+  categoria e centro de custo são pop-overs de seleção. Trocar o status de uma conta é uma
+  chamada real à API — inclusive quando o rótulo mostra "Vencido" (calculado), o menu continua
+  oferecendo Em aberto/Pago/Negociado.
 - Em Empréstimo de Equipamentos, "Registrar saída" abre um catálogo com foto dos
   equipamentos disponíveis; escolher um leva ao formulário de dados do empréstimo, que grava a
   saída no banco e marca a unidade como "Emprestado" numa transação. "Devolver" marca a unidade

@@ -362,3 +362,41 @@ CREATE TABLE IF NOT EXISTS carnes (
   FOREIGN KEY (contrato_id) REFERENCES contratos(id),
   FOREIGN KEY (criado_por_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Fase 8: Controle Financeiro (Contas a Pagar/Receber)
+
+CREATE TABLE IF NOT EXISTS contas_receber (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NOT NULL UNIQUE,
+  origem ENUM('Plano','Atendimento','Venda de equipamento','Locação de equipamento','Lançamento manual') NOT NULL,
+  ref VARCHAR(40) NULL,
+  cliente_nome VARCHAR(160) NOT NULL,
+  categoria VARCHAR(80) NOT NULL,
+  centro_custo VARCHAR(60) NOT NULL,
+  vencimento DATE NOT NULL,
+  valor DECIMAL(10,2) NOT NULL,
+  status ENUM('Em aberto','Pago','Negociado') NOT NULL DEFAULT 'Em aberto',
+  pago_em DATETIME NULL,
+  criado_por_usuario_id INT UNSIGNED NULL,
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (criado_por_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS contas_pagar (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NOT NULL UNIQUE,
+  origem ENUM('Repasse a parceiro','Fornecedor','Despesa fixa') NOT NULL,
+  parceiro_id INT UNSIGNED NULL,
+  favorecido VARCHAR(160) NOT NULL,
+  categoria VARCHAR(80) NOT NULL,
+  centro_custo VARCHAR(60) NOT NULL,
+  vencimento DATE NOT NULL,
+  valor DECIMAL(10,2) NOT NULL,
+  status ENUM('Em aberto','Pago','Negociado') NOT NULL DEFAULT 'Em aberto',
+  pago_em DATETIME NULL,
+  lote VARCHAR(60) NULL,
+  criado_por_usuario_id INT UNSIGNED NULL,
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (parceiro_id) REFERENCES parceiros(id),
+  FOREIGN KEY (criado_por_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

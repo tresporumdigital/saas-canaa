@@ -1,23 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
-  Card, Tabs, DataTable, Badge, StatusMenu, Button, StatCard, AgingBars, Bar,
+  Card, Tabs, DataTable, StatusMenu, Button, StatCard, AgingBars, Bar,
 } from '../../components/index.js';
-import useRowStatus from '../../hooks/useRowStatus.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import {
-  contasReceber, contasPagar, fluxoCaixa, agingInadimplencia,
-  fechamentoCaixa, dreMes, dreResultado,
-} from '../../mock/financeiro.js';
-import { money, date, number } from '../../lib/format.js';
-import { STATUS_SETS } from '../../lib/status.js';
+  apiFetch, useAging, useContasPagarCacheState, useContasReceberCacheState, useFechamentoCaixa, useFluxoCaixa,
+} from '../../lib/api.js';
+import { money, date } from '../../lib/format.js';
 import NovaContaModal from './NovaContaModal.jsx';
 
-const addMonths = (isoDate, n) => {
-  const d = new Date(`${isoDate}T00:00:00`);
-  d.setMonth(d.getMonth() + n);
-  return d.toISOString().slice(0, 10);
-};
+const OPCOES_STATUS_CONTA = ['Em aberto', 'Pago', 'Negociado'];
 
 const TABS = [
   { id: 'visao', label: 'Visão geral' },
@@ -26,50 +19,80 @@ const TABS = [
   { id: 'fluxo', label: 'Fluxo de caixa' },
   { id: 'inadimplencia', label: 'Inadimplência' },
   { id: 'fechamento', label: 'Fechamento de caixa' },
-  { id: 'dre', label: 'DRE gerencial' },
 ];
 
 export default function FinanceiroHome() {
   const { toast } = useToast();
   const [tab, setTab] = useState('visao');
   const [novaConta, setNovaConta] = useState(null);
-  const [novasReceber, setNovasReceber] = useState([]);
-  const [novasPagar, setNovasPagar] = useState([]);
-  const fonteReceber = useMemo(() => [...novasReceber, ...contasReceber], [novasReceber]);
-  const fontePagar = useMemo(() => [...novasPagar, ...contasPagar], [novasPagar]);
-  const [receberRows, setReceberStatus] = useRowStatus(fonteReceber);
-  const [pagarRows, setPagarStatus] = useRowStatus(fontePagar);
+  const { rows: receberRows, reload: reloadReceber } = useContasReceberCacheState();
+  const { rows: pagarRows, reload: reloadPagar } = useContasPagarCacheState();
+  const { rows: fluxoCaixa, reload: reloadFluxoCaixa } = useFluxoCaixa();
+  const { rows: agingInadimplencia, reload: reloadAging } = useAging();
+  const { rows: fechamentoEntradas, reload: reloadFechamento } = useFechamentoCaixa();
 
-  const totalReceber = fonteReceber.reduce((s, c) => s + c.valor, 0);
-  const totalPagar = fontePagar.reduce((s, c) => s + c.valor, 0);
-  const maxFluxo = Math.max(...fluxoCaixa.map((f) => Math.max(f.entradas, f.saidas)));
+  const totalReceber = receberRows.filter((c) => c.status !== 'Pago').reduce((s, c) => s + c.valor, 0);
+  const totalPagar = pagarRows.filter((c) => c.status !== 'Pago').reduce((s, c) => s + c.valor, 0);
+  const totalInadimplencia = agingInadimplencia.reduce((s, b) => s + b.value, 0);
+  const maxFluxo = Math.max(1, ...fluxoCaixa.map((f) => Math.max(f.entradas, f.saidas)));
+
+  // Qualquer mutação em contas a pagar/receber pode mudar os relatórios computados
+  // (fluxo de caixa, aging, fechamento de caixa) — esses hooks não têm cache compartilhado
+  // como useXCache, então precisam ser recarregados explicitamente aqui (mesma lição das
+  // fases anteriores: invalidar todo hook que lê o dado mudado, não só o "dono" da mutação).
+  const reloadRelatorios = () => {
+    reloadFluxoCaixa();
+    reloadAging();
+    reloadFechamento();
+  };
+
+  const alterarStatusReceber = async (r, next) => {
+    try {
+      await apiFetch(`/financeiro/contas_receber_status.php?id=${encodeURIComponent(r.id)}`, { method: 'PATCH', body: { status: next } });
+      toast(`Lançamento ${r.id} definido como "${next}".`);
+      reloadReceber();
+      reloadRelatorios();
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    }
+  };
+
+  const alterarStatusPagar = async (r, next) => {
+    try {
+      await apiFetch(`/financeiro/contas_pagar_status.php?id=${encodeURIComponent(r.id)}`, { method: 'PATCH', body: { status: next } });
+      toast(`Lançamento ${r.id} definido como "${next}".`);
+      reloadPagar();
+      reloadRelatorios();
+    } catch (err) {
+      toast(err.message, { kind: 'danger' });
+    }
+  };
 
   return (
     <>
       <PageHeader
         crumbs={[{ label: 'Início', to: '/' }, { label: 'Controle Financeiro' }]}
         title="Controle Financeiro"
-        subtitle="Entradas, saídas, inadimplência e projeções — com trilha de auditoria de todo lançamento."
+        subtitle="Entradas, saídas e inadimplência — com trilha de auditoria de todo lançamento."
         actions={<Button variant="secondary" icon="download" onClick={() => toast('Relatório exportado em PDF/CSV (simulação).')}>Exportar</Button>}
       />
 
-      <div className="grid cols-4">
+      <div className="grid cols-3">
         <StatCard label="A receber (aberto)" value={money(totalReceber)} icon="cash" tone="success" />
         <StatCard label="A pagar (aberto)" value={money(totalPagar)} icon="wallet" tone="danger" />
-        <StatCard label="Inadimplência" value={money(agingInadimplencia.reduce((s, b) => s + b.value, 0))} icon="alert" tone="warning" />
-        <StatCard label="Resultado do mês (DRE)" value={money(dreResultado())} icon="bars" tone={dreResultado() >= 0 ? 'success' : 'danger'} />
+        <StatCard label="Inadimplência" value={money(totalInadimplencia)} icon="alert" tone="warning" />
       </div>
 
       <Tabs tabs={TABS} active={tab} onChange={setTab} />
 
       {tab === 'visao' && (
         <div className="grid cols-2">
-          <Card title="Fluxo de caixa — realizado x projetado">
+          <Card title="Fluxo de caixa — últimos meses (realizado)">
             <div className="stack gap-sm">
               {fluxoCaixa.map((f) => (
                 <div key={f.mes}>
                   <div className="row between" style={{ fontSize: 'var(--text-xs)', marginBottom: 4 }}>
-                    <span>{f.mes} <Badge variant={f.tipo === 'Realizado' ? 'success' : f.tipo === 'Parcial' ? 'warning' : 'info'}>{f.tipo}</Badge></span>
+                    <span>{f.mes}</span>
                     <span className="num">{money(f.entradas - f.saidas)}</span>
                   </div>
                   <Bar value={(f.entradas / maxFluxo) * 100} />
@@ -99,8 +122,8 @@ export default function FinanceiroHome() {
               { key: 'status', header: 'Status', render: (r) => (
                 <StatusMenu
                   value={r.status}
-                  options={STATUS_SETS.contaFinanceira}
-                  onChange={(next) => { setReceberStatus(r.id, next); toast(`Lançamento ${r.id} definido como "${next}".`); }}
+                  options={OPCOES_STATUS_CONTA}
+                  onChange={(next) => alterarStatusReceber(r, next)}
                 />
               ) },
             ]}
@@ -124,8 +147,8 @@ export default function FinanceiroHome() {
               { key: 'status', header: 'Status', render: (r) => (
                 <StatusMenu
                   value={r.status}
-                  options={STATUS_SETS.contaFinanceira}
-                  onChange={(next) => { setPagarStatus(r.id, next); toast(`Lançamento ${r.id} definido como "${next}".`); }}
+                  options={OPCOES_STATUS_CONTA}
+                  onChange={(next) => alterarStatusPagar(r, next)}
                 />
               ) },
             ]}
@@ -142,7 +165,6 @@ export default function FinanceiroHome() {
             getKey={(r) => r.mes}
             columns={[
               { key: 'mes', header: 'Competência' },
-              { key: 'tipo', header: 'Tipo', render: (r) => <Badge variant={r.tipo === 'Realizado' ? 'success' : r.tipo === 'Parcial' ? 'warning' : 'info'}>{r.tipo}</Badge> },
               { key: 'entradas', header: 'Entradas', align: 'right', render: (r) => money(r.entradas) },
               { key: 'saidas', header: 'Saídas', align: 'right', render: (r) => money(r.saidas) },
               { key: 'saldo', header: 'Saldo', align: 'right', render: (r) => money(r.entradas - r.saidas) },
@@ -152,12 +174,12 @@ export default function FinanceiroHome() {
       )}
 
       {tab === 'inadimplencia' && (
-        <Card title="Inadimplência consolidada — aging e valor recuperável">
+        <Card title="Inadimplência consolidada — aging">
           <div className="stack">
             {agingInadimplencia.map((b) => (
               <div key={b.label} className="row between" style={{ fontSize: 'var(--text-sm)', borderBottom: '1px solid var(--color-border)', paddingBottom: 'var(--space-3)' }}>
                 <span>{b.label}</span>
-                <span className="num">{money(b.value)} <span style={{ color: 'var(--color-text-secondary)' }}>· recuperável ~{money(b.value * b.recuperavel)}</span></span>
+                <span className="num">{money(b.value)}</span>
               </div>
             ))}
           </div>
@@ -165,10 +187,10 @@ export default function FinanceiroHome() {
       )}
 
       {tab === 'fechamento' && (
-        <Card title={`Fechamento de caixa — ${date(fechamentoCaixa.data)}`}>
+        <Card title={`Fechamento de caixa — ${date(new Date().toISOString().slice(0, 10))}`}>
           <DataTable
             searchable={false}
-            rows={fechamentoCaixa.entradasPorForma}
+            rows={fechamentoEntradas}
             getKey={(r) => r.forma}
             columns={[
               { key: 'forma', header: 'Forma de pagamento' },
@@ -177,33 +199,9 @@ export default function FinanceiroHome() {
             ]}
           />
           <div className="row between" style={{ marginTop: 'var(--space-4)', fontWeight: 800 }}>
-            <span>Total de entradas − sangrias ({money(fechamentoCaixa.sangrias)})</span>
-            <span className="num">{money(fechamentoCaixa.entradasPorForma.reduce((s, e) => s + e.valor, 0) - fechamentoCaixa.sangrias)}</span>
+            <span>Total de entradas do dia</span>
+            <span className="num">{money(fechamentoEntradas.reduce((s, e) => s + e.valor, 0))}</span>
           </div>
-          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', marginTop: 'var(--space-2)' }}>
-            {fechamentoCaixa.conferido ? 'Conferido' : 'Não conferido'} por {fechamentoCaixa.responsavel}.
-          </p>
-        </Card>
-      )}
-
-      {tab === 'dre' && (
-        <Card title={`DRE gerencial — ${dreMes.competencia}`}>
-          <table className="data-table">
-            <tbody>
-              {dreMes.linhas.map((l, i) => (
-                <tr key={i}>
-                  <td style={{ color: 'var(--color-text-secondary)', width: 160 }}>{l.grupo}</td>
-                  <td>{l.conta}</td>
-                  <td className="num" style={{ color: l.valor < 0 ? 'var(--canaa-danger-600)' : 'inherit' }}>{money(l.valor)}</td>
-                </tr>
-              ))}
-              <tr>
-                <td />
-                <td style={{ fontWeight: 800 }}>Resultado gerencial</td>
-                <td className="num" style={{ fontWeight: 800 }}>{money(dreResultado())}</td>
-              </tr>
-            </tbody>
-          </table>
         </Card>
       )}
 
@@ -211,24 +209,36 @@ export default function FinanceiroHome() {
         <NovaContaModal
           tipo={novaConta}
           onClose={() => setNovaConta(null)}
-          onCreate={(conta) => {
-            if (novaConta === 'receber') {
-              setNovasReceber((l) => [conta, ...l]);
-              toast(`Conta ${conta.id} lançada (simulação — sem persistência).`);
-              return;
+          onCreate={async (conta) => {
+            try {
+              if (novaConta === 'receber') {
+                const { id } = await apiFetch('/financeiro/contas_receber.php', {
+                  method: 'POST',
+                  body: {
+                    clienteNome: conta.clienteNome, categoria: conta.categoria, centroCusto: conta.centroCusto,
+                    vencimento: conta.vencimento, valor: conta.valor, status: conta.status,
+                  },
+                });
+                toast(`Conta ${id} lançada.`);
+                reloadReceber();
+                reloadRelatorios();
+              } else {
+                const { id, total } = await apiFetch('/financeiro/contas_pagar.php', {
+                  method: 'POST',
+                  body: {
+                    favorecido: conta.favorecido, categoria: conta.categoria, centroCusto: conta.centroCusto,
+                    vencimento: conta.vencimento, valor: conta.valor, status: conta.status,
+                    recorrente: conta.recorrente, recorrencias: conta.recorrencias,
+                  },
+                });
+                toast(total > 1 ? `${total} contas recorrentes lançadas a partir de ${id}.` : `Conta ${id} lançada.`);
+                reloadPagar();
+                reloadRelatorios();
+              }
+              setNovaConta(null);
+            } catch (err) {
+              toast(err.message, { kind: 'danger' });
             }
-            if (conta.recorrente && conta.recorrencias > 1) {
-              const linhas = Array.from({ length: conta.recorrencias }, (_, i) => ({
-                ...conta,
-                id: `${conta.id}-${String(i + 1).padStart(2, '0')}`,
-                vencimento: addMonths(conta.vencimento, i),
-              }));
-              setNovasPagar((l) => [...linhas, ...l]);
-              toast(`${conta.recorrencias} contas recorrentes lançadas a partir de ${conta.id} (simulação — sem persistência).`);
-              return;
-            }
-            setNovasPagar((l) => [conta, ...l]);
-            toast(`Conta ${conta.id} lançada (simulação — sem persistência).`);
           }}
         />
       )}

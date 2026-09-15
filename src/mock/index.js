@@ -2,17 +2,12 @@ import { TODAY } from '../lib/format.js';
 import { pagamentos, pagamentoById, filaExcecoes, logApiBancaria } from './pagamentos.js';
 import { leads, leadById } from './leads.js';
 import {
-  contasReceber, contasPagar, fluxoCaixa, agingInadimplencia,
-  fechamentoCaixa, dreMes, dreResultado,
-} from './financeiro.js';
-import {
   perfisPermissoes, parametros, backupConfig,
   backupExecucoes, ultimoBackup, auditoria,
 } from './sistema.js';
 
 export * from './pagamentos.js';
 export * from './leads.js';
-export * from './financeiro.js';
 export * from './sistema.js';
 
 // ---------- Helpers de período ----------
@@ -41,10 +36,6 @@ export function parcelasEmAbertoTotal(contratos) {
   return contratos.reduce((s, c) => s + (c.parcelasEmAberto || 0), 0);
 }
 
-export function inadimplenciaTotal() {
-  return agingInadimplencia.reduce((s, b) => s + b.value, 0);
-}
-
 export function guiasPorParceiro(guias) {
   const map = {};
   guias.forEach((g) => {
@@ -57,12 +48,13 @@ export function guiasPorParceiro(guias) {
 
 // ---------- Dados do dashboard ----------
 // `parceiros`/`contratos`/`planos`/`pagamentosReais`/`obitosReais`/`guiasReais`/`unidadesReais`/
-// `emprestimosReais`/`vendasEquipamentoReais`/`notasFiscaisReais` vêm dos caches/listas
-// reativos da API — não são mais mockados, então o chamador (Dashboard.jsx) precisa repassar
-// as listas.
+// `emprestimosReais`/`vendasEquipamentoReais`/`notasFiscaisReais`/`fluxoCaixaReal`/`agingReal`
+// vêm dos caches/listas reativos da API — não são mais mockados, então o chamador
+// (Dashboard.jsx) precisa repassar as listas.
 export function dashboardData(
   periodo = 'mes', parceiros = [], contratos = [], planos = [], pagamentosReais = [], obitosReais = [], guiasReais = [],
   unidadesReais = [], emprestimosReais = [], vendasEquipamentoReais = [], notasFiscaisReais = [],
+  fluxoCaixaReal = [], agingReal = [],
 ) {
   const parceiroById = (id) => parceiros.find((p) => p.id === id);
   const planoById = (id) => planos.find((p) => p.id === id);
@@ -74,7 +66,7 @@ export function dashboardData(
     .filter((p) => inPeriodo(p.recebidoEm, periodo) && p.status !== 'Exceção')
     .reduce((s, p) => s + p.valor, 0);
   const receitaPrevista = ativos * avgMensalidade;
-  const inad = inadimplenciaTotal();
+  const inad = agingReal.reduce((s, b) => s + b.value, 0);
   const inadPct = inad / (receitaPrevista + inad);
 
   const novos = contratos.filter((c) => inPeriodo(c.criadoEm, periodo)).length;
@@ -115,6 +107,6 @@ export function dashboardData(
       { tipo: 'warning', icon: 'doc', label: `${nfPendentes} notas fiscais pendentes ou rejeitadas`, to: '/notas-fiscais' },
       { tipo: 'danger', icon: 'cash', label: `${filaExcecoes().length} pagamentos em exceção de conciliação`, to: '/pagamentos' },
     ],
-    serieReceita: fluxoCaixa.slice(-8).map((f) => f.entradas),
+    serieReceita: fluxoCaixaReal.map((f) => f.entradas),
   };
 }

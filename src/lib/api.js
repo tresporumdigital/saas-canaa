@@ -87,6 +87,18 @@ export function usePagamentosList() {
   return useApiList('/pagamentos/index.php');
 }
 
+export function useFluxoCaixa() {
+  return useApiList('/financeiro/fluxo_caixa.php');
+}
+
+export function useAging() {
+  return useApiList('/financeiro/aging.php');
+}
+
+export function useFechamentoCaixa(data) {
+  return useApiList(`/financeiro/fechamento_caixa.php${data ? `?data=${encodeURIComponent(data)}` : ''}`, [data]);
+}
+
 // Cache reativo compartilhado (useSyncExternalStore) para módulos que só precisam ler uma
 // lista (seletor de cliente, junções por id etc.) sem cada lugar refazer o fetch — e a página
 // "dona" de cada entidade usa o mesmo cache (via useXCacheState) para já nascer sincronizada
@@ -147,6 +159,8 @@ const vendasEquipamentoCache = createListCache('/equipamentos/vendas.php');
 const notasFiscaisCache = createListCache('/notas-fiscais/index.php');
 const baixasParceiroCache = createListCache('/portal/baixas.php');
 const carnesCache = createListCache('/carnes/index.php');
+const contasReceberCache = createListCache('/financeiro/contas_receber.php');
+const contasPagarCache = createListCache('/financeiro/contas_pagar.php');
 
 export function useClientesCache() {
   return useCacheRows(clientesCache);
@@ -270,4 +284,20 @@ export function useCarnesCache() {
 
 export function useCarnesCacheState() {
   return useCacheState(carnesCache);
+}
+
+export function useContasReceberCache() {
+  return useCacheRows(contasReceberCache);
+}
+
+export function useContasReceberCacheState() {
+  return useCacheState(contasReceberCache);
+}
+
+export function useContasPagarCache() {
+  return useCacheRows(contasPagarCache);
+}
+
+export function useContasPagarCacheState() {
+  return useCacheState(contasPagarCache);
 }
