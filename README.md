@@ -8,10 +8,14 @@ Parceiro + Carnês**, **Controle Financeiro (Contas a Pagar/Receber, Fluxo de Ca
 Inadimplência, Fechamento de Caixa, DRE gerencial)**, **Perfis/Permissões e Backup (registro/
 configuração)**, **Leads do Site** e **Parâmetros + Auditoria** são reais, com API própria em
 PHP/PDO (`server/`, publicada em `/api/`) e banco MySQL/MariaDB na Hostinger — sem dado de
-exemplo pré-carregado, é um banco de produção mesmo. Só a **Conciliação bancária automática**
-(`src/mock/pagamentos.js`) ainda é mockada — sem gateway bancário real para integrar; o usuário
-decidiu deixá-la assim por enquanto (não é uma exclusão permanente, é uma decisão em aberto) e
-trará um pedido específico se um dia quiser retomar.
+exemplo pré-carregado, é um banco de produção mesmo. **A migração está completa**: `src/mock/`
+não existe mais como diretório de dado fictício de negócio. A tela "Pagamentos" (antes
+"Pagamento Integrado com Banco", simulando boletos/Pix conciliados automaticamente com uma API
+bancária que nunca existiu de verdade) foi redesenhada para um histórico real de baixas
+manuais — sem fingir uma integração bancária que este projeto nunca vai ter (decisão do
+usuário); os cards de "Receita Recebida" e os alertas do Painel passaram a ser calculados 100%
+a partir de dados reais já existentes no sistema (contratos, parcelas, contas a pagar), sem
+nenhum valor inventado.
 
 **Online:** https://backoffice.funerariacanaa.com/
 
@@ -37,16 +41,17 @@ redireciona para lá.
   copie `server/_config.example.php`).
 - `src/lib/api.js` concentra o cliente HTTP do frontend (`apiFetch`) e os hooks/caches
   reativos (`useClientesCache`, `useParceirosCache`, `usePlanosCache`, `useContratosCache` etc.)
-  usados tanto pelas páginas "donas" desses módulos quanto por telas ainda mockadas que só
-  precisam ler cliente/parceiro/plano/contrato por id.
+  usados tanto pelas páginas "donas" desses módulos quanto por outras telas que só precisam ler
+  cliente/parceiro/plano/contrato por id (ex.: um seletor de cliente dentro de um formulário de
+  outro módulo).
 - Contratos geram 12 parcelas reais na criação (não são mais calculadas na hora como no mock);
   o status "Vencido" é calculado na leitura a partir do vencimento, não gravado no banco.
 - Baixa manual (`server/pagamentos/index.php`) marca a parcela como `Pago` e grava um registro
   de pagamento real, numa transação; uma parcela já paga não pode receber baixa de novo (erro
-  409). A aba Conciliação de Pagamentos mistura essas baixas reais com a lista mockada de
-  pagamentos "batidos automaticamente com o banco" — só a baixa manual é uma ação real do
-  usuário, a conciliação bancária automática continua sendo uma simulação (não há gateway de
-  pagamento configurado).
+  409). Até a Fase 13, a tela de Pagamentos misturava essas baixas reais com uma lista mockada de
+  pagamentos "batidos automaticamente com o banco" — essa simulação foi removida (ver Fase 13
+  abaixo); hoje a tela só mostra baixas manuais reais, já que não há gateway de pagamento
+  configurado nem planejado.
 - Códigos gerados (`CLI-`, `PAR-`, `CTR-2026-`, `DEP-`, `OB-2026-`, `GA-2026-`, `EQP-`,
   `EMP-2026-`, `VEQ-2026-`, `NF-2026-`, `BX-2026-`, `CAR-2026-`, `AR-2026-`, `AP-2026-`...) para
   entidades cujo id ainda é referenciado por módulos mockados começam num número alto (ex.:
@@ -118,8 +123,8 @@ redireciona para lá.
   mercadoria vendida) que não têm nenhum dado real por trás. Mostra sempre o mês atual, sem
   seletor de competência (mesmo padrão do "Fechamento de caixa", que também não tem um).
 - Parâmetros e Auditoria (`server/config/parametros.php`, `server/config/auditoria.php`) são
-  reais desde a Fase 11 — depois dela, `src/mock/` só tem `pagamentos.js` (Conciliação bancária).
-  Parâmetros virou uma tabela real com edição real, mas **nenhum dos 8 valores é lido pelo
+  reais desde a Fase 11. Parâmetros virou uma tabela real com edição real, mas **nenhum dos 8
+  valores é lido pelo
   código** (a tela avisa isso): "Expiração de sessão" declara 30 min, mas o token real dura 7
   dias fixos; "Valor máx. de baixa sem aprovação" duplica os R$ 1.500 hardcoded em
   `portal/baixas.php`; "Retenção de backups" duplica `backup_config` (Fase 9); "Reajuste anual
@@ -131,14 +136,31 @@ redireciona para lá.
   fiscal, aprovar/estornar baixa de parceiro — um `registrar_auditoria()` novo em
   `_bootstrap.php`, chamado nesses 4 pontos já existentes. É um log imutável: nada nesta tela
   edita ou apaga uma linha.
-- Fase 12 (final desta migração): dados bancários e acordo comercial do Parceiro (`dadosBancarios`,
-  `acordo.vigencia`, `acordo.servicosCobertos`) ganharam formulário real em
-  `ParceiroFormModal.jsx` — as colunas já existiam no banco desde a Fase 1, só faltava como
-  preenchê-las. A Conciliação bancária automática segue mockada por decisão do usuário (fica
-  como débito técnico em aberto, não permanente — o PRD já prevê uma via sem integração de banco
-  real, por arquivo de retorno CNAB/CSV, RF-66, se um dia quiser retomar); o login real de
-  parceiro no Portal (RF-104) e o upload persistente de fotos também continuam como débitos
-  técnicos documentados, não pedidos nesta fase.
+- Fase 12: dados bancários e acordo comercial do Parceiro (`dadosBancarios`, `acordo.vigencia`,
+  `acordo.servicosCobertos`) ganharam formulário real em `ParceiroFormModal.jsx` — as colunas já
+  existiam no banco desde a Fase 1, só faltava como preenchê-las. O login real de parceiro no
+  Portal (RF-104) e o upload persistente de fotos continuam como débitos técnicos documentados,
+  não pedidos em nenhuma fase até agora.
+- Fase 13 (fecha a migração): a tela "Pagamentos" (`src/pages/pagamentos/Pagamentos.jsx`)
+  simulava uma integração bancária automática completa — boletos/Pix "conciliados" sozinhos,
+  fila de exceções, log de chamadas a uma API bancária — que nunca vai existir de verdade
+  (decisão do usuário). Virou um histórico real e simples: 3 cards ("Recebido no mês", "Baixas
+  registradas no mês", "Parcelas em aberto") calculados só a partir de `pagamentos` reais e do
+  total de parcelas em aberto; a tabela lista só baixas reais, sem nenhuma linha fictícia; o
+  Drawer de detalhe ganhou **"Registrado por"** (o `usuario_id` de cada baixa já era gravado
+  desde a Fase 3 para cumprir a RN-04, mas nunca tinha sido exibido) e perdeu "Identificador"
+  (campo vestígio da simulação bancária, sempre `NULL` em toda baixa real). O Painel deixou de
+  somar um array mockado na Receita Recebida (agora soma só `pagamentos` reais) e troca dois
+  cards fixos por contagens reais: "contratos com ciclo de parcelas terminando em 30 dias"
+  (contratos ativos cuja última parcela gerada vence nos próximos 30 dias — o sistema não tem
+  nenhum job de renovação automática, então esse é o sinal real mais próximo de "precisa
+  renovar") e "contas a pagar vencidas" (reaproveita o `status` já calculado por
+  `status_parcela_exibido()` em `contas_pagar.php`, Fase 8). Depois desta fase, `src/mock/` não
+  existe mais como diretório de dado fictício de negócio — só restam ali os helpers reais
+  (`inPeriodo`, `parcelasEmAbertoTotal`, `dashboardData`) que continuam morando lá por herança do
+  nome do diretório. A Conciliação bancária automática de verdade (integração com um banco/PSP
+  real) e o log de auditoria bancária continuam fora — não existem e não é planejado construí-los
+  sem uma decisão explícita do usuário sobre qual gateway usar.
 
 ## Design
 
@@ -180,7 +202,7 @@ npm run preview  # serve o build
 | Grupo | Módulos |
 |---|---|
 | **Núcleo** | Painel, Clientes, Parceiros, Registro de Óbito, Guias de Atendimento |
-| **Financeiro** | Planos e contratos, Gerador de Carnês, Pagamento Integrado, Controle Financeiro |
+| **Financeiro** | Planos e contratos, Gerador de Carnês, Pagamentos, Controle Financeiro |
 | **Operação** | Empréstimo de Equipamentos, Vendas de Equipamentos, Cadastro de Equipamentos, Notas Fiscais |
 | **Expansão** | Leads do Site, Portal do Parceiro |
 | **Configurações** | Unidades, Planos, Backup, Usuários (perfis/permissões, parâmetros e auditoria ficam na aba de Usuários) |
@@ -199,12 +221,11 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
   Financeiro (incluindo DRE gerencial), em Perfis-Permissões/Backup, em Leads do Site e em
   Parâmetros**, criar/editar/mudar status já persiste de verdade no banco (API própria) — a
   única exceção nessa lista é que editar um Parâmetro não muda nenhum comportamento real, só o
-  valor salvo (ver seção do Backend). Auditoria só lê, nunca edita (log imutável). Os demais
-  módulos (Conciliação bancária, execução/restauração de Backup, envio de e-mail a cada novo
-  lead) continuam em simulação: ações disparam um _toast_ de confirmação, sem gravar nada.
-- Nas listagens ainda mockadas, o badge de status é clicável: abre os status pré-definidos da
-  tela e troca o status da linha (só em memória, sem persistência). Nas listagens já migradas,
-  a troca de status é uma chamada real à API (com rollback visual se falhar).
+  valor salvo (ver seção do Backend). Auditoria só lê, nunca edita (log imutável). Não existe mais
+  nenhuma listagem inteiramente mockada no sistema — os únicos comportamentos ainda simulados são
+  ações pontuais que não têm integração externa real por trás (execução/restauração de Backup,
+  envio de e-mail a cada novo lead/carnê/nota fiscal): disparam um _toast_ de confirmação, sem
+  gravar nada, exatamente como sempre avisaram.
 - Cadastro/edição de clientes, parceiros e registros de óbito abrem em pop-up sobre a
   página atual (lista ou ficha), sem navegar para uma rota separada.
 - Os campos de seleção são pop-overs próprios do sistema (sem `<select>` nativo).
@@ -268,7 +289,11 @@ Parceiro comercial) altera o menu e o conteúdo — o perfil Parceiro enxerga ap
   gravam no banco de verdade. Foto de produto continua `URL.createObjectURL` (blob local, não
   persiste entre recarregamentos) — gap conhecido desde a Fase 1, real upload de arquivo fica
   fora de escopo.
-- Autenticação é **real** (token validado no servidor a cada carregamento); os módulos ainda
-  não migrados continuam com dados de exemplo fixos em `src/mock/`.
-- Data de referência do protótipo (para os módulos ainda mockados): **27/08/2026**.
+- Autenticação é **real** (token validado no servidor a cada carregamento).
+- `TODAY` (`src/lib/format.js`) continua uma data de referência fixa (**27/08/2026**), não o
+  relógio real do dispositivo — usada pelos filtros de período do Painel (Hoje/Semana/Mês/
+  Trimestre) e da tela de Pagamentos ("Recebido no mês"). Isso é anterior à migração e não foi
+  alterado por nenhuma fase: um pagamento/lançamento datado com o dia real de hoje pode
+  corretamente ficar fora da janela "no mês" até que `TODAY` passe a acompanhar o relógio real
+  (mudança que ninguém pediu até agora).
 - `design-system/`, `PRD.md` e `visual/` não são alterados por este frontend.

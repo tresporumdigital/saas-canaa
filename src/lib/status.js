@@ -43,9 +43,7 @@ const MAP = {
   'Em aberto': 'warning',
   'Vencido': 'danger',
   'Negociado': 'info',
-  // Pagamentos / conciliação
-  'Conciliado': 'success',
-  'Exceção': 'danger',
+  // Pagamentos
   'Baixa manual': 'info',
   // Backups
   'Sucesso': 'success',
@@ -72,7 +70,6 @@ export const STATUS_SETS = {
   lead: ['Novo', 'Em contato', 'Convertido', 'Perdido'],
   usuario: ['Ativo', 'Inativo'],
   notaFiscal: ['Pendente', 'Autorizada', 'Rejeitada', 'Cancelada'],
-  pagamento: ['Conciliado', 'Exceção', 'Baixa manual'],
   emprestimo: ['Em vigência', 'Devolvido', 'Atrasado'],
   unidadeEquipamento: ['Disponível', 'Emprestado', 'Em manutenção', 'Baixado'],
   contaFinanceira: ['Pago', 'Em aberto', 'Vencido', 'Negociado'],

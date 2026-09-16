@@ -7,10 +7,11 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
     $rows = $pdo->query(
-        'SELECT p.*, pc.numero AS parcela_numero, c.codigo AS contrato_codigo
+        'SELECT p.*, pc.numero AS parcela_numero, c.codigo AS contrato_codigo, u.nome AS usuario_nome
          FROM pagamentos p
          LEFT JOIN contrato_parcelas pc ON pc.id = p.parcela_id
          LEFT JOIN contratos c ON c.id = pc.contrato_id
+         LEFT JOIN usuarios u ON u.id = p.usuario_id
          ORDER BY p.id DESC'
     )->fetchAll();
 
@@ -27,7 +28,7 @@ if ($method === 'GET') {
             'meio' => $p['meio'],
             'recebidoEm' => $p['recebido_em'],
             'status' => $p['status'],
-            'identificador' => $p['identificador'],
+            'registradoPor' => $p['usuario_nome'],
             'observacao' => $p['observacao'],
         ];
     }, $rows);

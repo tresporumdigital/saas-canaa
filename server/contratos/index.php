@@ -9,7 +9,9 @@ if ($method === 'GET') {
     $rows = $pdo->query(
         'SELECT c.*, cl.codigo AS cliente_codigo, p.codigo AS plano_codigo, u.nome AS vendedor_nome,
             (SELECT COUNT(*) FROM contrato_parcelas pc
-             WHERE pc.contrato_id = c.id AND pc.status = \'Em aberto\') AS parcelas_em_aberto
+             WHERE pc.contrato_id = c.id AND pc.status = \'Em aberto\') AS parcelas_em_aberto,
+            (SELECT MAX(pc2.vencimento) FROM contrato_parcelas pc2
+             WHERE pc2.contrato_id = c.id) AS ultima_parcela_vencimento
          FROM contratos c
          JOIN clientes cl ON cl.id = c.cliente_id
          JOIN planos_produto p ON p.id = c.plano_id
@@ -28,6 +30,7 @@ if ($method === 'GET') {
             'vendedor' => $c['vendedor_nome'],
             'situacao' => $c['situacao'],
             'parcelasEmAberto' => (int) $c['parcelas_em_aberto'],
+            'ultimaParcelaVencimento' => $c['ultima_parcela_vencimento'],
             'canceladoEm' => $c['cancelado_em'],
             'motivoCancelamento' => $c['motivo_cancelamento'],
             'criadoEm' => $c['criado_em'],

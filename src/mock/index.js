@@ -1,7 +1,4 @@
 import { TODAY } from '../lib/format.js';
-import { pagamentos, pagamentoById, filaExcecoes, logApiBancaria } from './pagamentos.js';
-
-export * from './pagamentos.js';
 
 // ---------- Helpers de período ----------
 export function inPeriodo(iso, periodo = 'mes') {
@@ -39,15 +36,28 @@ export function guiasPorParceiro(guias) {
   return Object.values(map).sort((a, b) => b.total - a.total);
 }
 
+// Contratos ativos cuja última parcela gerada (das 12 criadas junto com o contrato) vence nos
+// próximos 30 dias — sinal real de que o ciclo de cobrança está terminando, já que o sistema não
+// tem (ainda) nenhum job de renovação automática. Substitui o texto fixo que existia aqui antes.
+function contratosARenovar(contratos) {
+  const hoje = TODAY;
+  const em30Dias = new Date(hoje.getTime() + 30 * 86400000);
+  return contratos.filter((c) => {
+    if (c.situacao !== 'Ativo' || !c.ultimaParcelaVencimento) return false;
+    const venc = new Date(c.ultimaParcelaVencimento);
+    return venc >= hoje && venc <= em30Dias;
+  });
+}
+
 // ---------- Dados do dashboard ----------
 // `parceiros`/`contratos`/`planos`/`pagamentosReais`/`obitosReais`/`guiasReais`/`unidadesReais`/
-// `emprestimosReais`/`vendasEquipamentoReais`/`notasFiscaisReais`/`fluxoCaixaReal`/`agingReal`
-// vêm dos caches/listas reativos da API — não são mais mockados, então o chamador
-// (Dashboard.jsx) precisa repassar as listas.
+// `emprestimosReais`/`vendasEquipamentoReais`/`notasFiscaisReais`/`fluxoCaixaReal`/`agingReal`/
+// `contasPagarReais` vêm dos caches/listas reativos da API — não são mais mockados, então o
+// chamador (Dashboard.jsx) precisa repassar as listas.
 export function dashboardData(
   periodo = 'mes', parceiros = [], contratos = [], planos = [], pagamentosReais = [], obitosReais = [], guiasReais = [],
   unidadesReais = [], emprestimosReais = [], vendasEquipamentoReais = [], notasFiscaisReais = [],
-  fluxoCaixaReal = [], agingReal = [],
+  fluxoCaixaReal = [], agingReal = [], contasPagarReais = [],
 ) {
   const parceiroById = (id) => parceiros.find((p) => p.id === id);
   const planoById = (id) => planos.find((p) => p.id === id);
@@ -55,8 +65,8 @@ export function dashboardData(
 
   const ativos = contratosAtivos(contratos).length;
   const avgMensalidade = contratosAtivos(contratos).reduce((s, c) => s + contratoValor(c), 0) / Math.max(1, ativos);
-  const receitaRecebida = [...pagamentosReais, ...pagamentos]
-    .filter((p) => inPeriodo(p.recebidoEm, periodo) && p.status !== 'Exceção')
+  const receitaRecebida = pagamentosReais
+    .filter((p) => inPeriodo(p.recebidoEm, periodo))
     .reduce((s, p) => s + p.valor, 0);
   const receitaPrevista = ativos * avgMensalidade;
   const inad = agingReal.reduce((s, b) => s + b.value, 0);
@@ -96,9 +106,9 @@ export function dashboardData(
     alertas: [
       { tipo: 'danger', icon: 'receipt', label: `${parcelasEmAbertoTotal(contratos)} carnês/parcelas em aberto`, to: '/financeiro' },
       { tipo: 'warning', icon: 'wheelchair', label: `${atrasadasDevolucao} devoluções de equipamento atrasadas`, to: '/emprestimos' },
-      { tipo: 'info', icon: 'refresh', label: '4 planos a renovar nos próximos 30 dias', to: '/planos' },
+      { tipo: 'info', icon: 'refresh', label: `${contratosARenovar(contratos).length} contratos com ciclo de parcelas terminando em 30 dias`, to: '/planos' },
       { tipo: 'warning', icon: 'doc', label: `${nfPendentes} notas fiscais pendentes ou rejeitadas`, to: '/notas-fiscais' },
-      { tipo: 'danger', icon: 'cash', label: `${filaExcecoes().length} pagamentos em exceção de conciliação`, to: '/pagamentos' },
+      { tipo: 'danger', icon: 'cash', label: `${contasPagarReais.filter((c) => c.status === 'Vencido').length} contas a pagar vencidas`, to: '/financeiro' },
     ],
     serieReceita: fluxoCaixaReal.map((f) => f.entradas),
   };
