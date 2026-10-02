@@ -124,7 +124,7 @@ export default function GuiaDetail() {
               <tbody>
                 <tr><th>Cliente</th><td>{g.clienteNome}</td><th>Vínculo</th><td>{g.clienteVinculo}</td></tr>
                 <tr><th>Atendimento</th><td>{g.obitoId || '—'}</td><th>Emissão</th><td>{dateTime(g.emitidaEm)}</td></tr>
-                <tr><th>Parceiro</th><td>{parceiro?.razaoSocial}</td><th>CNPJ</th><td>{parceiro?.cnpj}</td></tr>
+                <tr><th>Parceiro</th><td>{parceiro?.razaoSocial}</td><th>CNPJ</th><td>{parceiro?.cnpj || '—'}</td></tr>
                 <tr><th>Serviço solicitado</th><td colSpan={3}>{g.servico}</td></tr>
                 <tr><th>Plano / cobertura</th><td>{g.coberto ? 'Coberto pelo plano' : 'Cobrança à parte'}</td><th>Valor acordado</th><td>{money(g.valorAcordado)}</td></tr>
                 <tr><th>Responsável pela emissão</th><td colSpan={3}>{g.emitidaPor || '—'}</td></tr>

@@ -26,7 +26,7 @@ export default function ParceiroFormModal({ parceiro, onClose, onSaved }) {
   const [form, setForm] = useState(() => ({
     razaoSocial: parceiro?.razaoSocial || '',
     nomeFantasia: parceiro?.nomeFantasia || '',
-    cnpj: parceiro ? maskCNPJ(parceiro.cnpj) : '',
+    cnpj: parceiro?.cnpj ? maskCNPJ(parceiro.cnpj) : '',
     responsavel: parceiro?.responsavel || '',
     categoria: parceiro?.tipoParceria || CATEGORIAS[0],
     cidade: parceiro?.cidade || 'São Paulo',
@@ -93,7 +93,7 @@ export default function ParceiroFormModal({ parceiro, onClose, onSaved }) {
         <FieldRow>
           <Input label="Razão social" value={form.razaoSocial} onChange={set('razaoSocial')} required />
           <Input label="Nome fantasia" value={form.nomeFantasia} onChange={set('nomeFantasia')} required />
-          <Input label="CNPJ" value={form.cnpj} onChange={setMasked('cnpj', maskCNPJ)} placeholder="00.000.000/0000-00" required />
+          <Input label="CNPJ (opcional)" value={form.cnpj} onChange={setMasked('cnpj', maskCNPJ)} placeholder="00.000.000/0000-00" />
           <Input label="Responsável" value={form.responsavel} onChange={set('responsavel')} />
           <Select label="Categoria" value={form.categoria} onChange={set('categoria')} options={CATEGORIAS} />
           <Input label="Cidade" value={form.cidade} onChange={set('cidade')} />

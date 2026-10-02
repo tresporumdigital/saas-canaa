@@ -59,13 +59,25 @@ if ($method === 'PUT') {
         ? json_encode(array_values($body['servicosCobertos']), JSON_UNESCAPED_UNICODE)
         : $parceiro['acordo_servicos'];
 
+    // CNPJ é opcional: enviado vazio, apaga; ausente do corpo, mantém o atual.
+    $cnpj = $parceiro['cnpj'];
+    if (array_key_exists('cnpj', $body)) {
+        $cnpj = only_digits((string) $body['cnpj']) ?: null;
+        if ($cnpj !== null && strlen($cnpj) !== 14) json_error('CNPJ inválido — informe os 14 dígitos ou deixe em branco.', 400);
+        if ($cnpj !== null) {
+            $existe = $pdo->prepare('SELECT id FROM parceiros WHERE cnpj = ? AND id <> ?');
+            $existe->execute([$cnpj, $parceiro['id']]);
+            if ($existe->fetch()) json_error('Já existe um parceiro cadastrado com esse CNPJ.', 409);
+        }
+    }
+
     $pdo->prepare(
         'UPDATE parceiros SET razao_social=?, nome_fantasia=?, cnpj=?, tipo_parceria=?, responsavel=?,
             cidade=?, uf=?, acordo_tipo=?, acordo_valor=?, dados_bancarios=?, acordo_vigencia=?, acordo_servicos=? WHERE id=?'
     )->execute([
         trim($body['razaoSocial'] ?? $parceiro['razao_social']),
         trim($body['nomeFantasia'] ?? $parceiro['nome_fantasia']),
-        $body['cnpj'] ? only_digits($body['cnpj']) : $parceiro['cnpj'],
+        $cnpj,
         $body['categoria'] ?? $parceiro['tipo_parceria'],
         $body['responsavel'] ?? $parceiro['responsavel'],
         $body['cidade'] ?? $parceiro['cidade'],

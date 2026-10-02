@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS parceiros (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   codigo VARCHAR(20) NOT NULL UNIQUE,
   razao_social VARCHAR(160) NOT NULL, nome_fantasia VARCHAR(160),
-  cnpj VARCHAR(20) NOT NULL UNIQUE, tipo_parceria VARCHAR(60), responsavel VARCHAR(120),
+  cnpj VARCHAR(20) NULL UNIQUE, tipo_parceria VARCHAR(60), responsavel VARCHAR(120),
   cidade VARCHAR(80), uf CHAR(2),
   status ENUM('Ativo','Inativo') NOT NULL DEFAULT 'Ativo',
   dados_bancarios TEXT,

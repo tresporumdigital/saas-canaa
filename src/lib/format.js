@@ -46,6 +46,7 @@ export function cpf(v) {
 }
 
 export function cnpj(v) {
+  if (!String(v || '').replace(/\D/g, '')) return '—';
   const s = String(v || '').replace(/\D/g, '').padStart(14, '0').slice(0, 14);
   return s.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
 }

@@ -50,7 +50,7 @@ export default function ParceiroDetail() {
       <PageHeader
         crumbs={[{ label: 'Início', to: '/' }, { label: 'Parceiros', to: '/parceiros' }, { label: p.nomeFantasia }]}
         title={p.nomeFantasia}
-        subtitle={`${p.razaoSocial} · ${cnpj(p.cnpj)} · ${p.cidade}/${p.uf}`}
+        subtitle={[p.razaoSocial, cnpj(p.cnpj), p.cidade && `${p.cidade}/${p.uf || ''}`].filter(Boolean).join(' · ')}
         actions={(
           <>
             <Button variant="secondary" icon="pencil" onClick={() => setEditing(true)}>Editar</Button>

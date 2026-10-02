@@ -5,6 +5,13 @@ require __DIR__ . '/../_bootstrap.php';
 $usuario = require_auth($pdo);
 $method = $_SERVER['REQUEST_METHOD'];
 
+// CNPJ passou a ser opcional (parceiros conveniados importados do site antigo não têm). A tabela
+// em produção nasceu com NOT NULL — ajusta uma vez, de forma idempotente.
+$colCnpj = $pdo->query("SHOW COLUMNS FROM parceiros LIKE 'cnpj'")->fetch();
+if ($colCnpj && $colCnpj['Null'] === 'NO') {
+    $pdo->exec('ALTER TABLE parceiros MODIFY cnpj VARCHAR(20) NULL');
+}
+
 function formatar_parceiro(array $p): array {
     return [
         'id' => $p['codigo'],
@@ -53,14 +60,17 @@ if ($method === 'POST') {
     $body = read_json_body();
     $razaoSocial = trim($body['razaoSocial'] ?? '');
     $nomeFantasia = trim($body['nomeFantasia'] ?? '');
-    $cnpj = only_digits($body['cnpj'] ?? '');
-    if ($razaoSocial === '' || $nomeFantasia === '' || strlen($cnpj) !== 14) {
-        json_error('Razão social, nome fantasia e CNPJ válidos são obrigatórios.', 400);
+    $cnpj = only_digits($body['cnpj'] ?? '') ?: null;
+    if ($razaoSocial === '' || $nomeFantasia === '') {
+        json_error('Razão social e nome fantasia são obrigatórios.', 400);
     }
+    if ($cnpj !== null && strlen($cnpj) !== 14) json_error('CNPJ inválido — informe os 14 dígitos ou deixe em branco.', 400);
 
-    $existe = $pdo->prepare('SELECT id FROM parceiros WHERE cnpj = ?');
-    $existe->execute([$cnpj]);
-    if ($existe->fetch()) json_error('Já existe um parceiro cadastrado com esse CNPJ.', 409);
+    if ($cnpj !== null) {
+        $existe = $pdo->prepare('SELECT id FROM parceiros WHERE cnpj = ?');
+        $existe->execute([$cnpj]);
+        if ($existe->fetch()) json_error('Já existe um parceiro cadastrado com esse CNPJ.', 409);
+    }
 
     $tipoDesconto = $body['tipoDesconto'] ?? '';
     $acordoTipo = $tipoDesconto === 'Porcentagem (%)' ? 'Percentual' : ($tipoDesconto ? 'Fixo por atendimento' : null);

@@ -97,7 +97,7 @@ export default function GerarGuiaModal({ onClose, onGenerate }) {
             <tbody>
               <tr><th>Cliente</th><td>{guiaGerada.clienteNome}</td><th>Vínculo</th><td>{guiaGerada.clienteVinculo}</td></tr>
               <tr><th>Contrato</th><td>{contrato.id}</td><th>Emissão</th><td>{dateTime(guiaGerada.emitidaEm)}</td></tr>
-              <tr><th>Parceiro</th><td>{parceiro.razaoSocial}</td><th>CNPJ</th><td>{parceiro.cnpj}</td></tr>
+              <tr><th>Parceiro</th><td>{parceiro.razaoSocial}</td><th>CNPJ</th><td>{parceiro.cnpj || '—'}</td></tr>
               <tr><th>Serviço solicitado</th><td colSpan={3}>{guiaGerada.servico}</td></tr>
               <tr><th>Plano / cobertura</th><td>Coberto pelo plano</td><th>Valor acordado</th><td>{money(guiaGerada.valorAcordado)}</td></tr>
             </tbody>
