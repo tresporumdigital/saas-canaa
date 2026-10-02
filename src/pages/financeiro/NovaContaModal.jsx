@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, Button, Input, Select, FieldRow, Checkbox } from '../../components/index.js';
 import { maskMoney, moneyToNumber } from '../../lib/masks.js';
+import { todayISO } from '../../lib/format.js';
 
 const CATEGORIAS_RECEBER = [
   'Mensalidade de plano', 'Atendimento particular', 'Venda de equipamento',
@@ -20,7 +21,7 @@ export default function NovaContaModal({ tipo, onClose, onCreate }) {
     descricao: '',
     categoria: categorias[0],
     centroCusto: receber ? 'Planos' : 'Administrativo',
-    vencimento: '2026-09-10',
+    vencimento: todayISO(),
     valor: '',
     status: 'Em aberto',
     recorrente: false,

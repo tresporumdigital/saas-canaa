@@ -64,8 +64,15 @@ export function initials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-// dias entre uma data e hoje (referência do protótipo: 27/08/2026)
-export const TODAY = new Date('2026-08-27T09:00:00');
+// dias entre uma data e hoje (data real do navegador — antes era fixa em 27/08/2026, do protótipo)
+export const TODAY = new Date();
+
+// Data (AAAA-MM-DD, fuso local) de hoje + `dias` — valor padrão para campos <input type="date">.
+export function todayISO(dias = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + dias);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 export function daysFromToday(iso) {
   const d = new Date(iso);

@@ -4,7 +4,7 @@ import {
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { apiFetch, reloadContratosCache, usePlanosCache } from '../../lib/api.js';
-import { money } from '../../lib/format.js';
+import { money, todayISO } from '../../lib/format.js';
 import { maskCPF, maskRG, maskPhone, isValidEmail } from '../../lib/masks.js';
 
 const PARENTESCOS = ['Cônjuge', 'Filho(a)', 'Mãe', 'Pai', 'Irmão(ã)', 'Neto(a)', 'Outro'];
@@ -21,7 +21,7 @@ export default function NovoClienteWizard({ existentes = [], initial, onClose, o
 
   const [form, setForm] = useState({
     nome: '', cpf: '', rg: '', nascimento: '', telefone: '', email: '',
-    planoId: '', planoInicio: '2026-09-01', planoVencimento: '10',
+    planoId: '', planoInicio: todayISO(), planoVencimento: '10',
     ...initial,
   });
   const [endereco, setEndereco] = useState({ cep: '', logradouro: '', numero: '', bairro: '', cidade: '', uf: '' });

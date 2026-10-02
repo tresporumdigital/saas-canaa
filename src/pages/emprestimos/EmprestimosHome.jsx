@@ -8,7 +8,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import {
   apiFetch, useClientesCache, useEmprestimosCacheState, useUnidadesCacheState,
 } from '../../lib/api.js';
-import { date, money, dateTime } from '../../lib/format.js';
+import { date, money, dateTime, todayISO } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
 
 const TABS = [
@@ -17,7 +17,7 @@ const TABS = [
 ];
 
 const formaVazia = {
-  clienteId: '', responsavel: '', previsao: '2026-09-27', vinculo: 'Cobertura de plano', estado: 'Ótimo', observacoes: '',
+  clienteId: '', responsavel: '', previsao: todayISO(30), vinculo: 'Cobertura de plano', estado: 'Ótimo', observacoes: '',
 };
 
 export default function EmprestimosHome() {

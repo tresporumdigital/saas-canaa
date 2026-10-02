@@ -6,7 +6,7 @@ import {
 import { useToast } from '../../context/ToastContext.jsx';
 import { apiFetch, reloadContratosCache, useClientesCache, useContratosCache, usePagamentosList } from '../../lib/api.js';
 import { parcelasEmAbertoTotal, inPeriodo } from '../../mock/index.js';
-import { money, dateTime, date, number } from '../../lib/format.js';
+import { money, dateTime, date, number, todayISO } from '../../lib/format.js';
 import { maskMoney, moneyToNumber, numberToMoneyInput } from '../../lib/masks.js';
 import { statusVariant } from '../../lib/status.js';
 
@@ -27,7 +27,7 @@ export default function Pagamentos() {
   const [parcelaId, setParcelaId] = useState('');
   const [valorBaixa, setValorBaixa] = useState('');
   const [meioBaixa, setMeioBaixa] = useState('Boleto');
-  const [dataBaixa, setDataBaixa] = useState('2026-08-27');
+  const [dataBaixa, setDataBaixa] = useState(todayISO);
   const [justificativaBaixa, setJustificativaBaixa] = useState('');
   const [salvandoBaixa, setSalvandoBaixa] = useState(false);
 
@@ -43,7 +43,7 @@ export default function Pagamentos() {
     setBaixa(false);
     setClienteBaixaId(''); setContratoBaixa(null); setBuscouBaixa(false);
     setParcelas([]); setParcelaId(''); setValorBaixa(''); setMeioBaixa('Boleto');
-    setDataBaixa('2026-08-27'); setJustificativaBaixa('');
+    setDataBaixa(todayISO()); setJustificativaBaixa('');
   };
 
   const buscarContratoBaixa = async () => {
