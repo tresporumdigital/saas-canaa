@@ -67,7 +67,7 @@ export default function ContratoDetail() {
             { label: 'Dia de vencimento', value: `dia ${ct.diaVencimento}` },
             { label: 'Forma de pagamento', value: ct.formaPagamento },
             { label: 'Vendedor', value: ct.vendedor || '—' },
-            { label: 'Renovação', value: 'Automática ao fim da vigência, com reajuste ' + plano?.reajuste },
+            { label: 'Renovação', value: 'Automática ao fim da vigência' },
             ...(ct.canceladoEm ? [{ label: 'Cancelamento', value: `${date(ct.canceladoEm)} — ${ct.motivoCancelamento}` }] : []),
           ]} />
         </Card>

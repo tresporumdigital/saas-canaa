@@ -35,7 +35,6 @@ export default function PlanosConfig() {
               { key: 'valorMensal', header: 'Mensalidade', align: 'right', sortable: true, render: (r) => money(r.valorMensal) },
               { key: 'carenciaDias', header: 'Carência', align: 'right', render: (r) => `${r.carenciaDias} dias` },
               { key: 'limiteDependentes', header: 'Dependentes', align: 'right' },
-              { key: 'reajuste', header: 'Reajuste' },
               { key: 'coberturas', header: 'Coberturas', render: (r) => (
                 <div className="row" style={{ gap: 'var(--space-2)', flexWrap: 'wrap' }}>
                   {(r.coberturas || []).slice(0, 3).map((c) => <Tag key={c}>{c}</Tag>)}
