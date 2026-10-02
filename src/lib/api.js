@@ -18,6 +18,9 @@ export function setToken(token) {
   } catch {
     /* localStorage indisponível — segue só em memória */
   }
+  // Trocou a sessão (login/logout): o que foi carregado com o token anterior — ou sem token,
+  // vindo vazio por erro 401 — não vale mais.
+  resetAllCaches();
 }
 
 // Wrapper de fetch para a API própria: injeta o Bearer token, serializa o body
@@ -133,6 +136,12 @@ export function useAuditoriaList() {
 // lista (seletor de cliente, junções por id etc.) sem cada lugar refazer o fetch — e a página
 // "dona" de cada entidade usa o mesmo cache (via useXCacheState) para já nascer sincronizada
 // com quem só lê, em vez de manter dois fetches paralelos e desatualizados entre si.
+const allCaches = new Set();
+
+function resetAllCaches() {
+  allCaches.forEach((c) => c.reset());
+}
+
 function createListCache(path) {
   let state = { rows: [], loading: true, error: null };
   let promise = null;
@@ -152,7 +161,14 @@ function createListCache(path) {
     return promise;
   };
 
-  return {
+  const cache = {
+    // Descarta os dados; se alguma tela ainda está inscrita, recarrega na hora, senão só na próxima inscrição.
+    reset() {
+      promise = null;
+      state = { rows: [], loading: true, error: null };
+      if (listeners.size > 0) ensureLoaded();
+      else notify();
+    },
     subscribe(listener) {
       ensureLoaded();
       listeners.add(listener);
@@ -165,6 +181,8 @@ function createListCache(path) {
       return promise;
     },
   };
+  allCaches.add(cache);
+  return cache;
 }
 
 function useCacheRows(cache) {
