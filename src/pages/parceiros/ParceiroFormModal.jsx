@@ -41,6 +41,9 @@ export default function ParceiroFormModal({ parceiro, onClose, onSaved }) {
     servicosCobertos: parceiro?.acordo.servicosCobertos || [],
   }));
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  // Parceiros importados do site antigo têm categorias próprias (ex.: "Radiologia") — mantém a atual na lista.
+  const categoriaAtual = parceiro?.tipoParceria;
+  const opcoesCategoria = categoriaAtual && !CATEGORIAS.includes(categoriaAtual) ? [categoriaAtual, ...CATEGORIAS] : CATEGORIAS;
   const setMasked = (k, maskFn) => (e) => setForm((f) => ({ ...f, [k]: maskFn(e.target.value) }));
   const toggleServico = (servico) => setForm((f) => ({
     ...f,
@@ -95,7 +98,7 @@ export default function ParceiroFormModal({ parceiro, onClose, onSaved }) {
           <Input label="Nome fantasia" value={form.nomeFantasia} onChange={set('nomeFantasia')} required />
           <Input label="CNPJ (opcional)" value={form.cnpj} onChange={setMasked('cnpj', maskCNPJ)} placeholder="00.000.000/0000-00" />
           <Input label="Responsável" value={form.responsavel} onChange={set('responsavel')} />
-          <Select label="Categoria" value={form.categoria} onChange={set('categoria')} options={CATEGORIAS} />
+          <Select label="Categoria" value={form.categoria} onChange={set('categoria')} options={opcoesCategoria} />
           <Input label="Cidade" value={form.cidade} onChange={set('cidade')} />
           <Select label="UF" value={form.uf} onChange={set('uf')} options={UF_LIST} />
           <Select label="Desconto fixado" value={form.tipoDesconto} onChange={(e) => setForm((f) => ({ ...f, tipoDesconto: e.target.value, valorDesconto: '' }))}>
