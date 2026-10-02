@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { PageHeader } from '../../components/index.js';
 import {
-  Card, Tabs, DataTable, Badge, Button, StatCard, Alert, Modal, Drawer, DefList,
+  Card, Tabs, DataTable, Button, StatCard, Alert, Modal, Drawer, DefList,
   Input, Select, FieldRow, EnderecoFields, Avatar,
 } from '../../components/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -31,7 +31,8 @@ export default function EquipamentosVendas() {
   const { toast } = useToast();
   const [tab, setTab] = useState('vendas');
   const clientes = useClientesCache();
-  const produtos = useEquipamentosCache();
+  // Itens vendáveis: tudo de Cadastros que não é equipamento de locação.
+  const produtos = useEquipamentosCache().filter((p) => !p.locavel);
   const { rows: rowsVendas, reload: reloadVendas } = useVendasEquipamentoCacheState();
   const [venda, setVenda] = useState(null);
 
@@ -48,7 +49,7 @@ export default function EquipamentosVendas() {
   const [salvando, setSalvando] = useState(false);
   const [emitindoNf, setEmitindoNf] = useState(false);
 
-  const abaixoMin = produtos.filter((p) => p.estoque <= p.estoqueMinimo);
+  const abaixoMin = produtos.filter((p) => p.tipo !== 'Serviço' && p.estoque <= p.estoqueMinimo);
   const totalMes = rowsVendas.reduce((s, v) => s + vendaTotais(v).total, 0);
   const margemMes = rowsVendas.reduce((s, v) => s + vendaTotais(v).margem, 0);
 
@@ -171,9 +172,9 @@ export default function EquipamentosVendas() {
   return (
     <>
       <PageHeader
-        crumbs={[{ label: 'Início', to: '/' }, { label: 'Vendas de Equipamentos' }]}
-        title="Vendas de Equipamentos"
-        subtitle="Controle de estoque, venda e faturamento de equipamentos de apoio à convalescência."
+        crumbs={[{ label: 'Início', to: '/' }, { label: 'Vendas' }]}
+        title="Vendas"
+        subtitle="Venda e faturamento de equipamentos, produtos e serviços cadastrados em Cadastros."
         actions={<Button variant="primary" icon="plus" onClick={() => setPasso(1)}>Nova venda</Button>}
       />
 
@@ -220,23 +221,23 @@ export default function EquipamentosVendas() {
             pageSize={12}
             columns={[
               { key: 'id', header: 'Código' },
-              { key: 'descricao', header: 'Produto', sortable: true },
+              { key: 'tipo', header: 'Tipo', sortable: true },
+              { key: 'descricao', header: 'Item', sortable: true },
               { key: 'categoria', header: 'Categoria', sortable: true },
               { key: 'precoCusto', header: 'Custo', align: 'right', render: (r) => money(r.precoCusto) },
               { key: 'precoVenda', header: 'Venda', align: 'right', render: (r) => money(r.precoVenda) },
-              { key: 'estoque', header: 'Estoque', align: 'right', render: (r) => (
+              { key: 'estoque', header: 'Estoque', align: 'right', render: (r) => (r.tipo === 'Serviço' ? '—' : (
                 <span style={{ color: r.estoque <= r.estoqueMinimo ? 'var(--canaa-danger-600)' : 'inherit', fontWeight: 700 }}>{r.estoque}/{r.estoqueMinimo}</span>
-              ) },
-              { key: 'locavel', header: 'Locável', render: (r) => <Badge variant={r.locavel ? 'info' : 'neutral'}>{r.locavel ? 'Sim' : 'Não'}</Badge> },
+              )) },
             ]}
           />
         </Card>
       )}
 
       {tab === 'relatorio' && (
-        <Card title="Vendas por produto (período)">
+        <Card title="Vendas por item (período)">
           <table className="data-table">
-            <thead><tr><th>Produto</th><th className="num">Qtd</th><th className="num">Faturamento</th><th className="num">Margem</th></tr></thead>
+            <thead><tr><th>Item</th><th className="num">Qtd</th><th className="num">Faturamento</th></tr></thead>
             <tbody>
               {Object.values(rowsVendas.reduce((acc, v) => {
                 v.itens.forEach((it) => {
@@ -250,7 +251,6 @@ export default function EquipamentosVendas() {
                   <td>{row.descricao}</td>
                   <td className="num">{row.qtd}</td>
                   <td className="num">{money(row.fat)}</td>
-                  <td className="num">{money(row.fat * 0.45)}</td>
                 </tr>
               ))}
             </tbody>
@@ -290,7 +290,7 @@ export default function EquipamentosVendas() {
       )}
 
       {passo === 1 && (
-        <Modal title="Selecione o equipamento" onClose={fecharVenda} wide footer={<Button variant="secondary" onClick={fecharVenda}>Cancelar</Button>}>
+        <Modal title="Selecione o item" onClose={fecharVenda} wide footer={<Button variant="secondary" onClick={fecharVenda}>Cancelar</Button>}>
           <div className="grid cols-3">
             {produtos.map((p) => (
               <button key={p.id} type="button" className="equip-card" onClick={() => escolherEquip(p)}>
@@ -310,7 +310,7 @@ export default function EquipamentosVendas() {
           wide
           footer={(
             <>
-              <Button variant="secondary" type="button" onClick={() => setPasso(1)}>Trocar equipamento</Button>
+              <Button variant="secondary" type="button" onClick={() => setPasso(1)}>Trocar item</Button>
               <Button variant="secondary" type="button" onClick={fecharVenda}>Cancelar</Button>
               <Button variant="primary" type="submit" form="venda-form" disabled={!vendaPronta} loading={salvando}>Confirmar venda</Button>
             </>

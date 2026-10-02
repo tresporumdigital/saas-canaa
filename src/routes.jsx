@@ -33,8 +33,9 @@ export const NAV = [
     icon: 'box',
     modules: [
       { path: '/emprestimos', label: 'Empréstimo de Equipamentos', icon: 'wheelchair', roles: ['admin', 'operacional', 'atendente'] },
-      { path: '/equipamentos', label: 'Vendas de Equipamentos', icon: 'box', roles: ['admin', 'operacional', 'atendente', 'financeiro'] },
-      { path: '/equipamentos-cadastro', label: 'Cadastro de Equipamentos', icon: 'database', roles: ['admin', 'operacional'] },
+      { path: '/equipamentos', label: 'Vendas', icon: 'box', roles: ['admin', 'operacional', 'atendente', 'financeiro'] },
+      { path: '/cadastros', label: 'Cadastros', icon: 'database', roles: ['admin', 'operacional'] },
+      { path: '/servicos', label: 'Serviços', icon: 'sparkle', roles: ['admin', 'operacional', 'atendente'] },
       { path: '/notas-fiscais', label: 'Notas Fiscais', icon: 'receipt', roles: ['admin', 'financeiro'] },
     ],
   },

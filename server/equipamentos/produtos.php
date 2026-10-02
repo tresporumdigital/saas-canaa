@@ -5,9 +5,18 @@ require __DIR__ . '/../_bootstrap.php';
 require_auth($pdo);
 $method = $_SERVER['REQUEST_METHOD'];
 
+// O catálogo de Cadastros guarda equipamentos, produtos e serviços na mesma tabela.
+// A coluna `tipo` entrou depois da criação da tabela em produção — garante que ela existe
+// (idempotente; os registros antigos ficam como "Equipamento").
+if (!$pdo->query("SHOW COLUMNS FROM equipamentos_produto LIKE 'tipo'")->fetch()) {
+    $pdo->exec("ALTER TABLE equipamentos_produto ADD COLUMN tipo ENUM('Equipamento','Produto','Serviço') NOT NULL DEFAULT 'Equipamento' AFTER codigo");
+}
+const TIPOS_CADASTRO = ['Equipamento', 'Produto', 'Serviço'];
+
 function formatar_produto(array $p): array {
     return [
         'id' => $p['codigo'],
+        'tipo' => $p['tipo'] ?? 'Equipamento',
         'descricao' => $p['descricao'],
         'categoria' => $p['categoria'],
         'precoCusto' => (float) $p['preco_custo'],
@@ -29,9 +38,14 @@ if ($method === 'POST') {
     $descricao = trim($body['descricao'] ?? '');
     $categoria = trim($body['categoria'] ?? '');
     if ($descricao === '' || $categoria === '') json_error('Descrição e categoria são obrigatórias.', 400);
+    $tipo = $body['tipo'] ?? 'Equipamento';
+    if (!in_array($tipo, TIPOS_CADASTRO, true)) json_error('Tipo de cadastro inválido.', 400);
 
     $unidades = $body['unidades'] ?? null;
     $locavel = is_array($unidades) && count($unidades) > 0;
+    // Só equipamento tem nº de inventário para locação; produto e serviço são sempre de venda.
+    if ($locavel && $tipo !== 'Equipamento') json_error('Apenas equipamentos podem ser cadastrados para locação.', 400);
+    $ehServico = $tipo === 'Serviço';
     $precoCusto = isset($body['precoCusto']) ? (float) $body['precoCusto'] : 0;
 
     if ($locavel) {
@@ -49,9 +63,9 @@ if ($method === 'POST') {
 
         if ($locavel) {
             $pdo->prepare(
-                'INSERT INTO equipamentos_produto (codigo, descricao, categoria, preco_custo, preco_venda, estoque, estoque_minimo, locavel)
-                 VALUES (?, ?, ?, ?, 0, ?, 0, 1)'
-            )->execute([$codigo, $descricao, $categoria, $precoCusto, count($unidades)]);
+                'INSERT INTO equipamentos_produto (codigo, tipo, descricao, categoria, preco_custo, preco_venda, estoque, estoque_minimo, locavel)
+                 VALUES (?, ?, ?, ?, ?, 0, ?, 0, 1)'
+            )->execute([$codigo, $tipo, $descricao, $categoria, $precoCusto, count($unidades)]);
             $produtoId = (int) $pdo->lastInsertId();
 
             $insUnidade = $pdo->prepare(
@@ -66,19 +80,20 @@ if ($method === 'POST') {
             }
         } else {
             $pdo->prepare(
-                'INSERT INTO equipamentos_produto (codigo, descricao, categoria, preco_custo, preco_venda, estoque, estoque_minimo, locavel)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 0)'
+                'INSERT INTO equipamentos_produto (codigo, tipo, descricao, categoria, preco_custo, preco_venda, estoque, estoque_minimo, locavel)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)'
             )->execute([
-                $codigo, $descricao, $categoria, $precoCusto, $precoVenda,
-                isset($body['estoque']) ? (int) $body['estoque'] : 0,
-                isset($body['estoqueMinimo']) ? (int) $body['estoqueMinimo'] : 0,
+                $codigo, $tipo, $descricao, $categoria, $precoCusto, $precoVenda,
+                // Serviço não tem estoque.
+                !$ehServico && isset($body['estoque']) ? (int) $body['estoque'] : 0,
+                !$ehServico && isset($body['estoqueMinimo']) ? (int) $body['estoqueMinimo'] : 0,
             ]);
         }
 
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
-        json_error('Erro ao cadastrar equipamento — verifique se o nº de inventário já não está em uso.', 500);
+        json_error('Erro ao salvar o cadastro — verifique se o nº de inventário já não está em uso.', 500);
     }
 
     json_response(['id' => $codigo], 201);

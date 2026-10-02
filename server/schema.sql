@@ -227,6 +227,7 @@ CREATE TABLE IF NOT EXISTS guia_historico (
 CREATE TABLE IF NOT EXISTS equipamentos_produto (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   codigo VARCHAR(20) NOT NULL UNIQUE,
+  tipo ENUM('Equipamento','Produto','Serviço') NOT NULL DEFAULT 'Equipamento',
   descricao VARCHAR(160) NOT NULL,
   categoria VARCHAR(60) NOT NULL,
   preco_custo DECIMAL(10,2) NOT NULL DEFAULT 0,

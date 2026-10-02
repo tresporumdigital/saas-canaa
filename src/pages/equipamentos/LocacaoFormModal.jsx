@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react';
 import { Modal, Button, Input, Select, FieldRow, Card, Icon, Avatar } from '../../components/index.js';
 import { maskMoney, moneyToNumber } from '../../lib/masks.js';
+import { todayISO } from '../../lib/format.js';
 
 const CATEGORIAS = ['Mobilidade', 'Leito', 'Higiene', 'Respiratório'];
 const ESTADOS = ['Ótimo', 'Bom', 'Regular'];
 
-const unidadeVazia = () => ({ patrimonio: '', estadoConservacao: 'Ótimo', aquisicao: '2026-09-01' });
+const unidadeVazia = () => ({ patrimonio: '', estadoConservacao: 'Ótimo', aquisicao: todayISO() });
 
 // Pop-up de cadastro de equipamento para locação — registra o produto e todos os
 // números de inventário (unidades) que entram no acervo de empréstimo.
