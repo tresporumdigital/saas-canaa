@@ -1,5 +1,6 @@
 import IconSprite from '../atoms/IconSprite.jsx';
 import Icon from '../atoms/Icon.jsx';
+import logoCanaa from '../../assets/logo-canaa.png';
 
 // Template: cena de autenticação — coluna de marca + painel do formulário sobre o gradiente.
 export default function AuthLayout({ children }) {
@@ -9,8 +10,7 @@ export default function AuthLayout({ children }) {
       <div className="auth-scene">
         <aside className="auth-aside">
           <div className="auth-brand">
-            <span className="auth-brand-mark"><Icon name="check-circle" size={22} /></span>
-            Funerária Canaã
+            <img className="auth-logo" src={logoCanaa} alt="Funerária Canaã" />
           </div>
           <div className="auth-aside-body">
             <h1>Gestão funerária, do plano ao pós-atendimento.</h1>
@@ -24,7 +24,7 @@ export default function AuthLayout({ children }) {
               <li><Icon name="trend" size={16} /> Indicadores de receita e inadimplência</li>
             </ul>
           </div>
-          <p className="auth-aside-foot">Ambiente de demonstração · dados fictícios</p>
+          <p className="auth-aside-foot">Funerária Canaã · Sistema de gestão</p>
         </aside>
         <main className="auth-panel">{children}</main>
       </div>
