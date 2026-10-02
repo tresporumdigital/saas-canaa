@@ -8,6 +8,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { apiFetch, useAging, useClientesCache, useContratosCacheState, usePlanosCache } from '../../lib/api.js';
 import { money, date, number } from '../../lib/format.js';
 import { STATUS_SETS } from '../../lib/status.js';
+import ContratarModal from './ContratarModal.jsx';
 
 const TABS = [
   { id: 'contratos', label: 'Contratos' },
@@ -19,6 +20,7 @@ export default function PlanosHome() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [tab, setTab] = useState('contratos');
+  const [contratando, setContratando] = useState(false);
   const clientes = useClientesCache();
   const clienteById = (id) => clientes.find((c) => c.id === id);
   const planosProduto = usePlanosCache();
@@ -47,7 +49,7 @@ export default function PlanosHome() {
         crumbs={[{ label: 'Início', to: '/' }, { label: 'Planos' }]}
         title="Planos"
         subtitle="Venda, cobrança recorrente, renovação automática e controle de inadimplência dos planos."
-        actions={<Button variant="primary" icon="plus" to="/planos/contratar">Contratar plano</Button>}
+        actions={<Button variant="primary" icon="plus" onClick={() => setContratando(true)}>Contratar plano</Button>}
       />
 
       <div className="grid cols-3">
@@ -100,7 +102,7 @@ export default function PlanosHome() {
                 <Badge variant="info">{p.limiteDependentes} dependentes</Badge>
               </div>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', margin: 'var(--space-2) 0 var(--space-3)' }}>
-                Carência {p.carenciaDias} dias · Reajuste: {p.reajuste}
+                Carência {p.carenciaDias} dias
               </p>
               <div className="row" style={{ gap: 'var(--space-2)' }}>
                 {p.coberturas.map((c) => <Tag key={c}>{c}</Tag>)}
@@ -141,6 +143,7 @@ export default function PlanosHome() {
           </Card>
         </>
       )}
+      {contratando && <ContratarModal onClose={() => setContratando(false)} />}
     </>
   );
 }

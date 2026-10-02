@@ -11,6 +11,7 @@ import {
 import { cpf, phone, date, dateTime, money } from '../../lib/format.js';
 import { statusVariant } from '../../lib/status.js';
 import ClienteFormModal from './ClienteFormModal.jsx';
+import ContratarModal from '../planos/ContratarModal.jsx';
 
 const TABS = [
   { id: 'geral', label: 'Visão geral' },
@@ -28,6 +29,7 @@ export default function ClienteDetail() {
   const [tab, setTab] = useState('geral');
   const [confirmInativar, setConfirmInativar] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [contratando, setContratando] = useState(false);
   const [cliente, setCliente] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -164,7 +166,7 @@ export default function ClienteDetail() {
       {tab === 'planos' && (
         <>
           {contratos.length === 0 ? (
-            <EmptyState icon="shield" title="Sem planos contratados" action={<Button variant="primary" to="/planos/contratar">Contratar plano</Button>} />
+            <EmptyState icon="shield" title="Sem planos contratados" action={<Button variant="primary" onClick={() => setContratando(true)}>Contratar plano</Button>} />
           ) : contratos.map((ct) => {
             const parcelas = parcelasPorContrato[ct.id] || [];
             return (
@@ -284,6 +286,8 @@ export default function ClienteDetail() {
           onClose={() => setConfirmInativar(false)}
         />
       )}
+
+      {contratando && <ContratarModal clienteId={cliente.id} onClose={() => setContratando(false)} />}
 
       {editing && (
         <ClienteFormModal
