@@ -1,4 +1,5 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useMemo } from 'react';
+import { useAuth } from './AuthContext.jsx';
 
 // Perfis de acesso do PRD (seção 2).
 export const ROLES = [
@@ -11,11 +12,16 @@ export const ROLES = [
 
 const RoleContext = createContext(null);
 
+// O perfil ativo é sempre o do usuário logado (campo `perfil` vindo da API) — não há mais
+// seletor para alternar entre perfis na barra superior.
+const PERFIL_TO_ROLE = { Administrador: 'admin', Atendente: 'atendente', Financeiro: 'financeiro', Operacional: 'operacional' };
+
 export function RoleProvider({ children }) {
-  const [roleId, setRoleId] = useState('admin');
+  const { user } = useAuth();
+  const roleId = PERFIL_TO_ROLE[user?.perfil] || 'atendente';
   const value = useMemo(() => {
     const role = ROLES.find((r) => r.id === roleId) || ROLES[0];
-    return { role, roleId, setRoleId, roles: ROLES };
+    return { role, roleId, roles: ROLES };
   }, [roleId]);
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;
 }

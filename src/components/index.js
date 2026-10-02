@@ -45,7 +45,6 @@ export { default as NavRail } from './organisms/NavRail.jsx';
 export { default as NavPanel } from './organisms/NavPanel.jsx';
 export { default as MobileNav } from './organisms/MobileNav.jsx';
 export { default as TopBar } from './organisms/TopBar.jsx';
-export { default as RoleSwitcher } from './organisms/RoleSwitcher.jsx';
 export { default as UserMenu } from './organisms/UserMenu.jsx';
 export { default as RequireAuth } from './organisms/RequireAuth.jsx';
 export { default as LoginForm } from './organisms/auth/LoginForm.jsx';

@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../atoms/Icon.jsx';
-import RoleSwitcher from './RoleSwitcher.jsx';
 import UserMenu from './UserMenu.jsx';
 
-// Organismo: barra superior (busca global, perfil simulado, usuário logado).
+// Organismo: barra superior (busca global e usuário logado).
 export default function TopBar({ onOpenMenu }) {
   const [q, setQ] = useState('');
   const navigate = useNavigate();
@@ -32,7 +31,6 @@ export default function TopBar({ onOpenMenu }) {
       <div className="spacer" />
       <div className="actions">
         <button className="icon-btn hide-mobile" aria-label="Notificações"><Icon name="bell" size={16} /></button>
-        <RoleSwitcher />
         <UserMenu />
       </div>
     </header>

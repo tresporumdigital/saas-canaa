@@ -1,20 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import Icon from '../atoms/Icon.jsx';
-import { useRole } from '../../context/RoleContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 
 // Organismo: navegação para telas pequenas (drawer da esquerda). Lista grupos/módulos
-// visíveis ao perfil ativo, o seletor de perfil e a saída da conta.
+// visíveis ao perfil do usuário logado e a saída da conta.
 export default function MobileNav({ groups, onClose }) {
-  const { role, roles, setRoleId } = useRole();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-
-  const pickRole = (id) => {
-    setRoleId(id);
-    onClose();
-    navigate(id === 'parceiro' ? '/portal-parceiro' : '/');
-  };
 
   const sair = () => {
     onClose();
@@ -43,22 +35,6 @@ export default function MobileNav({ groups, onClose }) {
               </div>
             </div>
           )}
-
-          <div className="mnav-group">
-            <div className="mnav-section-title">Perfil de acesso</div>
-            <div className="mnav-list">
-              {roles.map((r) => (
-                <button
-                  key={r.id}
-                  className={`mnav-item ${r.id === role.id ? 'active' : ''}`}
-                  onClick={() => pickRole(r.id)}
-                >
-                  <span className="avatar xs">{r.avatar}</span>
-                  {r.name}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {groups.map((g) => (
             <div key={g.id} className="mnav-group">
